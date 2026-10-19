@@ -1,0 +1,62 @@
+[project]
+name = "hallustream"
+version = "0.1.0a0"
+description = "Live hallucination highlighting for open LLMs: a probe on hidden states flags unsupported entities as the model writes."
+readme = "README.md"
+license = "Apache-2.0"
+authors = [{ name = "Pranav Sethia", email = "pranav.sethia5@gmail.com" }]
+requires-python = ">=3.10"
+keywords = ["llm", "hallucination", "probe", "interpretability", "qwen3", "streaming"]
+dependencies = [
+    "torch>=2.8",
+    "transformers>=5.20,<6",
+    "safetensors>=0.4",
+    "huggingface_hub>=1.0",
+    "numpy>=1.26",
+]
+
+[project.optional-dependencies]
+research = [
+    "datasets>=3.0",
+    "scikit-learn>=1.5",
+    "pandas>=2.2",
+    "pyarrow>=17",
+    "wandb>=0.19",
+    "anthropic>=0.60",
+]
+demo = ["gradio[mcp]>=5.30", "spaces>=0.40"]
+serve = ["fastapi>=0.115", "uvicorn>=0.30"]
+agents = ["langchain-core>=1.0"]
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "hypothesis>=6.100",
+    "ruff>=0.8",
+    "pyright>=1.1.390",
+    "pre-commit>=4",
+    "modal>=1.6",
+]
+
+[project.urls]
+Repository = "https://github.com/pranav-sethia/hallustream"
+
+[build-system]
+requires = ["uv_build>=0.10.7,<0.11.0"]
+build-backend = "uv_build"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+
+[tool.pyright]
+include = ["src/hallustream"]
+exclude = ["src/hallustream/research"]
+typeCheckingMode = "basic"
+pythonVersion = "3.10"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

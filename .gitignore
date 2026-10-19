@@ -1,0 +1,35 @@
+# Private: AI-workflow and internal notes (never pushed)
+CLAUDE.md
+.claude/
+plans/
+CLAIMS.md
+notes/
+
+# Secrets
+.env
+.env.*
+
+# Data, activations, run outputs (re-created by scripts; never committed)
+data/
+runs/
+results/
+*.npy
+*.parquet
+*.safetensors
+*.bin
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+dist/
+build/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.hypothesis/
+
+# OS / editors
+.DS_Store
+.vscode/
+.idea/
