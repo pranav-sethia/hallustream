@@ -1,4 +1,4 @@
-.PHONY: test lint format smoke
+.PHONY: test lint format smoke split
 
 test:
 	uv run pytest -q
@@ -14,3 +14,6 @@ format:
 
 smoke:
 	uv run modal run modal_jobs/smoke.py
+
+split:
+	uv run python -m hallustream.research.data data/splits.json

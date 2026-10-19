@@ -10,9 +10,17 @@ Both datasets come from Obeso et al., *Real-Time Detection of Hallucinated Entit
 
 The datasets carry **no license tag**, so this project never redistributes them. Code downloads them from the source at a pinned revision.
 
-## Which answers are used for training
-- **Training and released probes use only answers written by Apache-2.0 or unrestricted-output models:** Qwen2.5-7B-Instruct, Mistral-Small-24B-Instruct-2501, Gemma-2-9B-it.
-- **Llama-written answers are used for evaluation only.** The Llama 3.1/3.3 license (§1.b.i) requires any distributed AI model trained on Llama outputs to include "Llama" at the start of its name.
+## Which answers are used
+- **Training:** the official train splits of both datasets, all five source models. After removing any answer whose question appears in a test set, that leaves 20,056 answers, plus 2,395 for validation (7.7% removed).
+- **Test:** the official test splits of both datasets, all five sources: 9,426 answers.
+- **Not used:** the `obalcells/hallucination-heads*` datasets. They re-export the same answers, so mixing them in would leak test data into training.
+
+## Why these datasets
+These are the only large public datasets with **entity-level** hallucination labels on **long, closed-book** answers written naturally by real models. That is exactly the setting HalluStream targets. We considered and skipped:
+- **RAGTruth:** labels faithfulness to a provided document, not factual recall.
+- **FAVA training data:** errors are inserted synthetically.
+- **HaluEval / ANAH / FELM:** answer- or sentence-level labels, or not English.
+- **PsiloQA:** short QA, mostly non-English, labels from GPT-4o against one passage.
 
 ## Models
 | Use | Model | License |
