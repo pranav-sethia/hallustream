@@ -15,7 +15,7 @@ image = (
     modal.Image.debian_slim(python_version="3.12")
     .uv_sync(str(PROJECT_ROOT), extras=["research"], frozen=True)
     .env({"HF_HOME": f"{CACHE_DIR}/hf", "TOKENIZERS_PARALLELISM": "false"})
-    .add_local_python_source("hallustream")
+    .add_local_python_source("hallustream", "modal_jobs")
 )
 
 volume = modal.Volume.from_name("hallustream-cache", create_if_missing=True)
