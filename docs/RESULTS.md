@@ -2,7 +2,7 @@
 
 All numbers are generated from logged runs (`data/gate/gate_results.json`, `sweep_results.json`), not typed by hand.
 
-## Reproduction check (Step 3)
+## Reproduction check
 We ran Obeso et al.'s released linear probe (`obalcells/hallucination-probes`, `qwen2_5_7b_linear`) through this project's own pipeline on Qwen2.5-7B-Instruct and compared against the paper's Table 4. Span-level AUROC: each entity is scored by its highest token probability.
 
 | Test set | Paper | Ours (paper-style span search) | Recall @ 10% FPR (ours) | Ours (exact character offsets) | Entities scored (exact) |
@@ -12,7 +12,7 @@ We ran Obeso et al.'s released linear probe (`obalcells/hallucination-probes`, `
 
 With the paper's span search, our pipeline reproduces the published numbers to within 0.0002 AUROC. The project's exact-offset labeling (used for all training) lands within 0.0004 of the paper while keeping every labeled entity and always labeling the correct mention of repeated names.
 
-## Layer sweep (Step 4)
+## Layer sweep
 **Setup**
 - Every layer of both models, on 1,200 train / 800 validation answers (11,414 validation entities).
 - Each candidate gets the same linear probe: L2 logistic regression on standardized features with balanced classes. Its regularization strength (C = 3e-5) was tuned on the best candidates first. The default C = 1 overfit and cost about 0.01 AUROC.
@@ -40,10 +40,10 @@ With the paper's span search, our pipeline reproduces the published numbers to w
 | Middle + last layers | 17+30: **0.847** | +0.004 (interval above 0), but recall at 10% FPR not higher |
 
 - For Qwen3, no combination beat layer 21 beyond noise.
-- Whether Qwen3.5 uses layer 17 alone or 17+30 is decided in Step 5 on the full training set, by the rule in [EVAL_PROTOCOL.md](../EVAL_PROTOCOL.md).
+- Whether Qwen3.5 uses layer 17 alone or 17+30 was decided on the full training set (below), by the rule in [EVAL_PROTOCOL.md](../EVAL_PROTOCOL.md).
 - Full tables: `results/sweep_report.json`, produced by `research/sweep_report.py`.
 
-## Trained probe (Step 5)
+## Trained probe
 **Training**
 - Recipe: Obeso et al.'s annealed loss, which starts as a per-token loss and shifts to a loss on each entity's riskiest token. Entity tokens are weighted 10x. Optimizer: AdamW with linear learning-rate decay.
 - Data: all 20,056 training answers.
@@ -52,7 +52,7 @@ With the paper's span search, our pipeline reproduces the published numbers to w
   - Accuracy plateaued at 8 passes over the data.
   - Learning rate and L2 strength changed AUROC by at most 0.001.
 - Layer choice: the rule fixed in [EVAL_PROTOCOL.md](../EVAL_PROTOCOL.md) picked layers 17 + 30 over layer 17 alone for Qwen3.5. On validation, AUROC was +0.008 [0.006, 0.009] higher and recall at 10% FPR was 64.9% vs 63.1%.
-- Frozen before test: probe, Platt calibration and thresholds were set on validation only and committed before the test set was scored ([configs/step5_frozen.json](../configs/step5_frozen.json)).
+- Frozen before test: probe, Platt calibration and thresholds were set on validation only and committed before the test set was scored ([configs/frozen_choices.json](../configs/frozen_choices.json)).
 
 **Test set:** 9,426 answers and 144,676 entities, scored once.
 
@@ -81,4 +81,4 @@ With the paper's span search, our pipeline reproduces the published numbers to w
 **Notes**
 - Test AUROC is about 0.018 below validation (0.867 vs 0.885). Validation questions come from the same pool as training; test questions are separate.
 - The paper's own Qwen2.5-7B linear probe scored 0.838 / 0.847 on these test sets. Its setting is different (one model probing its own answers), so it is context rather than a head-to-head comparison.
-- The guard's stop rate on whole answers needs full token streams. It is measured with the library in Step 6.
+- The guard's stop rate on whole answers needs full token streams. It will be measured with the streaming library.

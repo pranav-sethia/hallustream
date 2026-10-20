@@ -5,7 +5,7 @@ This file was committed **before** any probe was trained. Its purpose is to fix 
 ## What is scored
 - **Unit:** one labeled entity span (a name, date, number, place or citation), scored by the **highest** per-token risk inside it.
 - **Labels:** "Not Supported" and "Insufficient Information" = positive (hallucinated); "Supported" = negative; missing labels are ignored.
-- **Own-answer data (Step 7):** "Contradicted" = positive; "Supported" = negative; "Not on the page" is dropped.
+- **Own-answer data (planned):** "Contradicted" = positive; "Supported" = negative; "Not on the page" is dropped.
 
 ## Data splits
 - **Annotated data:** `obalcells/longfact-annotations` and `obalcells/longfact-augmented-annotations` (pinned revisions in `src/hallustream/research/data.py`).
@@ -18,7 +18,7 @@ This file was committed **before** any probe was trained. Its purpose is to fix 
 ## Layer choice (validation only)
 - An every-layer sweep (2,000 answers, logistic probe with tuned regularization) picked **Qwen3.5-4B layer 17** and **Qwen3-4B layer 21** as the best single layers.
 - For Qwen3.5, layers 17 + 30 together scored 0.004 AUROC higher on validation (bootstrap interval above 0). It was selected from about 54 candidates, though, and its recall at 10% false alarms was not higher.
-- **Rule, fixed before the Step 5 training:** train the final recipe on both layer 17 (A) and layers 17 + 30 (B). Ship B only if, on validation:
+- **Rule, fixed before training the final probe:** train the final recipe on both layer 17 (A) and layers 17 + 30 (B). Ship B only if, on validation:
   1. its AUROC is higher than A's, with the paired-bootstrap 95% interval above 0; and
   2. its recall at 10% false alarms is not lower than A's.
   Otherwise ship A.
@@ -53,5 +53,5 @@ This file was committed **before** any probe was trained. Its purpose is to fix 
 ## Fixed prompts
 Added here **before** each is first used:
 - the neutral default prompt: `Write a detailed, factual answer.`
-- the Step 7 entity-extraction and judge prompts
+- the own-answer entity-extraction and judge prompts
 - the P(True) prompt

@@ -1,12 +1,12 @@
-"""Step 5 evaluation, in two phases (EVAL_PROTOCOL.md).
+"""Probe evaluation, in two phases (EVAL_PROTOCOL.md).
 
 Phase "val": everything that is chosen is chosen here, on validation only:
   layer choice for Qwen3.5 (rule fixed before training), Platt calibration,
   the fpr10 and guard thresholds, and the best confidence baseline.
-  Writes results/step5_frozen.json, which is committed before the test set is scored.
+  Writes results/frozen_choices.json, which is committed before the test set is scored.
 
 Phase "test": scores the test set once with the frozen choices.
-  Writes results/step5_test.json.
+  Writes results/test_results.json.
 
 Inputs are the prediction files written by modal_jobs/train.py, downloaded to
 results/probes/<variant>/.
@@ -27,7 +27,7 @@ import pandas as pd
 from hallustream.research.metrics import auroc, paired_bootstrap, recall_at_fpr
 
 PROBES = Path("results/probes")
-FROZEN = Path("results/step5_frozen.json")
+FROZEN = Path("results/frozen_choices.json")
 BASELINES = ["nll_max", "nll_mean", "entropy_max", "entropy_mean"]
 SHIP_SEED = 0  # decided in advance: ship seed 0, report the spread over all seeds
 GUARD_FPR = 0.02
@@ -202,7 +202,7 @@ def phase_test() -> dict:
             s35["label"].to_numpy(), s35[col].to_numpy(), s3[col].to_numpy(), groups
         ).items()
     }
-    Path("results/step5_test.json").write_text(json.dumps(out, indent=1))
+    Path("results/test_results.json").write_text(json.dumps(out, indent=1))
     return out
 
 

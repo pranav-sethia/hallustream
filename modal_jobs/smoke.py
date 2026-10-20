@@ -1,4 +1,4 @@
-"""Step 1 smoke test: load Qwen3-0.6B in bf16 on an L4 and run one forward pass.
+"""Smoke test: load Qwen3-0.6B in bf16 on an L4 and run one forward pass.
 
 Run:  uv run modal run modal_jobs/smoke.py
 Then: uv run modal volume get hallustream-cache runs/smoke/ok.json .

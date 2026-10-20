@@ -1,4 +1,4 @@
-"""Step 5: train a linear probe on cached hidden states with Obeso et al.'s recipe.
+"""Train a linear probe on cached hidden states with Obeso et al.'s recipe.
 
 The paper's loss (checked against their code):
 - token loss: BCE on every answer token, entity tokens weighted 10x, ordinary tokens 1x,

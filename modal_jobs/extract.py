@@ -1,4 +1,4 @@
-"""Step 4: teacher-forced feature extraction on Modal (sharded, resumable).
+"""Teacher-forced feature extraction on Modal (sharded, resumable).
 
 Deploy once:  uv run modal deploy modal_jobs/extract.py
 Launch:       uv run python -m modal_jobs.launch extract <run>     (see RUNS below)

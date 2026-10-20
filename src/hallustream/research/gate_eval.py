@@ -1,4 +1,4 @@
-"""Step 3 reproduction gate, CPU part.
+"""Reproduction gate, CPU part.
 
 Aligns labels both ways ("paper" replica and our "exact" offsets) on the saved
 per-token probabilities and compares AUROC with the paper's Table 4.

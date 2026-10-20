@@ -1,4 +1,4 @@
-"""Step 3 reproduction gate, GPU part.
+"""Reproduction gate, GPU part.
 
 Runs Qwen2.5-7B-Instruct with the paper's released linear probe over the Qwen2.5
 test splits of both annotated datasets and saves per-token probabilities.

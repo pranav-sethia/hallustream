@@ -31,10 +31,13 @@ These are the only large public datasets with **entity-level** hallucination lab
 | Reproduction check | `Qwen/Qwen2.5-7B-Instruct` + `obalcells/hallucination-probes` (`qwen2_5_7b_linear`) | Apache-2.0 |
 | Tests | `trl-internal-testing/tiny-Qwen3ForCausalLM` | — |
 
-## Own-answer data (Step 7)
+## Own-answer data (planned)
 - Qwen3 answers questions about Wikipedia topics.
 - Claude Haiku 5.5 labels each entity against the topic's Wikipedia page text.
 - We publish labels and scores, not page text. Wikipedia text is CC BY-SA.
 
 ## Pinned revisions
-Recorded in `configs/` and in every run's `run_meta.json` (filled in at Step 2).
+- `obalcells/longfact-annotations` @ `949fd2f71b3efd403350e38539340d9d9ceefc9d`
+- `obalcells/longfact-augmented-annotations` @ `63174c7ea9111adb6f4c4ea61895af3e3740d997`
+
+Set in `src/hallustream/research/data.py`. Every run also records its git commit in `run_meta.json`.

@@ -1,4 +1,4 @@
-"""Step 5: train probes on the main feature caches (GPU), tune on validation, predict.
+"""Train probes on the main feature caches (GPU), tune on validation, predict.
 
 Deploy once:  uv run modal deploy modal_jobs/train.py
 Then:         uv run python -m modal_jobs.train tune <variant>
