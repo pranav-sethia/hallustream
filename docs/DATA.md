@@ -12,6 +12,7 @@ The datasets carry **no license tag**, so this project never redistributes them.
 
 ## Which answers are used
 - **Training:** the official train splits of both datasets, all five source models. After removing any answer whose question appears in a test set, that leaves 20,056 answers, plus 2,395 for validation (7.7% removed).
+- **Reworded-question check:** exact matching can miss rewordings, so `research/leak_check.py` compares every test question with every train/val question (TF-IDF cosine). Of 1,986 test questions, 5 had a train/val match at ≥ 0.9; reading them by hand, all ask about the same subject, so their 7 train/val answers are dropped before training. Pairs below 0.9 are mostly sibling topics that share a prompt template.
 - **Test:** the official test splits of both datasets, all five sources: 9,426 answers.
 - **Not used:** the `obalcells/hallucination-heads*` datasets. They re-export the same answers, so mixing them in would leak test data into training.
 
