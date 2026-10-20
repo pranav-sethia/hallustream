@@ -92,14 +92,16 @@ def fit_and_score(
 
 
 def evaluate(
-    run_dir: Path, layers: list[int], combine: str = "concat", exclude=frozenset()
+    run_dir: Path, layers: list[int], combine: str = "concat", exclude=frozenset(), C: float = 1.0
 ) -> dict:
     rows, spans = load_tables(run_dir)
-    scores, vs = fit_and_score(rows, load_features(run_dir, layers, combine), spans, exclude)
+    X = load_features(run_dir, layers, combine)
+    scores, vs = fit_and_score(rows, X, spans, exclude, C)
     y = vs["label"].to_numpy()
     return {
         "layers": layers,
         "combine": combine,
+        "C": C,
         "val_auroc": round(auroc(y, scores), 4),
         "val_recall_at_10pct_fpr": round(recall_at_fpr(y, scores), 4),
         "n_val_spans": int(len(vs)),

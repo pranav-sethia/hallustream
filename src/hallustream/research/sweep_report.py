@@ -23,7 +23,8 @@ QWEN35_FULL_ATTENTION = set(range(3, 32, 4))  # 0-based decoder layers; the rest
 
 def name(c: dict) -> str:
     layers = "+".join(map(str, c["layers"]))
-    return f"mean({layers})" if c["combine"] == "mean" and len(c["layers"]) > 1 else layers
+    out = f"mean({layers})" if c["combine"] == "mean" and len(c["layers"]) > 1 else layers
+    return out if c.get("C", 1.0) == 1.0 else f"{out} C={c['C']}"
 
 
 def compare_to_best(files: list[Path], q_of: dict[str, str], n_boot: int = 1000) -> dict:

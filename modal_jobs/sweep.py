@@ -20,11 +20,13 @@ LEAK_CHECK = Path("data/leak_check.json")
 
 
 @app.function(image=image, volumes={CACHE_DIR: volume}, cpu=4, memory=32768, timeout=2 * 60 * 60)
-def score_candidate(run: str, layers: list[int], combine: str, exclude: list[str]) -> dict:
+def score_candidate(
+    run: str, layers: list[int], combine: str, exclude: list[str], C: float = 1.0
+) -> dict:
     from hallustream.research.layer_sweep import evaluate
 
     t0 = time.time()
-    res = evaluate(Path(CACHE_DIR) / "features" / run, layers, combine, frozenset(exclude))
+    res = evaluate(Path(CACHE_DIR) / "features" / run, layers, combine, frozenset(exclude), C)
     return res | {"seconds": round(time.time() - t0)}
 
 
@@ -51,13 +53,16 @@ def _get(call: modal.FunctionCall) -> dict:
 def run_candidates(run: str, candidates: list[dict], name: str) -> Path:
     exclude = json.loads(LEAK_CHECK.read_text())["exclude"]
     fn = modal.Function.from_name("hallustream-sweep", "score_candidate")
-    calls = [fn.spawn(run, c["layers"], c.get("combine", "concat"), exclude) for c in candidates]
+    calls = [
+        fn.spawn(run, c["layers"], c.get("combine", "concat"), exclude, c.get("C", 1.0))
+        for c in candidates
+    ]
     base = modal.Function.from_name("hallustream-sweep", "score_baselines").spawn(run, exclude)
     print(f"{run}: {len(calls)} candidates launched")
     results = []
     for c in calls:
         r = _get(c)
-        print(f"  {r['combine']:6s} {r['layers']}: {r['val_auroc']}  ({r['seconds']}s)")
+        print(f"  {r['combine']:6s} {r['layers']} C={r['C']}: {r['val_auroc']}  ({r['seconds']}s)")
         results.append(r)
     out = Path("results") / f"{run}_{name}.json"
     out.parent.mkdir(exist_ok=True)
@@ -71,7 +76,7 @@ if __name__ == "__main__":
     p = argparse.ArgumentParser()
     p.add_argument("run", choices=list(RUNS))
     p.add_argument("name", help="'singles' scores every layer; anything else needs --spec")
-    p.add_argument("--spec", type=Path, help="JSON list of {layers, combine}")
+    p.add_argument("--spec", type=Path, help="JSON list of {layers, combine, C}")
     a = p.parse_args()
     if a.name == "singles":
         cands = [{"layers": [layer]} for layer in RUNS[a.run]["layers"]]

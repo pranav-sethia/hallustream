@@ -32,6 +32,9 @@ RUNS = {
     # main cache: every train/val/test answer at the chosen layer (filled in after the sweep)
     "main_qwen35": dict(model=QWEN35, layers=None, subset="all"),
     "main_qwen3": dict(model=QWEN3, layers=None, subset="all"),
+    # re-extraction after the every-layer sweep picked new layers
+    "main2_qwen35": dict(model=QWEN35, layers=[17, 30], subset="all"),
+    "main2_qwen3": dict(model=QWEN3, layers=[21], subset="all"),
     # tiny end-to-end check
     "smoke": dict(model=QWEN35, layers=[26, 30], subset="smoke"),
 }
