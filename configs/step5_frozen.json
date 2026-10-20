@@ -1,0 +1,83 @@
+{
+ "layer_choice": {
+  "auroc_A_L17": 0.877,
+  "auroc_B_L17_30": 0.8846,
+  "B_minus_A": {
+   "delta": 0.0076,
+   "ci_low": 0.0062,
+   "ci_high": 0.0091,
+   "frac_le_0": 0.0
+  },
+  "recall10_A": 0.6309,
+  "recall10_B": 0.6488,
+  "chosen": "qwen35_L17_30"
+ },
+ "models": {
+  "qwen35_L17_30": {
+   "variant": "qwen35_L17_30",
+   "platt": [
+    0.9773558378219604,
+    -0.016486451029777527
+   ],
+   "threshold_fpr10": 0.4840106964111328,
+   "threshold_guard": 0.7733386158943176,
+   "best_baseline": "nll_max",
+   "val": {
+    "auroc_by_seed": {
+     "p_seed0": 0.8846,
+     "p_seed1": 0.8843,
+     "p_seed2": 0.8845,
+     "p_seed3": 0.8845,
+     "p_seed4": 0.8839
+    },
+    "ece_raw": 0.0105,
+    "ece_calibrated": 0.0088,
+    "baselines": {
+     "nll_max": 0.6248,
+     "nll_mean": 0.6173,
+     "entropy_max": 0.6123,
+     "entropy_mean": 0.6082
+    }
+   },
+   "train_config": {
+    "loss": "annealed",
+    "lr": 0.001,
+    "epochs": 8,
+    "l2": 0.01
+   }
+  },
+  "qwen3_L21": {
+   "variant": "qwen3_L21",
+   "platt": [
+    0.988804280757904,
+    -0.033070534467697144
+   ],
+   "threshold_fpr10": 0.4914146959781647,
+   "threshold_guard": 0.7603327035903931,
+   "best_baseline": "entropy_max",
+   "val": {
+    "auroc_by_seed": {
+     "p_seed0": 0.8712,
+     "p_seed1": 0.8711,
+     "p_seed2": 0.8717,
+     "p_seed3": 0.8715,
+     "p_seed4": 0.8711
+    },
+    "ece_raw": 0.0087,
+    "ece_calibrated": 0.0073,
+    "baselines": {
+     "nll_max": 0.6035,
+     "nll_mean": 0.6031,
+     "entropy_max": 0.6688,
+     "entropy_mean": 0.6561
+    }
+   },
+   "train_config": {
+    "loss": "annealed",
+    "lr": 0.001,
+    "epochs": 8,
+    "l2": 0.01
+   }
+  }
+ }
+}
