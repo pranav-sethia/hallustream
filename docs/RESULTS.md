@@ -1,6 +1,6 @@
 # Results
 
-All numbers are generated from logged runs (`results.json` / `gate_results.json`), not typed by hand.
+All numbers are generated from logged runs (`data/gate/gate_results.json`, `sweep_results.json`), not typed by hand.
 
 ## Reproduction check (Step 3)
 We ran Obeso et al.'s released linear probe (`obalcells/hallucination-probes`, `qwen2_5_7b_linear`) through this project's own pipeline on Qwen2.5-7B-Instruct and compared against the paper's Table 4. Span-level AUROC: each entity is scored by its highest token probability.
@@ -10,7 +10,7 @@ We ran Obeso et al.'s released linear probe (`obalcells/hallucination-probes`, `
 | LongFact | 0.8383 | 0.8384 | 0.5436 | 0.8387 | 14,416 |
 | LongFact++ | 0.8467 | 0.8469 | 0.5532 | 0.8467 | 10,117 |
 
-Our pipeline reproduces the published numbers to within 0.0002 AUROC. The project's exact-offset labeling (used for all training) gives the same AUROC while keeping every labeled entity and always labeling the correct mention of repeated names.
+With the paper's span search, our pipeline reproduces the published numbers to within 0.0002 AUROC. The project's exact-offset labeling (used for all training) lands within 0.0004 of the paper while keeping every labeled entity and always labeling the correct mention of repeated names.
 
 ## Layer sweep (Step 4)
 Validation span-AUROC of a linear probe (L2 logistic regression, the same method for every layer) on 1,200 train / 800 validation answers. The layer is chosen on validation only.

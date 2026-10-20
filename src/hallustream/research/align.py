@@ -80,6 +80,8 @@ def align_exact(
     stats: Counter = Counter()
 
     answer_start = next(i for i, (_, e) in enumerate(offsets) if e > answer_char)
+    if answer_start >= max_length:
+        raise ValueError(f"prompt is {answer_start} tokens, longer than max_length={max_length}")
     spans: list[Span] = []
     for ann in annotations:
         label = LABEL_MAP[ann.get("label")]

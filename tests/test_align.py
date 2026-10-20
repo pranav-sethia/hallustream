@@ -120,3 +120,9 @@ def test_metrics_match_hand_computed_values():
     assert scores.tolist() == [0.9, 0.2, 0.8, 0.3]
     assert auroc(labels, scores) == 1.0
     assert recall_at_fpr(labels, scores) == 1.0
+
+
+def test_prompt_longer_than_max_length_fails_loudly(tok):
+    long_msgs = [{"role": "user", "content": "word " * 200}]
+    with pytest.raises(ValueError, match="longer than max_length"):
+        align_exact(tok, long_msgs, "Paris is in France.", [], max_length=50)
