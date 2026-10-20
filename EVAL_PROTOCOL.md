@@ -8,12 +8,20 @@ This file was committed **before** any probe was trained. Its purpose is to fix 
 - **Own-answer data (Step 7):** "Contradicted" = positive; "Supported" = negative; "Not on the page" is dropped.
 
 ## Data splits
-- **Annotated data:** `obalcells/longfact-annotations` and `obalcells/longfact-augmented-annotations` (pinned revisions in `configs/`).
+- **Annotated data:** `obalcells/longfact-annotations` and `obalcells/longfact-augmented-annotations` (pinned revisions in `src/hallustream/research/data.py`).
 - **Test:** the official test splits of both datasets, all source models.
-- **Train/validation:** official splits of the license-clean sources only (Qwen2.5-7B, Mistral-Small-24B, Gemma-2-9B).
-- Any train/validation answer whose question (normalized: lowercased, whitespace collapsed) appears in the test set is removed.
+- **Train/validation:** official splits of all five source models (Qwen2.5-7B, Mistral-Small-24B, Gemma-2-9B, Llama-3.1-8B, Llama-3.3-70B).
+- Any train/validation answer whose question (normalized: lowercased, whitespace collapsed) appears in the test set is removed, as are answers to reworded copies of test questions (TF-IDF cosine ≥ 0.9, see `docs/DATA.md`).
 - **Own-answer data:** split by **topic** into train / validation / test.
 - **Nothing is chosen using test data.** Layers, thresholds, calibration and hyperparameters are all chosen on validation.
+
+## Layer choice (validation only)
+- An every-layer sweep (2,000 answers, logistic probe with tuned regularization) picked **Qwen3.5-4B layer 17** and **Qwen3-4B layer 21** as the best single layers.
+- For Qwen3.5, layers 17 + 30 together scored 0.004 AUROC higher on validation (bootstrap interval above 0). It was selected from about 54 candidates, though, and its recall at 10% false alarms was not higher.
+- **Rule, fixed before the Step 5 training:** train the final recipe on both layer 17 (A) and layers 17 + 30 (B). Ship B only if, on validation:
+  1. its AUROC is higher than A's, with the paired-bootstrap 95% interval above 0; and
+  2. its recall at 10% false alarms is not lower than A's.
+  Otherwise ship A.
 
 ## Metrics
 - **Primary:** AUROC.
