@@ -25,7 +25,8 @@ These are the only large public datasets with **entity-level** hallucination lab
 ## Models
 | Use | Model | License |
 |---|---|---|
-| Main | `Qwen/Qwen3-4B-Instruct-2507` | Apache-2.0 |
+| Main | `Qwen/Qwen3.5-4B` (hybrid: 24 Gated DeltaNet + 8 full-attention layers) | Apache-2.0 |
+| Comparison (same size, standard attention) | `Qwen/Qwen3-4B-Instruct-2507` | Apache-2.0 |
 | Reproduction check | `Qwen/Qwen2.5-7B-Instruct` + `obalcells/hallucination-probes` (`qwen2_5_7b_linear`) | Apache-2.0 |
 | Tests | `trl-internal-testing/tiny-Qwen3ForCausalLM` | — |
 

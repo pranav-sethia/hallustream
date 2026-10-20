@@ -11,12 +11,23 @@ import modal
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 CACHE_DIR = "/cache"  # Modal Volume mount point (features, results, HF cache)
 
-image = (
+base_image = (
     modal.Image.debian_slim(python_version="3.12")
     .uv_sync(str(PROJECT_ROOT), extras=["research"], frozen=True)
     .env({"HF_HOME": f"{CACHE_DIR}/hf", "TOKENIZERS_PARALLELISM": "false"})
-    .add_local_python_source("hallustream", "modal_jobs")
 )
+
+
+def with_code(img: modal.Image) -> modal.Image:
+    """Add our local packages last, so code edits don't trigger image rebuilds."""
+    return img.add_local_python_source("hallustream", "modal_jobs")
+
+
+image = with_code(base_image)
+
+# Qwen3.5 uses Gated DeltaNet layers; flash-linear-attention gives ~1.5x faster
+# teacher forcing and decoding on L4 (measured in model_check.py).
+qwen35_image = with_code(base_image.uv_pip_install("flash-linear-attention"))
 
 volume = modal.Volume.from_name("hallustream-cache", create_if_missing=True)
 
