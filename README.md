@@ -2,7 +2,7 @@
 
 **Live hallucination highlighting for open LLMs.** A small probe reads Qwen3.5's hidden states and flags names, dates, numbers and citations the model probably can't back up, token by token, as the text streams.
 
-> 🚧 **Work in progress.** Built so far: the data split, a reproduction of the paper's published Qwen2.5-7B result through this pipeline, and a layer sweep on Qwen3.5-4B and Qwen3-4B (see [docs/RESULTS.md](docs/RESULTS.md)). The trained probe, library, demo and `pip install` instructions will appear here once they exist. Every number comes from a logged run.
+> 🚧 **Work in progress.** Built so far: the data split, a reproduction of the paper's published Qwen2.5-7B result through this pipeline, an every-layer sweep, and the trained probe: **0.867 entity-level AUROC on 144,676 held-out entities for Qwen3.5-4B, vs 0.630 for the model's own confidence** (see [docs/RESULTS.md](docs/RESULTS.md)). The trained probe, library, demo and `pip install` instructions will appear here once they exist. Every number comes from a logged run.
 
 ## What this builds on
 HalluStream applies the method from Obeso et al., [*Real-Time Detection of Hallucinated Entities in Long-Form Generation*](https://arxiv.org/abs/2509.03531) (2025), to Qwen3.5-4B, with Qwen3-4B as a comparison. Planned additions:

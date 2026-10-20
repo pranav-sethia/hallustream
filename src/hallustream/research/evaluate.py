@@ -141,7 +141,8 @@ def phase_val() -> dict:
     for v in (layer["chosen"], "qwen3_L21"):
         spans, _ = load(v, "val")
         out["models"][v] = freeze(v, spans)
-    FROZEN.write_text(json.dumps(out, indent=1))  # copied to configs/ and committed before phase "test"
+    # copied to configs/ and committed before phase "test"
+    FROZEN.write_text(json.dumps(out, indent=1))
     return out
 
 
