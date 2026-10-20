@@ -23,6 +23,7 @@ research = [
     "pyarrow>=17",
     "wandb>=0.19",
     "anthropic>=0.60",
+    "matplotlib>=3.10.9",
 ]
 demo = ["gradio[mcp]>=5.30", "spaces>=0.40"]
 serve = ["fastapi>=0.115", "uvicorn>=0.30"]

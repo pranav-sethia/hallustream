@@ -26,6 +26,9 @@ RUNS = {
     # layer sweep: 1,200 train + 800 val answers, several layers
     "sweep_qwen35": dict(model=QWEN35, layers=[15, 18, 19, 22, 23, 26, 27, 30], subset="sweep"),
     "sweep_qwen3": dict(model=QWEN3, layers=[18, 22, 26, 30, 34], subset="sweep"),
+    # full sweep: every layer, same 2,000 answers (confirms the depth curve, enables combinations)
+    "full_qwen35": dict(model=QWEN35, layers=list(range(32)), subset="sweep"),
+    "full_qwen3": dict(model=QWEN3, layers=list(range(36)), subset="sweep"),
     # main cache: every train/val/test answer at the chosen layer (filled in after the sweep)
     "main_qwen35": dict(model=QWEN35, layers=None, subset="all"),
     "main_qwen3": dict(model=QWEN3, layers=None, subset="all"),

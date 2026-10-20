@@ -126,3 +126,17 @@ def test_prompt_longer_than_max_length_fails_loudly(tok):
     long_msgs = [{"role": "user", "content": "word " * 200}]
     with pytest.raises(ValueError, match="longer than max_length"):
         align_exact(tok, long_msgs, "Paris is in France.", [], max_length=50)
+
+
+def test_paired_bootstrap_detects_a_real_gap_and_not_a_fake_one():
+    from hallustream.research.metrics import paired_bootstrap
+
+    rng = np.random.default_rng(0)
+    y = rng.integers(0, 2, 600)
+    good = y + rng.normal(0, 0.5, 600)
+    bad = y + rng.normal(0, 2.0, 600)
+    groups = np.repeat(np.arange(200), 3)
+    real = paired_bootstrap(y, good, bad, groups, n_boot=200)
+    assert real["ci_low"] > 0
+    same = paired_bootstrap(y, good, good, groups, n_boot=50)
+    assert same["delta"] == 0 and same["ci_low"] == same["ci_high"] == 0
