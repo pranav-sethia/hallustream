@@ -3,7 +3,7 @@
 Deploy once:  uv run modal deploy modal_jobs/bios.py
 Then:         uv run python -m modal_jobs.bios fetch
               uv run python -m modal_jobs.bios generate qwen3 qwen35
-              uv run python -m modal_jobs.bios prepare            # judge request files
+              uv run python -m modal_jobs.bios prepare <db> pilot|checks|gate [setting]
               uv run python -m modal_jobs.judge_batch submit <run>   # needs the `gemini` secret
               uv run python -m modal_jobs.judge_batch collect <run>
               uv run python -m modal_jobs.bios score qwen3 qwen35
@@ -18,6 +18,7 @@ Volume layout (/cache):
 import argparse
 import json
 import time
+from collections import Counter
 from pathlib import Path
 
 import modal
@@ -116,45 +117,63 @@ def _bios(model: str) -> list[dict]:
 
 
 @app.function(image=qwen35_image, volumes={CACHE_DIR: volume}, timeout=60 * 60)
-def prepare(db_path: str, models: list[str]) -> dict:
-    """Write judge request files: gate bios per model, plus the two judge checks."""
+def prepare(db_path: str, what: str, setting: str = "") -> dict:
+    """Write judge request files.
+
+    pilot:  every judge setting on the tuning people (both checks)  -> judge/pilot
+    checks: one setting on the reported people (both checks)        -> judge/checks
+    gate:   one setting on each model's biographies                 -> judge/gate_<model>
+    """
     from hallustream.research.factcheck import judge, people, wiki
 
     w = wiki.WikiDB(Path(db_path))
     root = ROOT / "factscore" / "data"
     runs: dict[str, list[dict]] = {}
-    for model in models:
+    if what == "gate":
+        for model in MODELS:
+            bios = _bios(model)
+            assert len({r["name"] for r in bios}) == len(bios), "duplicate people"
+            reqs = []
+            for r in bios:
+                try:
+                    ev = wiki.evidence(w.passages(r["name"]), r["bio"])
+                except KeyError:  # no Wikipedia page (1 of 500 people)
+                    continue
+                reqs.append(judge.bio_request(r["name"], r["name"], ev, r["bio"], setting))
+            runs[f"gate_{model}"] = reqs
+    else:
+        tune, report = people.split_labeled([b.name for b in people.human_labeled(root, "ChatGPT")])
+        subset, settings = (tune, list(judge.SETTINGS)) if what == "pilot" else (report, [setting])
         reqs = []
-        for r in _bios(model):
-            try:
-                ev = wiki.evidence(w.passages(r["name"]), r["bio"])
-            except KeyError:  # no Wikipedia page (1 of 500 people)
-                continue
-            reqs.append(judge.bio_request(r["name"], r["name"], ev, r["bio"]))
-        runs[f"gate_{model}"] = reqs
-    runs["check_labeling"], runs["check_end_to_end"] = [], []
-    for system in people.LABELED_SYSTEMS:
-        for b in people.human_labeled(root, system):
-            key = f"{system}|{b.name}"
-            ev = wiki.evidence(w.passages(b.name), b.output)
-            if b.claims:
-                runs["check_labeling"].append(
-                    judge.claim_request(key, b.name, ev, [c for c, _ in b.claims])
-                )
-            runs["check_end_to_end"].append(judge.bio_request(key, b.name, ev, b.output))
+        for s in settings:
+            prefix = f"{s}|" if what == "pilot" else ""
+            for system in people.LABELED_SYSTEMS:
+                for b in people.human_labeled(root, system):
+                    if b.name not in subset:
+                        continue
+                    key = f"{system}|{b.name}"
+                    ev = wiki.evidence(w.passages(b.name), b.output)
+                    if b.claims:
+                        reqs.append(judge.claim_request(
+                            f"{prefix}labeling|{key}", b.name, ev, [c for c, _ in b.claims], s
+                        ))  # fmt: skip
+                    reqs.append(judge.bio_request(f"{prefix}e2e|{key}", b.name, ev, b.output, s))
+        runs[what] = reqs
     sizes = {}
     for run, reqs in runs.items():
         d = ROOT / "judge" / run
         d.mkdir(parents=True, exist_ok=True)
         (d / "requests.jsonl").write_text("".join(json.dumps(r) + "\n" for r in reqs))
-        sizes[run] = len(reqs)
+        sizes[run] = {"requests": len(reqs),
+                      "prompt_chars": sum(len(r["request"]["contents"][0]["parts"][0]["text"])
+                                          for r in reqs)}  # fmt: skip
     volume.commit()
     return sizes
 
 
 @app.function(image=qwen35_image, **GPU)
 def score(model: str, commit: str) -> dict:
-    """Teacher-force each judged bio and score every judged entity with the frozen probe."""
+    """Teacher-force each judged bio and score every judged entity with the frozen probes."""
     import numpy as np
     import pandas as pd
     import torch
@@ -165,25 +184,34 @@ def score(model: str, commit: str) -> dict:
     from hallustream.research.extract import token_baselines
     from hallustream.research.factcheck import judge
     from hallustream.research.factcheck.people import BIO_PROMPT
+    from hallustream.research.factcheck.validate import read_results
 
     cfg = MODELS[model]
-    results = _results(f"gate_{model}")
+    results, result_stats = read_results(ROOT / "judge" / f"gate_{model}" / "results.jsonl")
     tok = AutoTokenizer.from_pretrained(cfg["hf"])
     lm = AutoModelForCausalLM.from_pretrained(cfg["hf"], dtype=torch.bfloat16).to("cuda").eval()
-    p = load_file(ROOT / "probes" / cfg["probe"] / "seed0.safetensors", device="cuda")
-    rows, stats = [], {"bios": 0, "no_judgment": 0, "entities_missed": 0}
+    pdir = ROOT / "probes" / cfg["probe"]
+    probes = {f"p_seed{k}": load_file(pdir / f"seed{k}.safetensors", "cuda") for k in range(5)}
+    rows, greedy = [], []
+    stats = Counter(bios=len(_bios(model)))
     for r in _bios(model):
         text = results.get(r["name"])
-        if text is None:
+        try:
+            judged = judge.parse_bio(text) if text is not None else None
+        except ValueError:  # includes json.JSONDecodeError
+            judged = None
+        if judged is None:
             stats["no_judgment"] += 1
             continue
-        try:
-            judged = judge.parse_bio(text)
-        except (json.JSONDecodeError, AttributeError):
-            stats["no_judgment"] += 1
+        if not judged["entities"]:
+            stats["no_entities"] += 1  # mostly "I don't know this person"
             continue
         anns, missed = judge.locate(r["bio"], judged["entities"])
+        stats["entities_judged"] += len(judged["entities"])
         stats["entities_missed"] += missed
+        truncated = r["new_tokens"] >= MAX_NEW_TOKENS
+        if truncated:  # drop entities that touch the cut-off end
+            anns = [a for a in anns if a["index"] + len(a["span"]) < len(r["bio"]) - 2]
         msgs = [{"role": "user", "content": BIO_PROMPT.format(name=r["name"])}]
         main = align_exact(tok, msgs, r["bio"], judge.for_alignment(anns, False), **CHAT)
         unsure = [
@@ -195,40 +223,46 @@ def score(model: str, commit: str) -> dict:
         spans = [(s, "not_supported" if s.label else "supported") for s in main.spans]
         spans += [(s, "insufficient") for s in extra.spans]
         if not spans:
+            stats["no_spans"] += 1
             continue
         ids = torch.tensor([main.input_ids], device="cuda")
         with torch.no_grad():
             out = lm(ids, output_hidden_states=True)
-        x = torch.cat([out.hidden_states[layer + 1][0] for layer in cfg["layers"]], dim=-1)
-        prob = torch.sigmoid(x.float() @ p["weight"] + p["bias"]).cpu().numpy()
-        nll, _ = token_baselines(out.logits[0], ids[0])
+        # Greedy decoding picked every answer token, so teacher forcing should reproduce it;
+        # a low match rate would mean re-tokenizing the text changed the tokens.
+        a, b = main.answer_start, len(main.input_ids) - 2  # answer tokens, without the end marker
+        pred = out.logits[0, a - 1 : b - 1].argmax(-1)
+        greedy.append(float((pred == ids[0, a:b]).float().mean()))
+        x = torch.cat([out.hidden_states[layer + 1][0] for layer in cfg["layers"]], dim=-1).float()
+        prob = {
+            k: torch.sigmoid(x @ p["weight"] + p["bias"]).cpu().numpy() for k, p in probes.items()
+        }
+        nll, ent = token_baselines(out.logits[0], ids[0])
         for s, kind in spans:
             sl = slice(s.start, s.end + 1)
             rows.append({
                 "name": r["name"], "start": s.start, "end": s.end, "kind": kind,
-                "probe": float(prob[sl].max()), "nll_max": float(np.nanmax(nll[sl])),
+                "truncated": truncated,
+                **{k: float(v[sl].max()) for k, v in prob.items()},
+                "nll_max": float(np.nanmax(nll[sl])), "nll_mean": float(np.nanmean(nll[sl])),
+                "entropy_max": float(np.nanmax(ent[sl])),
+                "entropy_mean": float(np.nanmean(ent[sl])),
             })  # fmt: skip
-        stats["bios"] += 1
+        stats["scored"] += 1
     df = pd.DataFrame(rows)
     out_dir = ROOT / "gate" / model
     out_dir.mkdir(parents=True, exist_ok=True)
     df.to_parquet(out_dir / "spans.parquet")
-    write_run_meta(out_dir, job=f"bios/score/{model}", commit=commit, config=cfg, extra=stats)
+    extra = dict(stats) | {
+        "results": result_stats,
+        "missed_fraction": round(stats["entities_missed"] / max(stats["entities_judged"], 1), 4),
+        "greedy_match_mean": round(float(np.mean(greedy)), 4) if greedy else None,
+        "greedy_match_below_0.95": int(sum(g < 0.95 for g in greedy)),
+        "truncated_bios": int(sum(r["new_tokens"] >= MAX_NEW_TOKENS for r in _bios(model))),
+    }
+    write_run_meta(out_dir, job=f"bios/score/{model}", commit=commit, config=cfg, extra=extra)
     volume.commit()
-    return stats | {"rows": len(df)}
-
-
-def _results(run: str) -> dict[str, str]:
-    """key -> response text from a batch results file."""
-    out = {}
-    path = ROOT / "judge" / run / "results.jsonl"
-    for line in path.read_text().splitlines():
-        row = json.loads(line)
-        try:
-            out[row["key"]] = row["response"]["candidates"][0]["content"]["parts"][0]["text"]
-        except (KeyError, IndexError):
-            continue
-    return out
+    return extra | {"rows": len(df)}
 
 
 if __name__ == "__main__":
@@ -246,7 +280,7 @@ if __name__ == "__main__":
         calls = [fn("generate").spawn(m, k) for m in a.args for k in range(N_SHARDS)]
         print([c.get() for c in calls])
     elif a.action == "prepare":
-        print(fn("prepare").remote(a.args[0], a.args[1:]))
+        print(json.dumps(fn("prepare").remote(*a.args), indent=1))
     elif a.action == "score":
         calls = [fn("score").spawn(m, git_commit()) for m in a.args]
         print([c.get() for c in calls])
