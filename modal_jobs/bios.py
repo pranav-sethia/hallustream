@@ -7,6 +7,7 @@ Then:         uv run python -m modal_jobs.bios fetch
               uv run python -m modal_jobs.judge_batch submit <run>   # needs the `gemini` secret
               uv run python -m modal_jobs.judge_batch collect <run>
               uv run python -m modal_jobs.bios score qwen3 qwen35
+Dev people (detector v2): generate/score take --group dev; score --features stores detector inputs.
 
 Volume layout (/cache):
   factscore/data/...                        FActScore people lists and human labels
@@ -37,10 +38,20 @@ CHAT = dict(enable_thinking=False)  # same template settings as the probe's trai
 GPU = dict(gpu="L4", memory=32768, volumes={CACHE_DIR: volume}, timeout=3 * 60 * 60)
 
 
-def _people() -> list[str]:
+FEATURE_LAYERS = [15, 18, 21, 24, 27, 30]  # candidate layers for the own-answer detector
+
+
+def _people(group: str) -> list[str]:
+    """gate: FActScore's 500 people. dev: configs/dev_people.json, copied to the Volume."""
     from hallustream.research.factcheck.people import eval_people
 
-    return eval_people(ROOT / "factscore" / "data")
+    if group == "gate":
+        return eval_people(ROOT / "factscore" / "data")
+    return [p["name"] for p in json.loads((ROOT / group / "people.json").read_text())["dev"]]
+
+
+def _bio_dir(group: str, model: str) -> Path:
+    return ROOT / "bios" / model if group == "gate" else ROOT / group / "bios" / model
 
 
 @app.function(image=qwen35_image, volumes={CACHE_DIR: volume}, timeout=60 * 60)
@@ -64,18 +75,35 @@ def fetch() -> dict:
     return {"db": db, "eval_people": len(names), "labeled_people": len(labeled), "missing": missing}
 
 
+@app.function(image=qwen35_image, volumes={CACHE_DIR: volume}, timeout=30 * 60)
+def sample_titles(db_path: str, n: int, seed: int = 0) -> list[str]:
+    """n random page titles from the Wikipedia DB (candidates for the dev people)."""
+    import random
+    import sqlite3
+
+    con = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
+    top = con.execute("SELECT max(rowid) FROM documents").fetchone()[0]
+    ids = random.Random(seed).sample(range(1, top + 1), n)
+    out = []
+    for i in range(0, n, 900):
+        chunk = ids[i : i + 900]
+        q = f"SELECT title FROM documents WHERE rowid IN ({','.join('?' * len(chunk))})"
+        out += [t for (t,) in con.execute(q, chunk)]
+    return out
+
+
 @app.function(image=qwen35_image, **GPU)
-def generate(model: str, shard: int) -> dict:
+def generate(model: str, shard: int, group: str = "gate") -> dict:
     import torch
     from transformers import AutoModelForCausalLM, AutoTokenizer
 
     from hallustream.research.factcheck.people import BIO_PROMPT
 
     cfg = MODELS[model]
-    out = ROOT / "bios" / model / f"shard{shard}.jsonl"
+    out = _bio_dir(group, model) / f"shard{shard}.jsonl"
     out.parent.mkdir(parents=True, exist_ok=True)
     done = {json.loads(x)["name"] for x in out.read_text().splitlines()} if out.exists() else set()
-    names = [n for i, n in enumerate(_people()) if i % N_SHARDS == shard and n not in done]
+    names = [n for i, n in enumerate(_people(group)) if i % N_SHARDS == shard and n not in done]
 
     tok = AutoTokenizer.from_pretrained(cfg["hf"], padding_side="left")
     lm = AutoModelForCausalLM.from_pretrained(cfg["hf"], dtype=torch.bfloat16).to("cuda").eval()
@@ -108,10 +136,10 @@ def generate(model: str, shard: int) -> dict:
     }
 
 
-def _bios(model: str) -> list[dict]:
+def _bios(model: str, group: str = "gate") -> list[dict]:
     rows = []
     for k in range(N_SHARDS):
-        p = ROOT / "bios" / model / f"shard{k}.jsonl"
+        p = _bio_dir(group, model) / f"shard{k}.jsonl"
         rows += [json.loads(x) for x in p.read_text().splitlines()] if p.exists() else []
     return rows
 
@@ -123,15 +151,16 @@ def prepare(db_path: str, what: str, setting: str = "", run: str = "") -> dict:
     pilot:  every judge setting (or just `setting`) on the tuning people -> judge/<run or pilot>
     checks: one setting on the reported people (both checks)        -> judge/checks
     gate:   one setting on each model's biographies                 -> judge/gate_<model>
+    dev:    one setting on Qwen3-4B's dev biographies               -> judge/dev_qwen3
     """
     from hallustream.research.factcheck import judge, people, wiki
 
     w = wiki.WikiDB(Path(db_path))
     root = ROOT / "factscore" / "data"
     runs: dict[str, list[dict]] = {}
-    if what == "gate":
-        for model in MODELS:
-            bios = _bios(model)
+    if what in ("gate", "dev"):
+        for model in MODELS if what == "gate" else ["qwen3"]:
+            bios = _bios(model, what)
             assert len({r["name"] for r in bios}) == len(bios), "duplicate people"
             reqs = []
             for r in bios:
@@ -140,7 +169,7 @@ def prepare(db_path: str, what: str, setting: str = "", run: str = "") -> dict:
                 except KeyError:  # no Wikipedia page (1 of 500 people)
                     continue
                 reqs.append(judge.bio_request(r["name"], r["name"], ev, r["bio"], setting))
-            runs[f"gate_{model}"] = reqs
+            runs[f"{what}_{model}"] = reqs
     else:
         tune, report = people.split_labeled([b.name for b in people.human_labeled(root, "ChatGPT")])
         subset = tune if what == "pilot" else report
@@ -173,8 +202,13 @@ def prepare(db_path: str, what: str, setting: str = "", run: str = "") -> dict:
 
 
 @app.function(image=qwen35_image, **GPU)
-def score(model: str, commit: str) -> dict:
-    """Teacher-force each judged bio and score every judged entity with the frozen probes."""
+def score(model: str, commit: str, group: str = "gate", features: bool = False) -> dict:
+    """Teacher-force each judged bio and score every judged entity with the frozen probes.
+
+    With features, also stores what the own-answer detector candidates need (EVAL_PROTOCOL.md):
+    mean and last-token probe scores, span length and position, and each entity's mean
+    hidden state at FEATURE_LAYERS (hidden.npy, one row per spans.parquet row).
+    """
     import numpy as np
     import pandas as pd
     import torch
@@ -188,14 +222,15 @@ def score(model: str, commit: str) -> dict:
     from hallustream.research.factcheck.validate import read_results
 
     cfg = MODELS[model]
-    results, result_stats = read_results(ROOT / "judge" / f"gate_{model}" / "results.jsonl")
+    results, result_stats = read_results(ROOT / "judge" / f"{group}_{model}" / "results.jsonl")
     tok = AutoTokenizer.from_pretrained(cfg["hf"])
     lm = AutoModelForCausalLM.from_pretrained(cfg["hf"], dtype=torch.bfloat16).to("cuda").eval()
     pdir = ROOT / "probes" / cfg["probe"]
     probes = {f"p_seed{k}": load_file(pdir / f"seed{k}.safetensors", "cuda") for k in range(5)}
-    rows, greedy = [], []
-    stats = Counter(bios=len(_bios(model)))
-    for r in _bios(model):
+    rows, greedy, hidden = [], [], []
+    bios = _bios(model, group)
+    stats = Counter(bios=len(bios))
+    for r in bios:
         text = results.get(r["name"])
         try:
             judged = judge.parse_bio(text) if text is not None else None
@@ -239,29 +274,43 @@ def score(model: str, commit: str) -> dict:
             k: torch.sigmoid(x @ p["weight"] + p["bias"]).cpu().numpy() for k, p in probes.items()
         }
         nll, ent = token_baselines(out.logits[0], ids[0])
+        mean_prob = np.mean(list(prob.values()), axis=0)
         for s, kind in spans:
             sl = slice(s.start, s.end + 1)
-            rows.append({
+            row = {
                 "name": r["name"], "start": s.start, "end": s.end, "kind": kind,
                 "truncated": truncated,
                 **{k: float(v[sl].max()) for k, v in prob.items()},
                 "nll_max": float(np.nanmax(nll[sl])), "nll_mean": float(np.nanmean(nll[sl])),
                 "entropy_max": float(np.nanmax(ent[sl])),
                 "entropy_mean": float(np.nanmean(ent[sl])),
-            })  # fmt: skip
+            }  # fmt: skip
+            if features:
+                row |= {
+                    "v1_mean": float(mean_prob[sl].mean()), "v1_last": float(mean_prob[s.end]),
+                    "n_tokens": s.end - s.start + 1,
+                    "position": (s.start - a) / max(b - a, 1),
+                }  # fmt: skip
+                hidden.append(torch.stack([
+                    out.hidden_states[layer + 1][0, sl].float().mean(0) for layer in FEATURE_LAYERS
+                ]).half().cpu().numpy())  # fmt: skip
+            rows.append(row)
         stats["scored"] += 1
     df = pd.DataFrame(rows)
-    out_dir = ROOT / "gate" / model
+    out_dir = ROOT / "gate" / model if not features else ROOT / "scores" / f"{group}_{model}"
     out_dir.mkdir(parents=True, exist_ok=True)
     df.to_parquet(out_dir / "spans.parquet")
+    if features:
+        np.save(out_dir / "hidden.npy", np.stack(hidden))
     extra = dict(stats) | {
         "results": result_stats,
         "missed_fraction": round(stats["entities_missed"] / max(stats["entities_judged"], 1), 4),
         "greedy_match_mean": round(float(np.mean(greedy)), 4) if greedy else None,
         "greedy_match_below_0.95": int(sum(g < 0.95 for g in greedy)),
-        "truncated_bios": int(sum(r["new_tokens"] >= MAX_NEW_TOKENS for r in _bios(model))),
+        "truncated_bios": int(sum(r["new_tokens"] >= MAX_NEW_TOKENS for r in bios)),
     }
-    write_run_meta(out_dir, job=f"bios/score/{model}", commit=commit, config=cfg, extra=extra)
+    config = cfg | {"group": group, "feature_layers": FEATURE_LAYERS if features else None}
+    write_run_meta(out_dir, job=f"bios/score/{model}", commit=commit, config=config, extra=extra)
     volume.commit()
     return extra | {"rows": len(df)}
 
@@ -270,6 +319,8 @@ if __name__ == "__main__":
     p = argparse.ArgumentParser()
     p.add_argument("action", choices=["fetch", "generate", "prepare", "score"])
     p.add_argument("args", nargs="*")
+    p.add_argument("--group", default="gate", help="gate (FActScore's 500 people) or dev")
+    p.add_argument("--features", action="store_true", help="score: also store detector features")
     a = p.parse_args()
 
     def fn(name):
@@ -278,10 +329,10 @@ if __name__ == "__main__":
     if a.action == "fetch":
         print(json.dumps(fn("fetch").remote(), indent=1))
     elif a.action == "generate":
-        calls = [fn("generate").spawn(m, k) for m in a.args for k in range(N_SHARDS)]
+        calls = [fn("generate").spawn(m, k, a.group) for m in a.args for k in range(N_SHARDS)]
         print([c.get() for c in calls])
     elif a.action == "prepare":
         print(json.dumps(fn("prepare").remote(*a.args), indent=1))
     elif a.action == "score":
-        calls = [fn("score").spawn(m, git_commit()) for m in a.args]
+        calls = [fn("score").spawn(m, git_commit(), a.group, a.features) for m in a.args]
         print([c.get() for c in calls])

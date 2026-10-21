@@ -85,3 +85,101 @@ def human_labeled(root: Path, system: str) -> list[HumanLabeledBio]:
         ]
         out.append(HumanLabeledBio(system, r["topic"], r["cat"], r["output"], facts))
     return out
+
+
+# Popularity buckets by Wikidata sitelink count (number of Wikipedia languages with a page).
+SITELINK_BUCKETS = ((1, 3), (4, 10), (11, 30), (31, None))
+WIKIDATA_SPARQL = "https://query.wikidata.org/sparql"
+USER_AGENT = "hallustream-research/0.1 (github.com/pranav-sethia/hallustream)"
+
+
+def bucket(sitelinks: int) -> int:
+    for i, (lo, hi) in enumerate(SITELINK_BUCKETS):
+        if sitelinks >= lo and (hi is None or sitelinks <= hi):
+            return i
+    raise ValueError(sitelinks)
+
+
+def wikidata_humans(titles: list[str], batch: int = 150) -> dict[str, int]:
+    """English Wikipedia titles that are humans (P31 = Q5) -> sitelink count."""
+    import time
+    import urllib.parse
+    import urllib.request
+
+    out: dict[str, int] = {}
+    for i in range(0, len(titles), batch):
+        values = " ".join(json.dumps(t) + "@en" for t in titles[i : i + batch])
+        query = f"""SELECT ?title ?n WHERE {{
+          VALUES ?title {{ {values} }}
+          ?article schema:name ?title; schema:isPartOf <https://en.wikipedia.org/>;
+                   schema:about ?item.
+          ?item wdt:P31 wd:Q5; wikibase:sitelinks ?n.
+        }}"""
+        req = urllib.request.Request(
+            WIKIDATA_SPARQL + "?" + urllib.parse.urlencode({"query": query, "format": "json"}),
+            headers={
+                "User-Agent": "hallustream-research/0.1 (github.com/pranav-sethia/hallustream)"
+            },
+        )
+        for attempt in range(5):
+            try:
+                with urllib.request.urlopen(req, timeout=60) as r:
+                    rows = json.load(r)["results"]["bindings"]
+                break
+            except OSError:
+                time.sleep(10 * (attempt + 1))
+        else:
+            raise RuntimeError("Wikidata query kept failing")
+        for row in rows:
+            out[row["title"]["value"]] = int(row["n"]["value"])
+        time.sleep(1)
+    return out
+
+
+def stratified(humans: dict[str, int], exclude: set[str], per_bucket: int, seed: int = 0):
+    """per_bucket people from each popularity bucket, none in `exclude`, in a fixed random order."""
+    import random
+
+    rng = random.Random(seed)
+    picked = []
+    for b in range(len(SITELINK_BUCKETS)):
+        pool = sorted(n for n, k in humans.items() if bucket(k) == b and n not in exclude)
+        if len(pool) < per_bucket:
+            raise ValueError(f"bucket {b}: only {len(pool)} people")
+        picked += [(n, b, humans[n]) for n in rng.sample(pool, per_bucket)]
+    return picked
+
+
+def bio_subject(question: str) -> str | None:
+    """'Tell me a bio of X.' -> 'X' (training-data biography prompts)."""
+    q = question.strip()
+    if not q.startswith("Tell me a bio of "):
+        return None
+    return q[len("Tell me a bio of ") :].split("\n")[0].strip().rstrip(".")
+
+
+if __name__ == "__main__":
+    import sys
+
+    # dev <humans.json> <factscore_data> <out.json>: 1,200 dev people, none used elsewhere
+    from hallustream.research.data import load_records
+
+    humans = json.loads(Path(sys.argv[2]).read_text())["humans"]
+    root = Path(sys.argv[3])
+    exclude = set(eval_people(root)) | {b.name for b in human_labeled(root, "ChatGPT")}
+    questions = [r.question for r in load_records()]
+    exclude |= {s for q in questions if (s := bio_subject(q))}
+    text = "\n".join(questions).lower()  # also drop anyone named anywhere in the probe's data
+    exclude |= {n for n in humans if n.split(" (")[0].lower() in text}
+    picked = stratified(humans, exclude, per_bucket=300)
+    dev = [p for i, p in enumerate(picked) if i % 300 < 150]
+    reserved = [p for i, p in enumerate(picked) if i % 300 >= 150]
+    assert not {n for n, _, _ in picked} & exclude
+    Path(sys.argv[4]).write_text(json.dumps({
+        "note": "Wikidata humans from random enwiki-20230401 pages, 300 per sitelink bucket "
+                f"{SITELINK_BUCKETS}; excludes FActScore's 500 + 183 people and LongFact bios",
+        "candidates_checked": len(humans), "excluded": len(exclude),
+        "dev": [{"name": n, "bucket": b, "sitelinks": k} for n, b, k in dev],
+        "reserved": [{"name": n, "bucket": b, "sitelinks": k} for n, b, k in reserved],
+    }, indent=1))  # fmt: skip
+    print(len(dev), len(reserved))
