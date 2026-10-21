@@ -65,6 +65,19 @@ This file was committed **before** any probe was trained. Its purpose is to fix 
   - **Otherwise:** retrain the probe with own-answer labels (people split into train/val/test) and re-test once.
   - **If it still fails:** the main direction becomes scoring other models' text (reader mode).
 
+## Detector v2 on own answers (decided before any dev biography is generated)
+- **Why:** the gate's probe (v1) was trained only on other models' text. On a model's own text, its confidence is a stronger signal (0.76 vs 0.63–0.68), so a detector that uses both, or a probe adapted to own answers, may do better. v1's gate result stays the pre-registered result; v2 is reported next to it.
+- **Test set stays untouched:** the 500 gate people are not used for any v2 choice.
+- **Dev people:** 1,200 Wikidata humans with an English Wikipedia page in `enwiki-20230401.db`, none of them among the 500 gate people, the 183 labeled people, or any LongFact biography person. They are sampled equally from 4 popularity buckets by Wikidata sitelink count (1–3, 4–10, 11–30, 31+). 600 (150 per bucket) are used here; the other 600 are reserved for later training. The list is committed as `configs/dev_people.json`.
+- **Model:** Qwen3-4B only, with the same generation and judge settings as the gate (`t1_minimal`).
+- **Judge audit on own text:** 300 dev entities (100 per judge label) are re-judged by `gemini-3.5-flash` with the person's whole page. Agreement on Supported vs Not Supported is reported; below 0.85, the judge is revisited using agreement only, never detector scores.
+- **Candidates** (v1 = mean of the 5 frozen seeds, max over the entity's tokens):
+  - **A. Combiner:** logistic regression on v1's logit, max and mean surprise, max and mean entropy, span length in tokens, and relative position in the biography.
+  - **B. Adapted probe:** v1's logit plus a learned linear term on the entity's mean hidden state at one layer (15, 18, 21, 24, 27 or 30), with L2 strength chosen inside the folds.
+  - **C. A + B.**
+  - **D. Token aggregation:** v1's score as max, mean or last token over the entity, applied to the winning candidate.
+- **Choice rule:** 5-fold cross-validation on the 600 dev people, folds by person. Per-candidate hyperparameters are tuned in inner folds. The gain over v1 on out-of-fold predictions gets a 95% interval from 2,000 bootstrap resamples over people. The simplest candidate (order A, D, B, C) with a gain ≥ 0.01 AUROC and an interval above 0 is chosen; if none qualifies, v1 is kept. The chosen detector is refit on all 600 dev people, frozen in `configs/detector_v2.json`, and then scored once on the 500 gate people.
+
 ## Gates (decided in advance)
 | Gate | Pass condition | If it fails |
 |---|---|---|
