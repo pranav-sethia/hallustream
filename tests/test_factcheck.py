@@ -102,3 +102,29 @@ def test_human_factscore():
         "ChatGPT", "X", [], "...", [("a", "S"), ("b", "NS"), ("c", "S"), ("d", "S")]
     )
     assert bio.factscore == 0.75
+
+
+def test_balanced_accuracy_weights_both_classes_equally():
+    from hallustream.research.factcheck.validate import balanced_accuracy
+
+    human = ["S", "S", "S", "NS"]
+    assert balanced_accuracy(human, ["Supported"] * 4) == 0.5
+    assert balanced_accuracy(human, ["Supported", "Supported", "Supported", "Not Supported"]) == 1.0
+
+
+def test_gate_drops_insufficient_in_primary_only():
+    import numpy as np
+    import pandas as pd
+
+    from hallustream.research.factcheck.validate import gate
+
+    rng = np.random.default_rng(0)
+    rows = []
+    for p in range(40):
+        for kind, mu in (("supported", 0.3), ("not_supported", 0.7), ("insufficient", 0.5)):
+            rows.append({"name": f"p{p}", "kind": kind, "probe": rng.normal(mu, 0.1),
+                         "nll_max": rng.normal(0, 1)})  # fmt: skip
+    res = gate(pd.DataFrame(rows))
+    assert res["primary"]["entities"] == 80 and res["secondary"]["entities"] == 120
+    assert res["primary"]["auroc"] > 0.95 and res["passes"]
+    assert res["primary"]["ci"][0] <= res["primary"]["auroc"] <= res["primary"]["ci"][1]
