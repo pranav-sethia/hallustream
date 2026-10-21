@@ -20,7 +20,10 @@ base_image = (
 
 def with_code(img: modal.Image) -> modal.Image:
     """Add our local packages last, so code edits don't trigger image rebuilds."""
-    return img.add_local_python_source("hallustream", "modal_jobs")
+    # Include non-Python package data (judge prompts), skip caches.
+    return img.add_local_python_source(
+        "hallustream", "modal_jobs", ignore=["**/__pycache__/**", "**/*.pyc"]
+    )
 
 
 image = with_code(base_image)
