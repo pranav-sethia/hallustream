@@ -1,8 +1,8 @@
-You are a careful fact-checker. Below are Wikipedia passages about {name}, followed by a numbered list of claims about {name}. Label each claim:
+You are a careful fact-checker. Below are Wikipedia passages about {name}, followed by a numbered list of claims about {name}. For each claim, write a short note (at most 15 words) on what the passages say, then label it:
 - "Supported": the passages support it.
-- "Not Supported": the passages contradict it or do not mention it.
+- "Not Supported": the passages contradict it or do not mention it, or it is not about {name} (for example, it describes a different person with the same name).
 
-Judge only from the passages. Do not use outside knowledge to mark a claim Supported. Ignore small technicalities.
+Never use outside knowledge to mark a claim "Supported". Ignore small technicalities.
 
 <wikipedia_passages>
 {passages}
@@ -12,5 +12,5 @@ Judge only from the passages. Do not use outside knowledge to mark a claim Suppo
 {claims}
 </claims>
 
-Return only JSON with one label per claim, in the same order:
-{{"labels": ["Supported" | "Not Supported", ...]}}
+Return only JSON with exactly one item per claim, using the claim's number as its id:
+{{"labels": [{{"id": 1, "note": "...", "label": "Supported" | "Not Supported"}}, ...]}}

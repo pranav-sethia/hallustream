@@ -1,6 +1,7 @@
 import json
 import sqlite3
 
+import numpy as np
 import pytest
 from transformers import AutoTokenizer
 
@@ -31,8 +32,23 @@ def test_parse_bio_keeps_valid_labels_and_strips_fences():
     assert out["claims"] == [("She won three Nobel Prizes.", "Not Supported")]
 
 
-def test_parse_claims_pads_missing_labels():
-    assert judge.parse_claims('{"labels": ["Supported", "??"]}', 3) == ["Supported", None, None]
+def test_parse_claims_joins_on_id_and_rejects_gaps():
+    ok = {"labels": [{"id": 2, "label": "Not Supported"}, {"id": 1, "label": "Supported"}]}
+    assert judge.parse_claims(json.dumps(ok), 2) == ["Supported", "Not Supported"]
+    for bad in (
+        {"labels": [{"id": 1, "label": "Supported"}]},  # claim 2 skipped
+        {"labels": [{"id": 1, "label": "Supported"}, {"id": 1, "label": "Supported"}]},
+        {"labels": [{"id": 1, "label": "Supported"}, {"id": 2, "label": "Maybe"}]},
+    ):
+        with pytest.raises(ValueError):
+            judge.parse_claims(json.dumps(bad), 2)
+
+
+def test_parse_bio_drops_non_string_spans_and_rejects_non_objects():
+    out = judge.parse_bio('{"entities": [{"span": 1867, "label": "Supported"}], "claims": []}')
+    assert out["entities"] == []
+    with pytest.raises(ValueError):
+        judge.parse_bio("[1, 2]")
 
 
 def test_locate_matches_repeated_spans_in_reading_order():
@@ -50,6 +66,29 @@ def test_locate_matches_repeated_spans_in_reading_order():
     assert missed == 1
 
 
+def test_locate_needs_word_boundaries_and_never_reuses_text():
+    anns, missed = judge.locate("Parisian art in Paris.", [("Paris", "Supported")])
+    assert anns[0]["index"] == 16 and missed == 0
+    anns, missed = judge.locate("Born in Paris.", [("Paris", "Supported"), ("Paris", "Supported")])
+    assert len(anns) == 1 and missed == 1
+
+
+def test_locate_ignores_markdown_and_quote_styles():
+    bio = "**Jean d’Arc** won the *Prix   Goncourt* in 1990."
+    anns, missed = judge.locate(bio, [("Jean d'Arc", "Supported"), ("Prix Goncourt", "Supported")])
+    assert missed == 0
+    assert [a["span"] for a in anns] == ["Jean d’Arc", "Prix   Goncourt"]
+    assert all(bio[a["index"] : a["index"] + len(a["span"])] == a["span"] for a in anns)
+
+
+def test_response_text_skips_thoughts_and_errors():
+    parts = [{"text": "thinking...", "thought": True}, {"text": '{"a": '}, {"text": "1}"}]
+    cand = {"finishReason": "STOP", "content": {"parts": parts}}
+    row = {"key": "k", "response": {"candidates": [cand]}}
+    assert judge.response_text(row) == ('{"a": 1}', "STOP")
+    assert judge.response_text({"key": "k", "error": {"code": 500}}) == (None, "ERROR")
+
+
 def test_located_entities_align_to_the_right_tokens():
     tok = AutoTokenizer.from_pretrained(TINY)
     anns, _ = judge.locate(
@@ -64,15 +103,13 @@ def test_located_entities_align_to_the_right_tokens():
 
 
 def test_requests_fill_both_prompts():
-    r = judge.bio_request("k1", "Marie Curie", ["Passage one."], BIO)
+    r = judge.bio_request("k1", "Marie Curie", ["Passage one."], BIO, "t1_low")
     text = r["request"]["contents"][0]["parts"][0]["text"]
-    assert (
-        r["key"] == "k1"
-        and "[1] Passage one." in text
-        and BIO in text
-        and "{" not in text.split("Return only JSON")[0]
-    )
-    c = judge.claim_request("k2", "Marie Curie", ["P."], ["A.", "B."])
+    assert r["key"] == "k1" and "[1] Passage one." in text and BIO in text and "Marie Curie" in text
+    cfg = r["request"]["generationConfig"]
+    assert cfg["thinkingConfig"] == {"thinkingLevel": "low"} and cfg["temperature"] == 1.0
+    assert cfg["responseSchema"]["properties"]["entities"]["items"]["properties"]["label"]["enum"]
+    c = judge.claim_request("k2", "Marie Curie", ["P."], ["A.", "B."], "t0_minimal")
     assert "1. A.\n2. B." in c["request"]["contents"][0]["parts"][0]["text"]
 
 
@@ -97,11 +134,21 @@ def test_wiki_db_and_bm25(tmp_path):
         wiki.WikiDB(db).passages("Nobody")
 
 
-def test_human_factscore():
+def test_human_factscore_counts_irrelevant_facts_as_unsupported():
     bio = HumanLabeledBio(
-        "ChatGPT", "X", [], "...", [("a", "S"), ("b", "NS"), ("c", "S"), ("d", "S")]
+        "ChatGPT", "X", [], "...", [("a", "S"), ("b", "NS"), ("c", "S"), ("d", "IR")]
     )
-    assert bio.factscore == 0.75
+    assert bio.factscore == 0.5
+    assert bio.claims == [("a", "S"), ("b", "NS"), ("c", "S")]
+
+
+def test_split_labeled_is_fixed_and_disjoint():
+    from hallustream.research.factcheck.people import split_labeled
+
+    names = [f"p{i}" for i in range(183)]
+    tune, report = split_labeled(names)
+    assert len(tune) == 40 and len(report) == 143 and not tune & report
+    assert split_labeled(list(reversed(names))) == (tune, report)
 
 
 def test_balanced_accuracy_weights_both_classes_equally():
@@ -110,10 +157,10 @@ def test_balanced_accuracy_weights_both_classes_equally():
     human = ["S", "S", "S", "NS"]
     assert balanced_accuracy(human, ["Supported"] * 4) == 0.5
     assert balanced_accuracy(human, ["Supported", "Supported", "Supported", "Not Supported"]) == 1.0
+    assert np.isnan(balanced_accuracy(["S", "S"], ["Supported", "Supported"]))
 
 
 def test_gate_drops_insufficient_in_primary_only():
-    import numpy as np
     import pandas as pd
 
     from hallustream.research.factcheck.validate import gate
@@ -122,9 +169,11 @@ def test_gate_drops_insufficient_in_primary_only():
     rows = []
     for p in range(40):
         for kind, mu in (("supported", 0.3), ("not_supported", 0.7), ("insufficient", 0.5)):
-            rows.append({"name": f"p{p}", "kind": kind, "probe": rng.normal(mu, 0.1),
-                         "nll_max": rng.normal(0, 1)})  # fmt: skip
-    res = gate(pd.DataFrame(rows))
+            seeds = {f"p_seed{k}": rng.normal(mu, 0.1) for k in range(2)}
+            rows.append({"name": f"p{p}", "kind": kind, "entropy_max": rng.normal(0, 1)} | seeds)
+    res = gate(pd.DataFrame(rows), "entropy_max")
     assert res["primary"]["entities"] == 80 and res["secondary"]["entities"] == 120
     assert res["primary"]["auroc"] > 0.95 and res["passes"]
     assert res["primary"]["ci"][0] <= res["primary"]["auroc"] <= res["primary"]["ci"][1]
+    assert set(res["primary"]["auroc_by_seed"]) == {"p_seed0", "p_seed1"}
+    assert gate(pd.DataFrame(rows), "entropy_max", {"p0", "p1"})["people"] == 2

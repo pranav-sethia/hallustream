@@ -1,13 +1,5 @@
 You are a careful fact-checker. A language model was asked to write a short biography of {name}. Check its biography against the Wikipedia passages about {name} given below.
 
-<wikipedia_passages>
-{passages}
-</wikipedia_passages>
-
-<biography>
-{biography}
-</biography>
-
 Do two things.
 
 1. ENTITIES. Go through the biography in order and extract every specific entity:
@@ -18,20 +10,61 @@ Do two things.
 - specific quantities or statistics
 - titles of works, awards, citations and references
 
-For each entity, give the minimal text span, copied word for word from the biography (just the entity itself, e.g. "1867", not "born in 1867"). List entities in the order they appear; if the same span appears several times, list each appearance separately. Label each one:
-- "Supported": the passages confirm it is correct in the context of its sentence.
-- "Not Supported": the passages contradict it, or it is clearly fabricated or wrong in context.
-- "Insufficient": the passages neither confirm nor contradict it.
+For each entity, give the minimal text span, copied exactly from the biography: just the entity itself (e.g. "1867", not "born in 1867"). Keep its accents, apostrophes, quote marks, dashes and capitalization, and never include markdown symbols (*, _, #, backticks) or list bullets. List entities in the order they appear; if the same entity appears several times, list each appearance separately. Do not list one entity inside another (for "University of Paris", list only "University of Paris", not also "Paris").
 
-2. CLAIMS. Split the biography into short atomic claims, each stating one fact (e.g. "Marie Curie was born in 1867."). Label each one:
+Write a short note (at most 15 words) on what the passages say, then label the entity as it is used in its sentence:
+- "Supported": the passages confirm it.
+- "Not Supported": the passages contradict it; or the passages cover this aspect of the person (such as birth date or place, education, positions, main works, awards) and give something different or leave it out where Wikipedia would plainly list it; or it is a person, work or organization you are confident does not exist.
+- "Insufficient": the passages are silent on it, and it is a minor detail that Wikipedia would not necessarily mention.
+You may use your own knowledge to mark an entity "Not Supported", but never to mark it "Supported".
+
+2. CLAIMS. Split the biography into atomic claims: short sentences that each state exactly one fact about {name}. Split finely: a sentence such as "She studied at Oxford, where she earned a PhD in physics in 1990" gives several claims ("She studied at Oxford.", "She earned a PhD.", "Her PhD was in physics.", "She earned her PhD at Oxford.", "She earned her PhD in 1990."). Include every statement, including vague or general ones. Write a short note (at most 15 words), then label each claim:
 - "Supported": the passages support it.
-- "Not Supported": the passages contradict it or do not mention it.
+- "Not Supported": the passages contradict it or do not mention it, or it is not about {name} (for example, it describes a different person with the same name).
 
 Rules:
-- Judge only from the passages. Do not use outside knowledge to mark something Supported.
 - Ignore small technicalities; we want facts the model got wrong or made up.
-- Skip vague statements with no checkable content (e.g. "She was a talented person").
-- If the biography says it does not know the person, return empty lists.
+- If the biography only says it does not know the person or cannot find information, return empty lists. If it hedges ("may have", "possibly") but still names specifics, judge those specifics as usual.
+- The biography may stop in the middle of a sentence. Do not extract an entity that is cut off, and do not write claims from the unfinished final sentence.
 
-Return only JSON with this schema:
-{{"entities": [{{"span": str, "label": "Supported" | "Not Supported" | "Insufficient"}}], "claims": [{{"text": str, "label": "Supported" | "Not Supported"}}]}}
+Example (a different person and passage, to show the format and how finely to split):
+
+<example_passages>
+[1] Augusta Ada King, Countess of Lovelace (née Byron; 10 December 1815 – 27 November 1852) was an English mathematician and writer, chiefly known for her work on Charles Babbage's proposed mechanical general-purpose computer, the Analytical Engine.
+</example_passages>
+<example_biography>
+**Ada Lovelace** (1815–1852) was an English mathematician who worked with Charles Babbage on the Analytical Engine. She was born in Paris and wrote 12 books.
+</example_biography>
+<example_answer>
+{{"entities": [
+ {{"span": "Ada Lovelace", "note": "Name matches the passage.", "label": "Supported"}},
+ {{"span": "1815", "note": "Born 10 December 1815.", "label": "Supported"}},
+ {{"span": "1852", "note": "Died 27 November 1852.", "label": "Supported"}},
+ {{"span": "English", "note": "Described as English.", "label": "Supported"}},
+ {{"span": "Charles Babbage", "note": "Worked on Babbage's machine.", "label": "Supported"}},
+ {{"span": "Analytical Engine", "note": "Named in the passage.", "label": "Supported"}},
+ {{"span": "Paris", "note": "Birthplace not given; she was born in London.", "label": "Not Supported"}},
+ {{"span": "12", "note": "No books listed; 12 books is not a known fact.", "label": "Not Supported"}}],
+ "claims": [
+ {{"text": "Ada Lovelace was born in 1815.", "note": "Passage gives 1815.", "label": "Supported"}},
+ {{"text": "Ada Lovelace died in 1852.", "note": "Passage gives 1852.", "label": "Supported"}},
+ {{"text": "Ada Lovelace was English.", "note": "Stated.", "label": "Supported"}},
+ {{"text": "Ada Lovelace was a mathematician.", "note": "Stated.", "label": "Supported"}},
+ {{"text": "Ada Lovelace worked with Charles Babbage.", "note": "Worked on his machine.", "label": "Supported"}},
+ {{"text": "Ada Lovelace worked on the Analytical Engine.", "note": "Stated.", "label": "Supported"}},
+ {{"text": "Ada Lovelace was born in Paris.", "note": "Not mentioned.", "label": "Not Supported"}},
+ {{"text": "Ada Lovelace wrote books.", "note": "Not mentioned.", "label": "Not Supported"}},
+ {{"text": "Ada Lovelace wrote 12 books.", "note": "Not mentioned.", "label": "Not Supported"}}]}}
+</example_answer>
+
+Now check this biography.
+
+<wikipedia_passages>
+{passages}
+</wikipedia_passages>
+
+<biography>
+{biography}
+</biography>
+
+Return only JSON: {{"entities": [{{"span", "note", "label"}}], "claims": [{{"text", "note", "label"}}]}}
