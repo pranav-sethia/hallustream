@@ -57,6 +57,7 @@ def collect(run: str) -> dict:
     from google import genai
 
     client = genai.Client()
+    volume.reload()  # a warm container may not see job.json written by submit
     d = ROOT / "judge" / run
     job = client.batches.get(name=json.loads((d / "job.json").read_text())["job"])
     state = job.state.name
