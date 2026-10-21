@@ -1,0 +1,95 @@
+{
+ "note": "Own-answer detector v2, chosen and fitted on 432 dev people (EVAL_PROTOCOL.md); inputs: v1 logit, nll_max, nll_mean, entropy_max, entropy_mean, log span tokens, relative position",
+ "dev_cv": {
+  "v1_auroc": 0.8004,
+  "candidates": {
+   "A": {
+    "auroc": 0.8399,
+    "gain": {
+     "delta": 0.0395,
+     "ci_low": 0.0289,
+     "ci_high": 0.0511,
+     "frac_le_0": 0.0
+    }
+   },
+   "D_mean": {
+    "auroc": 0.7767,
+    "gain": {
+     "delta": -0.0236,
+     "ci_low": -0.0298,
+     "ci_high": -0.0176,
+     "frac_le_0": 1.0
+    }
+   },
+   "D_last": {
+    "auroc": 0.7515,
+    "gain": {
+     "delta": -0.0488,
+     "ci_low": -0.0581,
+     "ci_high": -0.0396,
+     "frac_le_0": 1.0
+    }
+   },
+   "B": {
+    "auroc": 0.8081,
+    "gain": {
+     "delta": 0.0077,
+     "ci_low": -0.0176,
+     "ci_high": 0.0315,
+     "frac_le_0": 0.251
+    }
+   },
+   "C": {
+    "auroc": 0.7905,
+    "gain": {
+     "delta": -0.0099,
+     "ci_low": -0.0395,
+     "ci_high": 0.0176,
+     "frac_le_0": 0.7375
+    }
+   }
+  },
+  "baselines": {
+   "nll_max": 0.6911,
+   "nll_mean": 0.6547,
+   "entropy_max": 0.6867,
+   "entropy_mean": 0.6416
+  }
+ },
+ "detector": {
+  "lam_x": 0.001,
+  "lam_h": 0.0,
+  "offset": false,
+  "a": [
+   1.104176,
+   0.66369,
+   -0.185355,
+   0.16351,
+   0.113041,
+   0.355904,
+   0.091468
+  ],
+  "w": [],
+  "b": 0.9482213258743286,
+  "x_mean": [
+   -1.489381,
+   0.688934,
+   0.264525,
+   1.320226,
+   0.57065,
+   1.25126,
+   0.328379
+  ],
+  "x_std": [
+   1.283585,
+   0.810839,
+   0.346369,
+   1.43585,
+   0.725522,
+   0.64259,
+   0.266297
+  ],
+  "candidate": "A",
+  "layer": null
+ }
+}
