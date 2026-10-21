@@ -78,6 +78,11 @@ This file was committed **before** any probe was trained. Its purpose is to fix 
   - **D. Token aggregation:** v1's score as max, mean or last token over the entity, applied to the winning candidate.
 - **Choice rule:** 5-fold cross-validation on the 600 dev people, folds by person. Per-candidate hyperparameters are tuned in inner folds. The gain over v1 on out-of-fold predictions gets a 95% interval from 2,000 bootstrap resamples over people. The simplest candidate (order A, D, B, C) with a gain ≥ 0.01 AUROC and an interval above 0 is chosen; if none qualifies, v1 is kept. The chosen detector is refit on all 600 dev people, frozen in `configs/detector_v2.json`, and then scored once on the 500 gate people.
 
+## Detector v3 and a final check on untouched people (decided before any reserved biography is generated)
+- **Why:** an audit found candidate B's penalty grid (hidden-state L2 up to 1.0) far too weak: every fold picked the grid's edge and the fit memorized the training folds. With stronger penalties, B is clearly better on dev, so "refitting on own answers did not help" was a grid artifact. Also, v2's `position` input uses the finished biography's length, so it is not available while the model writes.
+- **Dev choice:** the same 432 dev people, the same nested 5-fold, person-grouped procedure and the same rule (simplest candidate, gain ≥ 0.01 with the interval above 0, now measured over v2) choose between v2 and new candidates. The new candidates are A without `position`, B and C with hidden-state penalties of 30 to 10,000 (per dimension) at layers 15–30, with C's tabular penalty at 0.001 or 0.01. The grid was widened after seeing that a stronger penalty helps, so dev numbers for B and C are slightly optimistic; the final check below is what counts. The winner is frozen in `configs/detector_v3.json`.
+- **Final check:** the 600 reserved people in `configs/dev_people.json`, untouched so far: same generation, judge and scoring. v1, v2 and v3 are each scored once on them, with intervals from 2,000 bootstrap resamples over people. The gate people are not used again. The detector for detect→fix is v3 if it beats v2 there with the interval above 0; otherwise v2.
+
 ## Gates (decided in advance)
 | Gate | Pass condition | If it fails |
 |---|---|---|

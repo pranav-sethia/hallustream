@@ -32,7 +32,7 @@ class TrainConfig:
     epochs: int = 1
     l2: float = 0.0  # extra L2 penalty on the (standardized) weights
     weight_decay: float = 0.01  # torch AdamW default, as in the paper
-    entity_weight: float = 10.0
+    # The entity-token weight is fixed when the data is built (build_data), not here.
     batch_answers: int = 4
     seed: int = 0
 

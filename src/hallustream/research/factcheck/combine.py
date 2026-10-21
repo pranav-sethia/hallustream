@@ -1,13 +1,13 @@
 """Own-answer detector candidates, chosen by cross-validation on dev people (EVAL_PROTOCOL.md).
 
 v1 is the frozen probe: mean of the 5 seeds, max over the entity's tokens. Candidates:
-  A  logistic regression on v1's logit and the model's confidence signals
+  A  logistic regression on v1's logit, the model's confidence signals and span length
   D  v1 with mean or last-token aggregation instead of max (nothing fitted)
   B  v1's logit plus a learned linear term on the entity's mean hidden state at one layer
   C  A plus the hidden-state term of B
 Every model is a logistic regression with L2 penalties, fitted with L-BFGS.
 
-Run: uv run python -m hallustream.research.factcheck.combine choose <dev_dir> <out.json>
+Run: uv run python -m hallustream.research.factcheck.combine choose|choose_v3 <dev_dir> <out.json>
      uv run python -m hallustream.research.factcheck.combine apply <detector.json> <scores_dir>
 """
 
@@ -26,7 +26,11 @@ from hallustream.research.metrics import auroc, paired_bootstrap
 
 CONFIDENCE = ["nll_max", "nll_mean", "entropy_max", "entropy_mean"]
 LAYERS = [15, 18, 21, 24, 27, 30]  # same order as modal_jobs/bios.FEATURE_LAYERS
-LAMBDAS = [1e-3, 1e-2, 1e-1, 1.0]
+LAMBDAS = [1e-3, 1e-2, 1e-1, 1.0]  # tabular weights (7 inputs)
+# Hidden-state weights: 2,560 inputs from a few thousand entities need a much stronger
+# penalty (it is applied per dimension, lam_h * mean(w^2)); the first grid stopped at 1.0,
+# the edge, and the fit memorized the training folds.
+LAMBDAS_H = [30.0, 100.0, 300.0, 1000.0, 3000.0, 10000.0]
 ORDER = ["A", "D_mean", "D_last", "B", "C"]  # simplest first
 MIN_GAIN = 0.01
 EPS = 1e-6
@@ -51,11 +55,14 @@ def v1_logit(df: pd.DataFrame, agg: str = "max") -> np.ndarray:
     return _logit(df[f"v1_{agg}"].to_numpy())
 
 
-def tabular(df: pd.DataFrame) -> np.ndarray:
-    """Candidate A's inputs: v1 logit, confidence signals, log span length, position."""
-    x = np.column_stack(
-        [v1_logit(df), df[CONFIDENCE].to_numpy(), np.log(df["n_tokens"]), df["position"]]
-    )
+def tabular(df: pd.DataFrame, position: bool = False) -> np.ndarray:
+    """Candidate A's inputs: v1 logit, confidence signals, log span length.
+
+    position (relative to the finished biography) is only for the frozen v2, which used
+    it; it is not known while the model is still writing, so new detectors leave it out.
+    """
+    cols = [v1_logit(df), df[CONFIDENCE].to_numpy(), np.log(df["n_tokens"])]
+    x = np.column_stack(cols + ([df["position"]] if position else []))
     return np.nan_to_num(x).astype(np.float32)
 
 
@@ -120,23 +127,24 @@ class Model:
         return out | extra
 
 
-def _inputs(cand: str, df: pd.DataFrame, hidden: np.ndarray, layer: int | None):
+def _inputs(cand: str, df: pd.DataFrame, hidden: np.ndarray, layer: int | None, position=False):
+    """(tabular x, hidden h, offset) for a candidate."""
     h = hidden[:, LAYERS.index(layer)] if layer is not None else None
-    if cand == "A":
-        return tabular(df), None, None
+    if cand in ("A", "A_pos"):
+        return tabular(df, position or cand == "A_pos"), None, None
     if cand == "B":
         return None, h, v1_logit(df)
     if cand == "C":
-        return tabular(df), h, None
+        return tabular(df, position), h, None
     raise ValueError(cand)
 
 
 def _grid(cand: str):
-    if cand == "A":
+    if cand in ("A", "A_pos"):
         return [(None, lx, 0.0) for lx in LAMBDAS]
     if cand == "B":
-        return [(L, 0.0, lh) for L in LAYERS for lh in LAMBDAS]
-    return [(L, lx, lh) for L in LAYERS for lx in LAMBDAS[1:3] for lh in LAMBDAS]
+        return [(L, 0.0, lh) for L in LAYERS for lh in LAMBDAS_H]
+    return [(L, lx, lh) for L in LAYERS for lx in LAMBDAS[:2] for lh in LAMBDAS_H]
 
 
 def _fit(cand, df, hidden, y, layer, lam_x, lam_h) -> Model:
@@ -144,8 +152,8 @@ def _fit(cand, df, hidden, y, layer, lam_x, lam_h) -> Model:
     return Model(lam_x, lam_h, offset=cand == "B").fit(y, x, h, off)
 
 
-def _predict(m: Model, cand, df, hidden, layer) -> np.ndarray:
-    x, h, off = _inputs(cand, df, hidden, layer)
+def _predict(m: Model, cand, df, hidden, layer, position=False) -> np.ndarray:
+    x, h, off = _inputs(cand, df, hidden, layer, position)
     return m.predict(x, h, off)
 
 
@@ -177,15 +185,21 @@ def out_of_fold(cand, df, hidden, y, groups, folds: int = 5) -> tuple[np.ndarray
     return pred, chosen
 
 
-def choose(df: pd.DataFrame, hidden: np.ndarray) -> dict:
+def choose(df: pd.DataFrame, hidden: np.ndarray, order=ORDER, reference: str | None = None):
+    """Pick the simplest candidate in `order` that beats the reference by MIN_GAIN.
+
+    The reference is v1, or another candidate's out-of-fold scores (A_pos = v2's recipe).
+    """
     y = (df["kind"] == "not_supported").to_numpy().astype(int)
     groups = df["name"].to_numpy()
-    base = v1_logit(df)
+    v1 = v1_logit(df)
+    base = v1 if reference is None else out_of_fold(reference, df, hidden, y, groups)[0]
     res = {"people": int(len(set(groups))), "entities": int(len(y)), "positives": int(y.sum()),
-           "v1_auroc": round(auroc(y, base), 4),
+           "v1_auroc": round(auroc(y, v1), 4),
+           "reference": reference or "v1", "reference_auroc": round(auroc(y, base), 4),
            "baselines": {c: round(auroc(y, df[c].to_numpy()), 4) for c in CONFIDENCE},
            "candidates": {}}  # fmt: skip
-    for cand in ORDER:
+    for cand in order:
         pred, chosen = out_of_fold(cand, df, hidden, y, groups)
         gain = paired_bootstrap(y, pred, base, groups, n_boot=2000)
         res["candidates"][cand] = {
@@ -194,12 +208,12 @@ def choose(df: pd.DataFrame, hidden: np.ndarray) -> dict:
             "fold_params": [list(p) for p in chosen],
         }
     winner = next(
-        (c for c in ORDER
+        (c for c in order
          if res["candidates"][c]["gain"]["delta"] >= MIN_GAIN
          and res["candidates"][c]["gain"]["ci_low"] > 0),
         None,
     )  # fmt: skip
-    res["chosen"] = winner or "v1"
+    res["chosen"] = winner or res["reference"]
     if winner and not winner.startswith("D_"):
         params = _tune(winner, df, hidden, y, groups, folds=5)
         m = _fit(winner, df, hidden, y, *params)
@@ -219,12 +233,16 @@ def apply(det: dict, df: pd.DataFrame, hidden: np.ndarray) -> np.ndarray:
     m.b = m.b.reshape(1)
     m.sx = (np.array(det["x_mean"]), np.array(det["x_std"])) if "x_mean" in det else None
     m.sh = (np.array(det["h_mean"]), np.array(det["h_std"])) if "h_mean" in det else None
-    return _predict(m, cand, df, hidden, det.get("layer"))
+    position = len(det.get("x_mean", [])) == len(CONFIDENCE) + 3  # v2 also used position
+    return _predict(m, cand, df, hidden, det.get("layer"), position)
 
 
 if __name__ == "__main__":
-    if sys.argv[1] == "choose":
-        out = choose(*load(Path(sys.argv[2])))
+    if sys.argv[1] in ("choose", "choose_v3"):
+        args = (
+            {"order": ["A", "B", "C"], "reference": "A_pos"} if sys.argv[1] == "choose_v3" else {}
+        )
+        out = choose(*load(Path(sys.argv[2])), **args)
         Path(sys.argv[3]).write_text(json.dumps(out, indent=1))
         print(json.dumps({k: v for k, v in out.items() if k != "detector"}, indent=1))
     else:

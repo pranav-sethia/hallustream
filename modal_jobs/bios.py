@@ -7,7 +7,7 @@ Then:         uv run python -m modal_jobs.bios fetch
               uv run python -m modal_jobs.judge_batch submit <run>   # needs the `gemini` secret
               uv run python -m modal_jobs.judge_batch collect <run>
               uv run python -m modal_jobs.bios score qwen3 qwen35
-Dev people (detector v2): generate/score take --group dev; score --features stores detector inputs.
+Dev people: generate/score take --group dev|reserved; score --features stores detector inputs.
 
 Volume layout (/cache):
   factscore/data/...                        FActScore people lists and human labels
@@ -42,12 +42,13 @@ FEATURE_LAYERS = [15, 18, 21, 24, 27, 30]  # candidate layers for the own-answer
 
 
 def _people(group: str) -> list[str]:
-    """gate: FActScore's 500 people. dev: configs/dev_people.json, copied to the Volume."""
+    """gate: FActScore's 500 people. dev / reserved: the two halves of configs/dev_people.json,
+    copied to the Volume as dev/people.json."""
     from hallustream.research.factcheck.people import eval_people
 
     if group == "gate":
         return eval_people(ROOT / "factscore" / "data")
-    return [p["name"] for p in json.loads((ROOT / group / "people.json").read_text())["dev"]]
+    return [p["name"] for p in json.loads((ROOT / "dev" / "people.json").read_text())[group]]
 
 
 def _bio_dir(group: str, model: str) -> Path:
@@ -151,7 +152,7 @@ def prepare(db_path: str, what: str, setting: str = "", run: str = "") -> dict:
     pilot:  every judge setting (or just `setting`) on the tuning people -> judge/<run or pilot>
     checks: one setting on the reported people (both checks)        -> judge/checks
     gate:   one setting on each model's biographies                 -> judge/gate_<model>
-    dev:    one setting on Qwen3-4B's dev biographies               -> judge/dev_qwen3
+    dev, reserved: one setting on Qwen3-4B's biographies of that group -> judge/<what>_qwen3
     audit:  100 dev entities per judge label, re-judged with the whole page -> judge/audit
     """
     from hallustream.research.factcheck import judge, people, wiki
@@ -159,7 +160,7 @@ def prepare(db_path: str, what: str, setting: str = "", run: str = "") -> dict:
     w = wiki.WikiDB(Path(db_path))
     root = ROOT / "factscore" / "data"
     runs: dict[str, list[dict]] = {}
-    if what in ("gate", "dev"):
+    if what in ("gate", "dev", "reserved"):
         for model in MODELS if what == "gate" else ["qwen3"]:
             bios = _bios(model, what)
             assert len({r["name"] for r in bios}) == len(bios), "duplicate people"
@@ -351,7 +352,7 @@ if __name__ == "__main__":
     p = argparse.ArgumentParser()
     p.add_argument("action", choices=["fetch", "generate", "prepare", "score"])
     p.add_argument("args", nargs="*")
-    p.add_argument("--group", default="gate", help="gate (FActScore's 500 people) or dev")
+    p.add_argument("--group", default="gate", help="gate (FActScore's 500), dev or reserved")
     p.add_argument("--features", action="store_true", help="score: also store detector features")
     a = p.parse_args()
 
