@@ -40,13 +40,30 @@ This file was committed **before** any probe was trained. Its purpose is to fix 
 - **Pass bar for the main result:** difference ≥ 0.05 AUROC, with the 95% interval above 0.
 - **Seeds:** 5 training seeds (mean ± spread reported); seed 42 for everything else.
 
+## Own-answer gate: biographies (decided before any biography is generated)
+- **Question:** does the frozen probe catch hallucinated entities in text the model wrote itself? So far it has only scored text written by other models.
+- **Models:** Qwen3-4B-Instruct-2507 (layer 21 probe) is the pipeline model for the next steps. Qwen3.5-4B (layers 17 + 30) is reported alongside it.
+- **Prompts:** the 500 people in FActScore's unlabeled set, as `Tell me a bio of {name}.` Thinking off, greedy decoding, at most 512 new tokens.
+- **Labels:** an LLM judge reads the biography plus the person's Wikipedia page (`enwiki-20230401`, FActScore's passages): every passage, or the 24 best-matching ones (BM25 against the biography) if the page is longer. It labels every entity *Supported*, *Not Supported* or *Insufficient*, and every atomic claim *Supported* or *Not Supported*. The judge prompt is fixed in `src/hallustream/research/factcheck/prompts/bio_judge.txt` (labeling check: `claim_judge.txt`).
+- **Primary analysis:** entity AUROC, *Not Supported* (positive) vs *Supported* (negative), with *Insufficient* dropped. A 95% interval comes from 1,000 bootstrap resamples over people. The token-surprise baseline is scored on the same entities.
+- **Secondary analysis:** *Insufficient* counted as positive, matching the training label map.
+- **The judge is checked first.** The gate counts only if, on FActScore's 183 human-labeled people × 3 systems (InstructGPT, ChatGPT, PerplexityAI):
+  - **Labeling:** given the humans' own atomic facts, the judge's labels reach balanced accuracy ≥ 0.80 against human S/NS labels (IR excluded).
+  - **End to end:** with the judge's own claim splitting, each system's FActScore (supported claims over all claims, averaged over biographies) is within 0.03 of the human FActScore. This is the error measure the FActScore paper reports.
+
+  If either check fails, the judge is upgraded to a stronger model and re-checked before any gate result is read.
+- **Pass rule:**
+  - **AUROC ≥ 0.75 on Qwen3-4B:** proceed with detect→fix on Qwen3-4B.
+  - **Otherwise:** retrain the probe with own-answer labels (people split into train/val/test) and re-test once.
+  - **If it still fails:** the main direction becomes scoring other models' text (reader mode).
+
 ## Gates (decided in advance)
 | Gate | Pass condition | If it fails |
 |---|---|---|
 | Reproduction (paper's Qwen2.5-7B probe through our pipeline) | AUROC within ±0.02 of 0.8383 (LongFact) and 0.8467 (LongFact++) | say "applies", not "reproduces" |
 | Leak removal | ≤ 25% of training answers removed | use the LongFact++ test set only |
 | Main result | as above | try 2-layer or small-network fallbacks, then report as-is |
-| Own-answer | AUROC ≥ 0.70 and κ ≥ 0.6 (50 hand labels) | report as-is; drop "while it writes" claims |
+| Own-answer (biographies) | judge checks pass, then AUROC ≥ 0.75 on Qwen3-4B (see above) | retrain on own-answer labels once, else switch to reader mode |
 | Guard | stops ≤ 10% of answers | tighten the `guard` threshold |
 | Neutral prompt (pasted text) | AUROC drop ≤ 0.03 | make the question field required |
 
