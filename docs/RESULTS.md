@@ -157,3 +157,5 @@ A was chosen, refit on all dev people and frozen ([configs/detector_v2.json](../
 | v2, finished biographies | 0.870 (355 people) | |
 
 The gain on the gate people (+0.038) matches the cross-validated gain on dev (+0.040), so the choice did not overfit.
+
+**Reader mode (scoring other models' text):** the same kind of combiner, cross-validated by answer on the probe's validation set (2,394 answers, 34,314 entities written by 5 other models), adds almost nothing: +0.002 [0.001, 0.002] for Qwen3-4B (0.872 → 0.873) and +0.001 for Qwen3.5-4B (0.885 → 0.886). The model's confidence about someone else's text is a weak signal (0.62–0.67), and the fitted formula puts nearly all its weight on the probe. Reader mode therefore uses the probe alone; detector v2 is for the model's own writing.
