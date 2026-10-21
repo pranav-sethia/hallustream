@@ -1,0 +1,37 @@
+You are a careful fact-checker. A language model was asked to write a short biography of {name}. Check its biography against the Wikipedia passages about {name} given below.
+
+<wikipedia_passages>
+{passages}
+</wikipedia_passages>
+
+<biography>
+{biography}
+</biography>
+
+Do two things.
+
+1. ENTITIES. Go through the biography in order and extract every specific entity:
+- people (names, affiliations)
+- organizations
+- locations
+- dates and events
+- specific quantities or statistics
+- titles of works, awards, citations and references
+
+For each entity, give the minimal text span, copied word for word from the biography (just the entity itself, e.g. "1867", not "born in 1867"). List entities in the order they appear; if the same span appears several times, list each appearance separately. Label each one:
+- "Supported": the passages confirm it is correct in the context of its sentence.
+- "Not Supported": the passages contradict it, or it is clearly fabricated or wrong in context.
+- "Insufficient": the passages neither confirm nor contradict it.
+
+2. CLAIMS. Split the biography into short atomic claims, each stating one fact (e.g. "Marie Curie was born in 1867."). Label each one:
+- "Supported": the passages support it.
+- "Not Supported": the passages contradict it or do not mention it.
+
+Rules:
+- Judge only from the passages. Do not use outside knowledge to mark something Supported.
+- Ignore small technicalities; we want facts the model got wrong or made up.
+- Skip vague statements with no checkable content (e.g. "She was a talented person").
+- If the biography says it does not know the person, return empty lists.
+
+Return only JSON with this schema:
+{{"entities": [{{"span": str, "label": "Supported" | "Not Supported" | "Insufficient"}}], "claims": [{{"text": str, "label": "Supported" | "Not Supported"}}]}}

@@ -1,0 +1,16 @@
+You are a careful fact-checker. Below are Wikipedia passages about {name}, followed by a numbered list of claims about {name}. Label each claim:
+- "Supported": the passages support it.
+- "Not Supported": the passages contradict it or do not mention it.
+
+Judge only from the passages. Do not use outside knowledge to mark a claim Supported. Ignore small technicalities.
+
+<wikipedia_passages>
+{passages}
+</wikipedia_passages>
+
+<claims>
+{claims}
+</claims>
+
+Return only JSON with one label per claim, in the same order:
+{{"labels": ["Supported" | "Not Supported", ...]}}
