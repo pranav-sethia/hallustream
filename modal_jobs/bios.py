@@ -117,10 +117,10 @@ def _bios(model: str) -> list[dict]:
 
 
 @app.function(image=qwen35_image, volumes={CACHE_DIR: volume}, timeout=60 * 60)
-def prepare(db_path: str, what: str, setting: str = "") -> dict:
+def prepare(db_path: str, what: str, setting: str = "", run: str = "") -> dict:
     """Write judge request files.
 
-    pilot:  every judge setting on the tuning people (both checks)  -> judge/pilot
+    pilot:  every judge setting (or just `setting`) on the tuning people -> judge/<run or pilot>
     checks: one setting on the reported people (both checks)        -> judge/checks
     gate:   one setting on each model's biographies                 -> judge/gate_<model>
     """
@@ -143,7 +143,8 @@ def prepare(db_path: str, what: str, setting: str = "") -> dict:
             runs[f"gate_{model}"] = reqs
     else:
         tune, report = people.split_labeled([b.name for b in people.human_labeled(root, "ChatGPT")])
-        subset, settings = (tune, list(judge.SETTINGS)) if what == "pilot" else (report, [setting])
+        subset = tune if what == "pilot" else report
+        settings = [setting] if setting else list(judge.SETTINGS)
         reqs = []
         for s in settings:
             prefix = f"{s}|" if what == "pilot" else ""
@@ -158,7 +159,7 @@ def prepare(db_path: str, what: str, setting: str = "") -> dict:
                             f"{prefix}labeling|{key}", b.name, ev, [c for c, _ in b.claims], s
                         ))  # fmt: skip
                     reqs.append(judge.bio_request(f"{prefix}e2e|{key}", b.name, ev, b.output, s))
-        runs[what] = reqs
+        runs[run or what] = reqs
     sizes = {}
     for run, reqs in runs.items():
         d = ROOT / "judge" / run

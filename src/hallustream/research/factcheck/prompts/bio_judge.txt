@@ -18,7 +18,7 @@ Write a short note (at most 15 words) on what the passages say, then label the e
 - "Insufficient": the passages are silent on it, and it is a minor detail that Wikipedia would not necessarily mention.
 You may use your own knowledge to mark an entity "Not Supported", but never to mark it "Supported".
 
-2. CLAIMS. Split the biography into atomic claims: short sentences that each state exactly one fact about {name}. Split finely: a sentence such as "She studied at Oxford, where she earned a PhD in physics in 1990" gives several claims ("She studied at Oxford.", "She earned a PhD.", "Her PhD was in physics.", "She earned her PhD at Oxford.", "She earned her PhD in 1990."). Include every statement, including vague or general ones. Write a short note (at most 15 words), then label each claim:
+2. CLAIMS. Go through the biography sentence by sentence and break each sentence into all the independent atomic facts it contains (usually 2 to 5 per sentence). Each claim is a short, self-contained sentence stating exactly one fact about {name}, with pronouns replaced by the name. Split as finely as possible: "He made his acting debut in the film Sunrise (1992)" gives "He made his acting debut in a film.", "His debut film was Sunrise.", "Sunrise is a film.", "Sunrise was released in 1992." Include every statement, including vague or general ones. Write a short note (at most 15 words), then label each claim:
 - "Supported": the passages support it.
 - "Not Supported": the passages contradict it or do not mention it, or it is not about {name} (for example, it describes a different person with the same name).
 

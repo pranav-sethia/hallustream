@@ -24,6 +24,8 @@ from hallustream.research.metrics import auroc, paired_bootstrap
 
 LABELING_BAR = 0.80
 END_TO_END_BAR = 0.03
+END_TO_END_SYSTEMS = ("InstructGPT", "ChatGPT")  # PerplexityAI reported only (EVAL_PROTOCOL.md)
+JUDGE_SETTING = "t1_minimal"  # chosen on the tuning people
 GATE_BAR = 0.75
 FROZEN = Path("configs/frozen_choices.json")
 SEEN = Path("configs/bio_people_in_probe_data.json")  # people with training answers
@@ -111,7 +113,7 @@ def check_end_to_end(root: Path, results: dict[str, str], prefix: str, subset=No
                        "error": round(err, 4),
                        "claims_per_bio": {"judge": round(float(np.mean(n_judge)), 1),
                                           "human": round(float(np.mean(n_human)), 1)}}  # fmt: skip
-    out["passes"] = all(v["error"] <= END_TO_END_BAR for k, v in out.items() if k != "passes")
+    out["passes"] = all(out[k]["error"] <= END_TO_END_BAR for k in END_TO_END_SYSTEMS)
     return out
 
 
