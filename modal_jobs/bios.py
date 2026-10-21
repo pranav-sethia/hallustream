@@ -126,7 +126,10 @@ def prepare(db_path: str, models: list[str]) -> dict:
     for model in models:
         reqs = []
         for r in _bios(model):
-            ev = wiki.evidence(w.passages(r["name"]), r["bio"])
+            try:
+                ev = wiki.evidence(w.passages(r["name"]), r["bio"])
+            except KeyError:  # no Wikipedia page (1 of 500 people)
+                continue
             reqs.append(judge.bio_request(r["name"], r["name"], ev, r["bio"]))
         runs[f"gate_{model}"] = reqs
     runs["check_labeling"], runs["check_end_to_end"] = [], []
