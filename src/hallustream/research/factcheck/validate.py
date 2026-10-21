@@ -26,6 +26,7 @@ LABELING_BAR = 0.80
 END_TO_END_BAR = 0.03
 GATE_BAR = 0.75
 FROZEN = Path("configs/frozen_choices.json")
+SEEN = Path("configs/bio_people_in_probe_data.json")  # people with training answers
 
 
 def read_results(path: Path) -> tuple[dict[str, str], dict]:
@@ -192,6 +193,10 @@ def _gate_dirs(dirs: list[Path]) -> dict:
         runs[d.name] = (pd.read_parquet(d / "spans.parquet"), frozen[variant]["best_baseline"])
     out = {m: gate(df, base) for m, (df, base) in runs.items()}
     out["untruncated"] = {m: gate(df[~df["truncated"]], base) for m, (df, base) in runs.items()}
+    seen = {n for n, c in json.loads(SEEN.read_text())["people"].items() if c.get("train")}
+    for part, keep in (("seen_in_training", True), ("unseen_in_training", False)):
+        out[part] = {m: gate(df, base, {n for n in set(df["name"]) if (n in seen) == keep})
+                     for m, (df, base) in runs.items()}  # fmt: skip
     if len(runs) > 1:  # same people for every model, since response rates differ
         common = set.intersection(*(set(df["name"]) for df, _ in runs.values()))
         out["common_people"] = {m: gate(df, base, common) for m, (df, base) in runs.items()}

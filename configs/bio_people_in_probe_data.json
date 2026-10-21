@@ -1,0 +1,1203 @@
+{
+ "note": "FActScore eval people whose 'Tell me a bio of' prompt appears in the probe's data (longfact_augmented_biography), with answer counts per split",
+ "people": {
+  "14th Dalai Lama": {
+   "train": 2
+  },
+  "A. K. Ramanujan": {
+   "dropped": 1,
+   "val": 1
+  },
+  "Aaron Burr": {
+   "train": 1
+  },
+  "Abdelhamid Shabana": {
+   "train": 1
+  },
+  "Abdul Halik Hudu": {
+   "test": 3
+  },
+  "Abdullahi Mohammad Ahmad Hassan": {
+   "train": 1
+  },
+  "Abdulqawi Yusuf": {
+   "train": 3
+  },
+  "Abraham Ancer": {
+   "train": 1
+  },
+  "Adel Emam": {
+   "train": 2
+  },
+  "Aditya Kalyanpur": {
+   "train": 1
+  },
+  "Adnan Sami": {
+   "train": 1
+  },
+  "Ahmed Mumin Warfa": {
+   "val": 1
+  },
+  "Ahn Jae-hyun": {
+   "train": 1
+  },
+  "Ahsee Tuala": {
+   "val": 1,
+   "dropped": 1
+  },
+  "Albert Outler": {
+   "train": 1
+  },
+  "Aleksandar Kolarov": {
+   "val": 1
+  },
+  "Alexander Vovin": {
+   "dropped": 1,
+   "val": 1
+  },
+  "Alf Garland": {
+   "train": 1
+  },
+  "Alice Torriani": {
+   "train": 1
+  },
+  "Amelia Earhart": {
+   "train": 1
+  },
+  "Amr Diab": {
+   "train": 2
+  },
+  "Amr Shabana": {
+   "train": 3
+  },
+  "Ana Cl\u00e1udia Bolzan": {
+   "train": 2
+  },
+  "Anderson Silva": {
+   "train": 2
+  },
+  "Andreas Ivanschitz": {
+   "train": 2
+  },
+  "Andreea Marin": {
+   "train": 1
+  },
+  "Andriy Yarmolenko": {
+   "val": 1
+  },
+  "Andry Rajoelina": {
+   "train": 1
+  },
+  "Andr\u00e9 Le N\u00f4tre": {
+   "train": 2
+  },
+  "Angela Bairstow": {
+   "train": 3
+  },
+  "Annie Landouw": {
+   "val": 1
+  },
+  "Antonio Leviste": {
+   "train": 3
+  },
+  "Anurag Kashyap": {
+   "dropped": 1,
+   "val": 1
+  },
+  "Ariel Behar": {
+   "train": 1
+  },
+  "Arif Mohammad Khan": {
+   "test": 5
+  },
+  "Arthur Ewert": {
+   "test": 5
+  },
+  "Arthur Wakefield": {
+   "train": 2
+  },
+  "Asafa Powell": {
+   "train": 1
+  },
+  "Avraham Eilam-Amzallag": {
+   "train": 1
+  },
+  "Ayman al-Zawahiri": {
+   "train": 2
+  },
+  "Bal\u00e1zs Bek\u0151": {
+   "train": 2
+  },
+  "Bastian Schweinsteiger": {
+   "train": 1
+  },
+  "Benjamin Lawrence Reid": {
+   "train": 1
+  },
+  "Bhuma Nagi Reddy": {
+   "test": 5
+  },
+  "Bh\u0101skara I": {
+   "train": 1
+  },
+  "Bif Naked": {
+   "train": 1
+  },
+  "Billy Snedden": {
+   "dropped": 1,
+   "val": 1
+  },
+  "Bir Hambir": {
+   "train": 1
+  },
+  "Blanca Err\u00e1zuriz": {
+   "train": 2
+  },
+  "Bob Marley": {
+   "train": 2
+  },
+  "Bobby Fischer": {
+   "train": 2
+  },
+  "Bobo Bald\u00e9": {
+   "train": 2
+  },
+  "Braulio Lara": {
+   "test": 3
+  },
+  "Caitlin Lowe": {
+   "train": 2
+  },
+  "Camille Paulus": {
+   "train": 2
+  },
+  "Carl Braun (obstetrician)": {
+   "dropped": 1,
+   "val": 1
+  },
+  "Carlos Ghosn": {
+   "train": 1
+  },
+  "Carlos P. Romulo": {
+   "train": 2
+  },
+  "Carmelo Anthony": {
+   "train": 2
+  },
+  "Carol Chell": {
+   "train": 1
+  },
+  "Carol Dweck": {
+   "train": 1
+  },
+  "Cel\u00e2l Bayar": {
+   "train": 1
+  },
+  "Cha Eun-woo": {
+   "train": 2
+  },
+  "Charles Allen (jurist)": {
+   "train": 1
+  },
+  "Charles B. McVay III": {
+   "train": 1
+  },
+  "Charley Boorman": {
+   "test": 5
+  },
+  "Charmion King": {
+   "train": 1
+  },
+  "Cheyenne Brando": {
+   "train": 1
+  },
+  "Chi Pu": {
+   "train": 1
+  },
+  "Chris Cuomo": {
+   "train": 1
+  },
+  "Chris Duffield": {
+   "train": 1
+  },
+  "Chris John (boxer)": {
+   "train": 1
+  },
+  "Christian Almeida": {
+   "train": 1
+  },
+  "Cicero": {
+   "test": 5
+  },
+  "Cierre Wood": {
+   "dropped": 3,
+   "val": 1
+  },
+  "Cleopatra": {
+   "test": 5
+  },
+  "Coco Chanel": {
+   "dropped": 1,
+   "val": 1
+  },
+  "Damon Herriman": {
+   "train": 1
+  },
+  "Dana Awartani": {
+   "train": 2
+  },
+  "Daniel Alexander Cameron": {
+   "train": 2
+  },
+  "Daniel Bedingfield": {
+   "train": 2
+  },
+  "Daniel Ek": {
+   "test": 5
+  },
+  "Daniil Medvedev": {
+   "train": 1
+  },
+  "Danny Almonte": {
+   "train": 2
+  },
+  "Danny Faure": {
+   "train": 1
+  },
+  "Dascha Polanco": {
+   "train": 2
+  },
+  "David Bogue": {
+   "train": 3
+  },
+  "DeAnna Bennett": {
+   "train": 2
+  },
+  "Deitrick Haddon": {
+   "val": 1
+  },
+  "Dennis Andersson": {
+   "test": 4
+  },
+  "Dewi Sartika": {
+   "train": 1
+  },
+  "Diafra Sakho": {
+   "train": 1
+  },
+  "Diana Ivanova": {
+   "train": 1
+  },
+  "Diego God\u00edn": {
+   "train": 2
+  },
+  "Diego Suarez (garden designer)": {
+   "train": 2
+  },
+  "Diosdado Cabello": {
+   "train": 2
+  },
+  "Djimon Hounsou": {
+   "train": 2
+  },
+  "Dominique Blake": {
+   "train": 1
+  },
+  "Don DeLillo": {
+   "train": 1
+  },
+  "Earl Garrison": {
+   "train": 3
+  },
+  "Emcee N.I.C.E.": {
+   "train": 1
+  },
+  "Erich Hartmann": {
+   "test": 5
+  },
+  "Ernestine Eckstein": {
+   "train": 2
+  },
+  "Evgeny Shalunov": {
+   "train": 1
+  },
+  "Ezechiel N'Douassel": {
+   "train": 2
+  },
+  "F. Gwynplaine MacIntyre": {
+   "dropped": 2,
+   "val": 1
+  },
+  "Felician of Foligno": {
+   "train": 1
+  },
+  "Felipe (footballer, born 1977)": {
+   "train": 4
+  },
+  "Felix Newman": {
+   "test": 2
+  },
+  "Fernando da Costa Novaes": {
+   "val": 1,
+   "dropped": 1
+  },
+  "Feroze Gandhi": {
+   "train": 2
+  },
+  "Fidel Castro": {
+   "dropped": 2,
+   "val": 1
+  },
+  "Fifi Cooper": {
+   "train": 2
+  },
+  "Flavio M\u00e9ndez Santiago": {
+   "train": 1
+  },
+  "Francis Nicholson (painter)": {
+   "train": 2
+  },
+  "Francisco Urroz": {
+   "train": 1
+  },
+  "Franck Rib\u00e9ry": {
+   "train": 1
+  },
+  "Fuerza Guerrera": {
+   "train": 2
+  },
+  "Funke Abimbola": {
+   "train": 2
+  },
+  "F\u00e9lix Mar\u00eda Zuloaga": {
+   "dropped": 1,
+   "val": 1
+  },
+  "G. Fowler Stewart": {
+   "train": 1
+  },
+  "G. Venugopal": {
+   "train": 1
+  },
+  "Gary Woodland": {
+   "train": 1
+  },
+  "Gemma Arterton": {
+   "train": 2
+  },
+  "Generoso Rossi": {
+   "train": 1
+  },
+  "George VI": {
+   "train": 1
+  },
+  "Giorgi Papunashvili": {
+   "dropped": 1,
+   "val": 1
+  },
+  "Grant Bowler": {
+   "train": 1
+  },
+  "Grayston Burgess": {
+   "train": 1
+  },
+  "Griselda Blanco": {
+   "train": 1
+  },
+  "Guillermo Rigondeaux": {
+   "train": 1
+  },
+  "Gulshan Kumar": {
+   "train": 1
+  },
+  "Haruto Takahashi": {
+   "train": 2
+  },
+  "Henry VII of England": {
+   "val": 1
+  },
+  "Henryk Wieniawski": {
+   "test": 5
+  },
+  "Hiren Gohain": {
+   "train": 1
+  },
+  "Hoshiar Singh Dahiya": {
+   "train": 3
+  },
+  "Huang Xing": {
+   "train": 1
+  },
+  "Ian Khama": {
+   "train": 1
+  },
+  "Idi Amin": {
+   "train": 1
+  },
+  "Idris Elba": {
+   "train": 3
+  },
+  "Iggy Azalea": {
+   "train": 1
+  },
+  "Imbolo Mbue": {
+   "train": 1
+  },
+  "Ingo Titze": {
+   "train": 2
+  },
+  "Irina Shayk": {
+   "train": 2
+  },
+  "Isla Fisher": {
+   "train": 2
+  },
+  "Ivan Peri\u0161i\u0107": {
+   "val": 1
+  },
+  "Ivan Toms": {
+   "train": 2
+  },
+  "Jackie Shroff": {
+   "train": 1
+  },
+  "Jackson Mart\u00ednez": {
+   "train": 1
+  },
+  "Jake Tilson": {
+   "test": 4
+  },
+  "James Franco": {
+   "train": 2
+  },
+  "James Tyrrell": {
+   "train": 2
+  },
+  "Jamie Cripps": {
+   "train": 1
+  },
+  "Jamie Dornan": {
+   "train": 1
+  },
+  "Jan Zamoyski": {
+   "train": 1
+  },
+  "Jan-Michael Gambill": {
+   "train": 2
+  },
+  "Jashubhai Dhanabhai Barad": {
+   "train": 1
+  },
+  "Jean Muir (actress)": {
+   "test": 4
+  },
+  "Jeff Beukeboom": {
+   "train": 1
+  },
+  "Jeff Long (athletic director)": {
+   "test": 4
+  },
+  "Jeffrey Satinover": {
+   "val": 1
+  },
+  "Jemima Goldsmith": {
+   "test": 5
+  },
+  "Jennifer Maia": {
+   "train": 2
+  },
+  "Jennifer Paz": {
+   "train": 1
+  },
+  "Jennifer Sevilla": {
+   "train": 1
+  },
+  "Jeremy Corbyn": {
+   "train": 1
+  },
+  "Jesse Chac\u00f3n": {
+   "train": 1
+  },
+  "Jessie Mae Brown Beavers": {
+   "train": 1
+  },
+  "Jimmy Tompkins (priest)": {
+   "train": 1
+  },
+  "Jimmy Weldon": {
+   "dropped": 1,
+   "val": 1
+  },
+  "Joe McGinniss": {
+   "train": 1
+  },
+  "Joel Edgerton": {
+   "train": 2
+  },
+  "Johann Christian von Engel": {
+   "train": 2
+  },
+  "John Atkinson Grimshaw": {
+   "test": 5
+  },
+  "John Counter": {
+   "train": 1
+  },
+  "John Craven": {
+   "train": 2
+  },
+  "John Forbes Nash Jr.": {
+   "val": 1,
+   "dropped": 1
+  },
+  "John Morris (curler)": {
+   "train": 3
+  },
+  "Joji (musician)": {
+   "train": 1
+  },
+  "Jonathan Roy": {
+   "train": 1
+  },
+  "Joseph A. Lopez": {
+   "test": 3
+  },
+  "Joseph Jaquet": {
+   "dropped": 1,
+   "val": 2
+  },
+  "Joseph Kony": {
+   "train": 1
+  },
+  "Joseph Michael Linsner": {
+   "val": 1
+  },
+  "Josh Mansour": {
+   "train": 1
+  },
+  "Josiah Maduabuchi": {
+   "train": 2
+  },
+  "Jos\u00e9 Cardozo": {
+   "val": 1,
+   "dropped": 1
+  },
+  "Jos\u00e9 Hern\u00e1ndez Delgadillo": {
+   "train": 1
+  },
+  "Jo\u00e3o Lucas (footballer, born 1991)": {
+   "val": 1
+  },
+  "Juan Nepomucino Goetz": {
+   "val": 2
+  },
+  "Julian Jarrold": {
+   "train": 2
+  },
+  "Julie Bishop": {
+   "train": 3
+  },
+  "Kajal Aggarwal": {
+   "train": 1
+  },
+  "Kak\u00e1": {
+   "train": 1
+  },
+  "Kaoru Kuroki": {
+   "test": 4
+  },
+  "Kari Matchett": {
+   "train": 1
+  },
+  "Karl Eliasberg": {
+   "dropped": 1,
+   "val": 1
+  },
+  "Karl Urban": {
+   "train": 2
+  },
+  "Karni Liddell": {
+   "train": 1
+  },
+  "Karyn Pugliese": {
+   "train": 1
+  },
+  "Katherine Ryan": {
+   "train": 2
+  },
+  "Kathinka Pasveer": {
+   "test": 5
+  },
+  "Kelli White": {
+   "train": 1
+  },
+  "Kevin Anderson (tennis)": {
+   "train": 1
+  },
+  "Kevin De Bruyne": {
+   "val": 1
+  },
+  "Ki Fitzgerald": {
+   "train": 1
+  },
+  "Kiara Advani": {
+   "train": 1
+  },
+  "Kion Smith": {
+   "train": 2
+  },
+  "Krystyna Szczepa\u0144ska": {
+   "train": 3
+  },
+  "Lali Esp\u00f3sito": {
+   "train": 2
+  },
+  "Leo Kokubo": {
+   "train": 1
+  },
+  "Le\u00f3n Dujovne": {
+   "train": 2
+  },
+  "Liam Neeson": {
+   "train": 1
+  },
+  "Lisa Ling": {
+   "dropped": 1,
+   "val": 1
+  },
+  "Lokesh Kanagaraj": {
+   "train": 2
+  },
+  "Loo Kum Zee": {
+   "train": 1
+  },
+  "Lucas Boy\u00e9": {
+   "train": 1
+  },
+  "Luiz In\u00e1cio Lula da Silva": {
+   "train": 1
+  },
+  "Lunay (singer)": {
+   "train": 1
+  },
+  "Lupe V\u00e9lez": {
+   "train": 1
+  },
+  "Maddy Crippen": {
+   "train": 1
+  },
+  "Mamunul Islam": {
+   "train": 3
+  },
+  "Manny Pacquiao": {
+   "train": 2
+  },
+  "Marcel Hern\u00e1ndez": {
+   "train": 1
+  },
+  "Marcus Aurelius": {
+   "train": 2
+  },
+  "Margaret Rose Vendryes": {
+   "train": 1
+  },
+  "Mark Murphy (singer)": {
+   "train": 1
+  },
+  "Marli Renfro": {
+   "val": 1,
+   "dropped": 1
+  },
+  "Martha Cunz": {
+   "train": 2
+  },
+  "Marty Mayberry": {
+   "train": 1
+  },
+  "Mar\u00eda Jos\u00e9 (singer)": {
+   "test": 4
+  },
+  "Mateo Correa Magallanes": {
+   "train": 2
+  },
+  "Matt Hunter (singer)": {
+   "train": 1
+  },
+  "Matthew Perry": {
+   "train": 2
+  },
+  "Maurice Jones-Drew": {
+   "train": 1
+  },
+  "Maxime Masson": {
+   "train": 1
+  },
+  "Maya Yoshida": {
+   "train": 1
+  },
+  "Meg Thalken": {
+   "train": 1
+  },
+  "Melvin Van Peebles": {
+   "test": 5
+  },
+  "Michael Douglas": {
+   "train": 2
+  },
+  "Michael Folorunsho": {
+   "train": 3
+  },
+  "Michael Goleniewski": {
+   "dropped": 2,
+   "val": 1
+  },
+  "Michael L. MacDonald": {
+   "train": 1
+  },
+  "Miguel \u00c1ngel F\u00e9lix Gallardo": {
+   "train": 1
+  },
+  "Mihai Eminescu": {
+   "train": 1
+  },
+  "Mike Adenuga": {
+   "train": 1
+  },
+  "Mike Melvill": {
+   "train": 2
+  },
+  "Mindy Smith": {
+   "train": 1
+  },
+  "Mohamed Abdi Mohamed": {
+   "test": 3
+  },
+  "Muhammad Al-Hafiz": {
+   "val": 1,
+   "dropped": 1
+  },
+  "Muhammad Ali Jinnah": {
+   "train": 1
+  },
+  "Muhammad Qutb": {
+   "train": 1
+  },
+  "Namita Gokhale": {
+   "dropped": 1,
+   "val": 1
+  },
+  "Nancy Onyango": {
+   "train": 1
+  },
+  "Napoleon": {
+   "train": 2
+  },
+  "Naz Mitrou-Long": {
+   "train": 1
+  },
+  "Neha Sargam": {
+   "train": 1
+  },
+  "Neil Googe": {
+   "train": 1
+  },
+  "Nelson Mandela": {
+   "train": 1
+  },
+  "Nick Kyrgios": {
+   "train": 1
+  },
+  "Nobuhiro Shimatani": {
+   "dropped": 3,
+   "val": 1
+  },
+  "Noel Malicdem": {
+   "train": 1
+  },
+  "Nonzee Nimibutr": {
+   "train": 1
+  },
+  "Pablo Ganet": {
+   "test": 4
+  },
+  "Pallavi Joshi": {
+   "train": 1
+  },
+  "Patoranking": {
+   "train": 1
+  },
+  "Patricia Cladis": {
+   "train": 1
+  },
+  "Patrick Merrill": {
+   "val": 1,
+   "dropped": 1
+  },
+  "Paul Anka": {
+   "val": 1
+  },
+  "PewDiePie": {
+   "train": 2
+  },
+  "Phife Dawg": {
+   "train": 3
+  },
+  "Philippe Coutinho": {
+   "val": 1,
+   "dropped": 1
+  },
+  "Phillip Gillespie": {
+   "train": 1
+  },
+  "Pogo (musician)": {
+   "train": 2
+  },
+  "Pratibha Patil": {
+   "train": 2
+  },
+  "Prince Carl Philip, Duke of V\u00e4rmland": {
+   "train": 3
+  },
+  "Profit (gamer)": {
+   "train": 2
+  },
+  "Quincy Jones": {
+   "train": 1
+  },
+  "R. Selvaraj (politician)": {
+   "val": 1
+  },
+  "Rachel Bilson": {
+   "dropped": 2,
+   "val": 1
+  },
+  "Rachel Weisz": {
+   "train": 1
+  },
+  "Radhika Apte": {
+   "train": 1
+  },
+  "Radja Nainggolan": {
+   "train": 1
+  },
+  "Rafael Nadal": {
+   "test": 5
+  },
+  "Raffaele Maiello": {
+   "train": 1
+  },
+  "Raghav Juyal": {
+   "val": 1,
+   "dropped": 2
+  },
+  "Ralph Macchio": {
+   "train": 1
+  },
+  "Ramkumar Mukhopadhyay": {
+   "train": 1
+  },
+  "Ramli Sarip": {
+   "dropped": 1,
+   "val": 1
+  },
+  "Rana Sanaullah": {
+   "train": 1
+  },
+  "Rangi Te Kanawa": {
+   "train": 2
+  },
+  "Ra\u00fal Esparza": {
+   "val": 1,
+   "dropped": 1
+  },
+  "Rebecca Romijn": {
+   "train": 1
+  },
+  "Riccardo Tisci": {
+   "train": 3
+  },
+  "Richard Burton": {
+   "test": 5
+  },
+  "Richard Kuklinski": {
+   "train": 2
+  },
+  "Richie Dorman": {
+   "train": 1
+  },
+  "Ricky Martin": {
+   "train": 1
+  },
+  "Rigoberto Torres": {
+   "train": 1
+  },
+  "Rii Sen": {
+   "train": 1
+  },
+  "Robbie Horgan": {
+   "train": 3
+  },
+  "Robert Guthrie": {
+   "train": 1
+  },
+  "Robert Jennings (rugby league)": {
+   "train": 1
+  },
+  "Robert Whittaker (fighter)": {
+   "train": 3
+  },
+  "Robin del Castillo": {
+   "train": 2
+  },
+  "Roman \u0160ebrle": {
+   "train": 1
+  },
+  "Ronaldinho": {
+   "train": 3
+  },
+  "Rory Burns": {
+   "train": 2
+  },
+  "Rory Byrne": {
+   "val": 1
+  },
+  "Rory Tapner": {
+   "test": 3
+  },
+  "Rosaline Elbay": {
+   "train": 1
+  },
+  "Ros\u00e9 (singer)": {
+   "train": 1
+  },
+  "Ryan Brasier": {
+   "train": 1
+  },
+  "Sada Thompson": {
+   "val": 1,
+   "dropped": 2
+  },
+  "Sage Stallone": {
+   "train": 3
+  },
+  "Salome Maswime": {
+   "train": 2
+  },
+  "Salt Bae": {
+   "train": 3
+  },
+  "Sam Michael": {
+   "val": 1,
+   "dropped": 1
+  },
+  "Sami Shalom Chetrit": {
+   "train": 1
+  },
+  "Samir Kochhar": {
+   "train": 3
+  },
+  "Sandra Pisani": {
+   "dropped": 2,
+   "val": 1
+  },
+  "Santiago Vergini": {
+   "train": 2
+  },
+  "Sayaka Ando": {
+   "train": 1
+  },
+  "Sayuri Yamauchi": {
+   "train": 2
+  },
+  "Serena Tideman": {
+   "train": 1
+  },
+  "Sergei Bodrov": {
+   "train": 1
+  },
+  "Shakira": {
+   "train": 1
+  },
+  "Shane Fontayne": {
+   "train": 1
+  },
+  "Shaolin (humorist)": {
+   "train": 1
+  },
+  "Shawn Ashmore": {
+   "train": 2
+  },
+  "Sheldon T. Mills": {
+   "train": 2
+  },
+  "Shin Jea-hwan": {
+   "train": 1
+  },
+  "Shoya Nakajima": {
+   "train": 2
+  },
+  "Sila Mar\u00eda Calder\u00f3n": {
+   "train": 1
+  },
+  "Sofiane Feghouli": {
+   "train": 3
+  },
+  "Stan Marple": {
+   "val": 1
+  },
+  "Stephanie Beatriz": {
+   "train": 1
+  },
+  "Stephanus Swart": {
+   "train": 2
+  },
+  "Stephen J. Mackwell": {
+   "train": 2
+  },
+  "Stephen Miller (political advisor)": {
+   "train": 1
+  },
+  "Steve Cummins": {
+   "train": 2
+  },
+  "Susan Sarandon": {
+   "train": 1
+  },
+  "Suthida": {
+   "test": 4
+  },
+  "S\u00e9rgio Moraes": {
+   "val": 1,
+   "dropped": 1
+  },
+  "Tacko Fall": {
+   "train": 2
+  },
+  "Tappaya Sit-Or": {
+   "val": 1,
+   "dropped": 1
+  },
+  "Tarik Elyounoussi": {
+   "train": 1
+  },
+  "Ted Mack (politician)": {
+   "train": 1
+  },
+  "Ted Thompson": {
+   "train": 1
+  },
+  "Theophilus Annorbaah": {
+   "train": 2
+  },
+  "Thierry Henry": {
+   "train": 2
+  },
+  "Thirayuth Boonmee": {
+   "train": 1
+  },
+  "Thomas Piketty": {
+   "train": 2
+  },
+  "Tim Ferguson": {
+   "train": 1
+  },
+  "Tom Coburn": {
+   "train": 2
+  },
+  "Tony Bellew": {
+   "train": 2
+  },
+  "Tracy Somerset, Duchess of Beaufort": {
+   "train": 1
+  },
+  "Trevor Noah": {
+   "train": 1
+  },
+  "Uee": {
+   "train": 1
+  },
+  "Umika Kawashima": {
+   "train": 1
+  },
+  "Valerie Harper": {
+   "train": 2
+  },
+  "Vanda Pignato": {
+   "test": 4
+  },
+  "Vasily Chuikov": {
+   "train": 1
+  },
+  "Vicente Guerrero": {
+   "train": 1
+  },
+  "Vicky Kaushal": {
+   "val": 1
+  },
+  "Vijay (actor)": {
+   "train": 1
+  },
+  "Virginia Christine": {
+   "train": 2
+  },
+  "Vishal (actor)": {
+   "train": 1
+  },
+  "Vladimir Lenin": {
+   "test": 5
+  },
+  "W. Clark Still": {
+   "train": 1
+  },
+  "Walter Model": {
+   "train": 1
+  },
+  "Will Voigt": {
+   "train": 1
+  },
+  "William G. Angel": {
+   "train": 1
+  },
+  "Winston Churchill": {
+   "train": 1
+  },
+  "Witold Gombrowicz": {
+   "val": 1,
+   "dropped": 1
+  },
+  "Worranit Thawornwong": {
+   "train": 1
+  },
+  "Yehuda Lindell": {
+   "train": 2
+  },
+  "Yuu Watase": {
+   "test": 5
+  },
+  "Yuyan": {
+   "train": 2
+  },
+  "Zeca Pagodinho": {
+   "train": 2
+  },
+  "Zewde Gebre-Sellassie": {
+   "train": 2
+  },
+  "Zhang Yaokun": {
+   "train": 1
+  },
+  "Ziaur Rahman": {
+   "train": 1
+  },
+  "Zi\u00e9 Ouattara": {
+   "train": 2
+  },
+  "Zubaira Tukhugov": {
+   "val": 1,
+   "dropped": 1
+  },
+  "\u00c9dgar Iv\u00e1n L\u00f3pez": {
+   "train": 1
+  }
+ }
+}
