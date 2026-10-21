@@ -52,6 +52,11 @@ BIO_SCHEMA = {
     "required": ["entities", "claims"],
     "propertyOrdering": ["entities", "claims"],
 }
+AUDIT_SCHEMA = {
+    "type": "OBJECT",
+    "properties": {"labels": _labeled(ENTITY_LABELS, "id", "INTEGER")},
+    "required": ["labels"],
+}
 CLAIM_SCHEMA = {
     "type": "OBJECT",
     "properties": {"labels": _labeled(CLAIM_LABELS, "id", "INTEGER")},
@@ -93,6 +98,39 @@ def claim_request(key, name, passages, claims, setting: str) -> dict:
     listed = "\n".join(f"{i + 1}. {c}" for i, c in enumerate(claims))
     prompt = _prompt("claim_judge").format(name=name, passages=_passages(passages), claims=listed)
     return _request(key, prompt, CLAIM_SCHEMA, setting)
+
+
+def audit_request(key, name, passages, biography, items, setting: str) -> dict:
+    """Re-judge chosen entities; items are (span, sentence) pairs."""
+    listed = "\n".join(f'{i + 1}. "{span}" in: {sent}' for i, (span, sent) in enumerate(items))
+    prompt = _prompt("entity_audit").format(
+        name=name, passages=_passages(passages), biography=biography, entities=listed
+    )
+    return _request(key, prompt, AUDIT_SCHEMA, setting)
+
+
+def parse_ids(text: str, n: int, labels: tuple[str, ...] = CLAIM_LABELS) -> list[str]:
+    """One label per numbered item, joined on its id; ValueError if any is missing or repeated."""
+    out: dict[int, str] = {}
+    for x in _json(text).get("labels") or []:
+        if not isinstance(x, dict) or x.get("label") not in labels:
+            raise ValueError(f"bad label item: {x!r}")
+        i = x.get("id")
+        if not isinstance(i, int) or not 1 <= i <= n or i in out:
+            raise ValueError(f"bad or repeated id: {i!r}")
+        out[i] = x["label"]
+    if len(out) != n:
+        raise ValueError(f"{n - len(out)} of {n} items unlabeled")
+    return [out[i] for i in range(1, n + 1)]
+
+
+def sentence_of(text: str, index: int) -> str:
+    """The sentence (or line) of text containing character index."""
+    starts = [m.end() for m in re.finditer(r"(?<=[.!?])\s+|\n+", text[:index])]
+    lo = starts[-1] if starts else 0
+    m = re.search(r"(?<=[.!?])\s|\n", text[index:])
+    hi = index + m.start() if m else len(text)
+    return text[lo:hi].strip()
 
 
 def response_text(row: dict) -> tuple[str | None, str | None]:
@@ -149,17 +187,7 @@ def parse_claims(text: str, n: int) -> list[str]:
     Raises ValueError unless every claim 1..n gets exactly one valid label, so a
     skipped or merged claim can never shift labels onto the wrong claim.
     """
-    out: dict[int, str] = {}
-    for x in _json(text).get("labels") or []:
-        if not isinstance(x, dict) or x.get("label") not in CLAIM_LABELS:
-            raise ValueError(f"bad label item: {x!r}")
-        i = x.get("id")
-        if not isinstance(i, int) or not 1 <= i <= n or i in out:
-            raise ValueError(f"bad or repeated claim id: {i!r}")
-        out[i] = x["label"]
-    if len(out) != n:
-        raise ValueError(f"{n - len(out)} of {n} claims unlabeled")
-    return [out[i] for i in range(1, n + 1)]
+    return parse_ids(text, n)
 
 
 _FOLD = str.maketrans({"‘": "'", "’": "'", "“": '"', "”": '"', "–": "-", "—": "-", "‐": "-"})

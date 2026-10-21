@@ -1,0 +1,22 @@
+You are a careful fact-checker. A language model was asked to write a short biography of {name}. Below are the complete Wikipedia article about {name}, the biography, and a numbered list of entities from the biography, each shown with the sentence it appears in.
+
+For each entity, write a short note (at most 20 words) on what the article says, then label the entity as it is used in its sentence:
+- "Supported": the article confirms it.
+- "Not Supported": the article contradicts it; or the article covers this aspect of the person (such as birth date or place, education, positions, main works, awards) and gives something different or leaves it out where Wikipedia would plainly list it; or it is a person, work or organization you are confident does not exist.
+- "Insufficient": the article is silent on it, and it is a minor detail that Wikipedia would not necessarily mention.
+You may use your own knowledge to mark an entity "Not Supported", but never to mark it "Supported".
+
+<wikipedia_article>
+{passages}
+</wikipedia_article>
+
+<biography>
+{biography}
+</biography>
+
+<entities>
+{entities}
+</entities>
+
+Return only JSON with exactly one item per entity, using the entity's number as its id:
+{{"labels": [{{"id": 1, "note": "...", "label": "Supported" | "Not Supported" | "Insufficient"}}, ...]}}

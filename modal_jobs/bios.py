@@ -152,6 +152,7 @@ def prepare(db_path: str, what: str, setting: str = "", run: str = "") -> dict:
     checks: one setting on the reported people (both checks)        -> judge/checks
     gate:   one setting on each model's biographies                 -> judge/gate_<model>
     dev:    one setting on Qwen3-4B's dev biographies               -> judge/dev_qwen3
+    audit:  100 dev entities per judge label, re-judged with the whole page -> judge/audit
     """
     from hallustream.research.factcheck import judge, people, wiki
 
@@ -170,6 +171,37 @@ def prepare(db_path: str, what: str, setting: str = "", run: str = "") -> dict:
                     continue
                 reqs.append(judge.bio_request(r["name"], r["name"], ev, r["bio"], setting))
             runs[f"{what}_{model}"] = reqs
+    elif what == "audit":
+        import random
+
+        from hallustream.research.factcheck.validate import read_results
+
+        results, _ = read_results(ROOT / "judge" / "dev_qwen3" / "results.jsonl")
+        bios = {r["name"]: r for r in _bios("qwen3", "dev")}
+        found = []
+        for name, text in sorted(results.items()):
+            try:
+                ents = judge.parse_bio(text)["entities"]
+            except ValueError:
+                continue
+            found += [(name, a) for a in judge.locate(bios[name]["bio"], ents)[0]]
+        rng = random.Random(0)
+        items = []
+        for label in judge.ENTITY_LABELS:
+            items += rng.sample([f for f in found if f[1]["label"] == label], 100)
+        by_person: dict[str, list] = {}
+        for name, a in items:
+            by_person.setdefault(name, []).append(a)
+        reqs, kept = [], []
+        for name, anns in sorted(by_person.items()):
+            anns.sort(key=lambda a: a["index"])
+            bio = bios[name]["bio"]
+            pairs = [(a["span"], judge.sentence_of(bio, a["index"])) for a in anns]
+            reqs.append(judge.audit_request(name, name, w.passages(name), bio, pairs, setting))
+            kept += [{"name": name, **a} for a in anns]
+        runs["audit"] = reqs
+        (ROOT / "judge" / "audit").mkdir(parents=True, exist_ok=True)
+        (ROOT / "judge" / "audit" / "items.json").write_text(json.dumps(kept))
     else:
         tune, report = people.split_labeled([b.name for b in people.human_labeled(root, "ChatGPT")])
         subset = tune if what == "pilot" else report

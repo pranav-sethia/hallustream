@@ -177,3 +177,19 @@ def test_gate_drops_insufficient_in_primary_only():
     assert res["primary"]["ci"][0] <= res["primary"]["auroc"] <= res["primary"]["ci"][1]
     assert set(res["primary"]["auroc_by_seed"]) == {"p_seed0", "p_seed1"}
     assert gate(pd.DataFrame(rows), "entropy_max", {"p0", "p1"})["people"] == 2
+
+
+def test_audit_request_lists_entities_with_their_sentences():
+    r = judge.audit_request("k", "Marie Curie", ["P."], BIO, [("1867", "Born in 1867.")], "t1_low")
+    text = r["request"]["contents"][0]["parts"][0]["text"]
+    assert '1. "1867" in: Born in 1867.' in text
+    enum = r["request"]["generationConfig"]["responseSchema"]["properties"]["labels"]
+    assert enum["items"]["properties"]["label"]["enum"] == list(judge.ENTITY_LABELS)
+    ok = '{"labels": [{"id": 1, "label": "Insufficient"}]}'
+    assert judge.parse_ids(ok, 1, judge.ENTITY_LABELS) == ["Insufficient"]
+
+
+def test_sentence_of_handles_sentences_and_list_lines():
+    t = "Born in 1901 in Paris. He studied at Oxford.\n- Award: Nobel"
+    got = [judge.sentence_of(t, t.index(x)) for x in ("1901", "Oxford", "Nobel")]
+    assert got == ["Born in 1901 in Paris.", "He studied at Oxford.", "- Award: Nobel"]
