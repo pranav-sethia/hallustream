@@ -82,3 +82,41 @@ With the paper's span search, our pipeline reproduces the published numbers to w
 - Test AUROC is about 0.018 below validation (0.867 vs 0.885). Validation questions come from the same pool as training; test questions are separate.
 - The paper's own Qwen2.5-7B linear probe scored 0.838 / 0.847 on these test sets. Its setting is different (one model probing its own answers), so it is context rather than a head-to-head comparison.
 - The guard's stop rate on whole answers needs full token streams. It will be measured with the streaming library.
+
+## Own-answer gate: biographies
+**Question:** the probe was trained on text written by other models. Does it catch hallucinated entities in biographies the model writes itself? The setup and pass rule were fixed in advance in [EVAL_PROTOCOL.md](../EVAL_PROTOCOL.md).
+
+**Fact checker (checked against FActScore's human labels; 143 reported people, kept apart from the 40 used to pick settings):**
+- Judge: `gemini-3.1-flash-lite` (Batch API), with the person's Wikipedia page as evidence.
+- Labeling the humans' own facts: balanced accuracy **0.890** (bar 0.80), on 11,049 facts.
+- FActScore with the judge's own fact splitting, compared with the human score:
+
+| | Human | Judge | Error (bar 0.03) |
+|---|---|---|---|
+| InstructGPT | 0.420 | 0.397 | 0.023 |
+| ChatGPT | 0.588 | 0.575 | 0.013 |
+| PerplexityAI (reported only) | 0.811 | 0.745 | 0.067 |
+
+- Entity labels vs facts the humans marked: balanced accuracy 0.913 (5,669 entities).
+
+**Gate:** 500 FActScore people, `Tell me a bio of {name}.`, greedy decoding. Entity AUROC is Not Supported vs Supported, using the mean of the 5 frozen probe seeds. The 95% intervals come from a bootstrap over people.
+
+| | Qwen3-4B (layer 21) | Qwen3.5-4B (layers 17+30) |
+|---|---|---|
+| Biographies scored (others said they did not know the person) | 404 | 485 |
+| Entities (share Not Supported) | 4,478 (56%) | 7,579 (75%) |
+| **Probe AUROC** | **0.828** [0.809, 0.847] | 0.804 [0.781, 0.825] |
+| Frozen baseline AUROC | 0.759 (max entropy) | 0.776 (max surprise) |
+| Probe − baseline | **+0.069** [0.045, 0.093] | +0.028 [0.008, 0.047] |
+| People never seen in probe training | 0.839 (161 people) | 0.814 (192 people) |
+| People seen in probe training | 0.821 (243 people) | 0.798 (293 people) |
+| Same 398 people for both models | 0.828 | 0.813 |
+
+**Result: passes** (Qwen3-4B AUROC 0.828, bar 0.75). Next comes detect→fix on Qwen3-4B.
+
+**Notes**
+- People the probe saw in training do not score higher. The unseen people actually score slightly higher, so the overlap does not inflate the result.
+- On the model's own text, the confidence baselines are much stronger (0.76–0.78) than on other models' text (0.63–0.68). The probe's lead shrinks from +0.18–0.24 to +0.03–0.07, and is clearly larger for Qwen3-4B.
+- Qwen3.5-4B hit the 512-token limit in 237 of 500 biographies. On the 248 people whose biographies finished, its probe scores 0.712, below the baseline's 0.755. Its finished biographies are mostly short answers about obscure people, with 84% of entities Not Supported. Qwen3-4B on finished biographies scores 0.839.
+- Gemini splits biographies into about half as many claims as FActScore's annotators did. Judge FActScores are therefore comparable across our own runs, not with published FActScore numbers.
+- Checks: 0.3–0.5% of judged entities could not be found in the text, and teacher forcing reproduced 98.9% of the greedy tokens.
