@@ -193,3 +193,23 @@ def test_sentence_of_handles_sentences_and_list_lines():
     t = "Born in 1901 in Paris. He studied at Oxford.\n- Award: Nobel"
     got = [judge.sentence_of(t, t.index(x)) for x in ("1901", "Oxford", "Nobel")]
     assert got == ["Born in 1901 in Paris.", "He studied at Oxford.", "- Award: Nobel"]
+
+
+def test_audit_compares_labels_per_person_in_order():
+    from hallustream.research.factcheck.validate import audit
+
+    items = [
+        {"name": "A", "span": "1867", "label": "Supported"},
+        {"name": "A", "span": "Paris", "label": "Not Supported"},
+        {"name": "B", "span": "Oxford", "label": "Insufficient"},
+    ]
+    results = {
+        "A": json.dumps(
+            {"labels": [{"id": 1, "label": "Supported"}, {"id": 2, "label": "Supported"}]}
+        ),  # fmt: skip
+        "B": "not json",
+    }
+    out = audit(items, results)
+    assert out["entities"] == 2 and out["failed"] == 1
+    assert out["agreement_supported_vs_not"] == 0.5
+    assert out["confusion"]["Not Supported -> Supported"] == 1

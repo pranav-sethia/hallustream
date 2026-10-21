@@ -6,6 +6,7 @@ Check keys are "<prefix><system>|<name>", e.g. "labeling|ChatGPT|Ada Lovelace".
 Run (module hallustream.research.factcheck.validate):
   checks <factscore_data> <results.jsonl> <key prefix> tune|report
   gate <checks.json> <gate_dir> [<gate_dir> ...]
+  audit <items.json> <results.jsonl>
 """
 
 from __future__ import annotations
@@ -151,6 +152,40 @@ def checks(root: Path, results: dict[str, str], prefix: str, subset=None) -> dic
     return out
 
 
+def audit(items: list[dict], results: dict[str, str]) -> dict:
+    """Judge entity labels vs a stronger model's labels on the same entities.
+
+    items are the audited entities in request order ({"name", "span", "label", ...}).
+    """
+    by_person: dict[str, list[dict]] = {}
+    for it in items:
+        by_person.setdefault(it["name"], []).append(it)
+    pairs, failed = [], 0
+    for name, its in by_person.items():
+        try:
+            labels = judge.parse_ids(results[name], len(its), judge.ENTITY_LABELS)
+        except (KeyError, ValueError):
+            failed += len(its)
+            continue
+        pairs += [(it, lab) for it, lab in zip(its, labels, strict=True)]
+    confusion = Counter((it["label"], lab) for it, lab in pairs)
+    both = [(it["label"], lab) for it, lab in pairs
+            if {it["label"], lab} <= {"Supported", "Not Supported"}]  # fmt: skip
+    per_label = {
+        lab: round(sum(a == b for a, b in ((it["label"], x) for it, x in pairs)
+                       if a == lab) / max(sum(it["label"] == lab for it, _ in pairs), 1), 3)
+        for lab in judge.ENTITY_LABELS
+    }  # fmt: skip
+    return {
+        "entities": len(pairs), "failed": failed,
+        "agreement_all_labels": round(sum(a["label"] == b for a, b in pairs) / len(pairs), 3),
+        "agreement_supported_vs_not": round(sum(a == b for a, b in both) / max(len(both), 1), 3),
+        "pairs_supported_vs_not": len(both),
+        "kept_label_rate": per_label,
+        "confusion": {f"{a} -> {b}": n for (a, b), n in sorted(confusion.items())},
+    }  # fmt: skip
+
+
 def gate(spans: pd.DataFrame, baseline: str, names: set[str] | None = None) -> dict:
     """Entity AUROC on the model's own biographies, bootstrapped over people.
 
@@ -211,6 +246,8 @@ if __name__ == "__main__":
         tune, report = people.split_labeled([b.name for b in people.human_labeled(root, "ChatGPT")])
         results, stats = read_results(path)
         out = {"results": stats} | checks(root, results, prefix, tune if part == "tune" else report)
+    elif sys.argv[1] == "audit":
+        out = audit(json.loads(Path(sys.argv[2]).read_text()), read_results(Path(sys.argv[3]))[0])
     else:
         status = json.loads(Path(sys.argv[2]).read_text())
         if not status.get("passes"):
