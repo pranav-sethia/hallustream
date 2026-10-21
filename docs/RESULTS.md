@@ -120,3 +120,40 @@ With the paper's span search, our pipeline reproduces the published numbers to w
 - Qwen3.5-4B hit the 512-token limit in 237 of 500 biographies. On the 248 people whose biographies finished, its probe scores 0.712, below the baseline's 0.755. On those people, 84% of entities are Not Supported (75% overall), so it is a small, lopsided subset. The cause is not yet known, and it is one more reason the pipeline uses Qwen3-4B. Qwen3-4B on finished biographies scores 0.839.
 - Gemini splits biographies into about half as many claims as FActScore's annotators did. Judge FActScores are therefore comparable across our own runs, not with published FActScore numbers.
 - Checks: 0.3–0.5% of judged entities could not be found in the text, and teacher forcing reproduced 98.9% of the greedy tokens.
+
+## Own-answer detector v2 (tuned on new people, tested once on the gate people)
+**Why:** on a model's own text, its confidence is a stronger signal than on other models' text, and v1 ignores it. The protocol in [EVAL_PROTOCOL.md](../EVAL_PROTOCOL.md) was committed before any new data existed: candidates are chosen on new people and scored once on the 500 gate people.
+
+**Dev people:**
+- 1,200 Wikidata humans drawn from random Wikipedia pages, stratified by popularity, with none of the gate people, labeled people, or anyone named in the probe's training data ([configs/dev_people.json](../configs/dev_people.json)).
+- 600 were used here; Qwen3-4B answered 432 of them, giving 3,373 judged entities.
+
+**Judge audit on Qwen's own text:**
+- `gemini-3.5-flash` re-judged 300 dev entities with the whole Wikipedia page.
+- Supported vs Not Supported agreement: 0.856 (bar 0.85). When the judge says Not Supported, the audit model agrees 96% of the time.
+- Most disagreements are the audit model marking a correct entity wrong because of a different error in the same sentence (for example, a person's name when their birth date is wrong). That is not the per-entity labeling the probe was trained on, so the judge was kept.
+
+**Candidates, 5-fold cross-validation by person on dev:**
+
+| Candidate | AUROC | Gain over v1 (95% CI) |
+|---|---|---|
+| v1 (frozen probe) | 0.800 | — |
+| **A: probe + confidence signals (logistic regression)** | **0.840** | **+0.040 [0.029, 0.051]** |
+| B: probe refit on own answers (hidden states) | 0.808 | +0.008 [−0.018, 0.032] |
+| C: A + B | 0.791 | −0.010 [−0.040, 0.018] |
+| D: mean / last-token aggregation | 0.777 / 0.752 | −0.024 / −0.049 |
+
+A was chosen, refit on all dev people and frozen ([configs/detector_v2.json](../configs/detector_v2.json)). It uses only signals that are available while the model writes.
+
+**Gate people (Qwen3-4B, 404 people, 4,478 entities), scored once:**
+
+| | AUROC | vs max-entropy baseline (0.759) |
+|---|---|---|
+| v1 (pre-registered) | 0.828 [0.809, 0.847] | +0.069 [0.045, 0.093] |
+| **v2** | **0.866** [0.850, 0.880] | **+0.107** [0.091, 0.123] |
+| v2 − v1 | +0.038 [0.028, 0.048] | |
+| v2, people unseen in probe training | 0.883 (161 people) | |
+| v2, seen | 0.855 (243 people) | |
+| v2, finished biographies | 0.870 (355 people) | |
+
+The gain on the gate people (+0.038) matches the cross-validated gain on dev (+0.040), so the choice did not overfit.
