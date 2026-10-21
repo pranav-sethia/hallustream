@@ -117,6 +117,6 @@ With the paper's span search, our pipeline reproduces the published numbers to w
 **Notes**
 - People the probe saw in training do not score higher. The unseen people actually score slightly higher, so the overlap does not inflate the result.
 - On the model's own text, the confidence baselines are much stronger (0.76–0.78) than on other models' text (0.63–0.68). The probe's lead shrinks from +0.18–0.24 to +0.03–0.07, and is clearly larger for Qwen3-4B.
-- Qwen3.5-4B hit the 512-token limit in 237 of 500 biographies. On the 248 people whose biographies finished, its probe scores 0.712, below the baseline's 0.755. Its finished biographies are mostly short answers about obscure people, with 84% of entities Not Supported. Qwen3-4B on finished biographies scores 0.839.
+- Qwen3.5-4B hit the 512-token limit in 237 of 500 biographies. On the 248 people whose biographies finished, its probe scores 0.712, below the baseline's 0.755. On those people, 84% of entities are Not Supported (75% overall), so it is a small, lopsided subset. The cause is not yet known, and it is one more reason the pipeline uses Qwen3-4B. Qwen3-4B on finished biographies scores 0.839.
 - Gemini splits biographies into about half as many claims as FActScore's annotators did. Judge FActScores are therefore comparable across our own runs, not with published FActScore numbers.
 - Checks: 0.3–0.5% of judged entities could not be found in the text, and teacher forcing reproduced 98.9% of the greedy tokens.
