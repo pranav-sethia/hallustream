@@ -108,6 +108,17 @@ This file was committed **before** any probe was trained. Its purpose is to fix 
   3. **Best-of-8:** the sample with the highest probe reward has higher judge precision than a random sample (averaged over people), with at most 10% fewer correct claims.
 - **Otherwise:** if (1) fails, test pairs built by replacing flagged sentences with a hedge; if (2) fails, the training direction is dropped.
 
+## SHARS with a probe detector (decided before any dev proposition is labeled)
+- **Question:** inside SHARS (Li et al., ICML 2026; code vendored in `third_party/shars`), does our probe as the hallucination detector match SHARS's own detector (HalluSE: question generation, answer sampling, NLI clustering) at a fraction of the compute? A free token-surprise detector is the control.
+- **Model and prompts:** Qwen3-4B-Instruct-2507 with SHARS's system prompt and `Tell me about {entity}.`, first attempt greedy, then SHARS's temperature schedule; rewrite on; Following ("natural") resampling; N = 10; at most 1,024 new tokens; Q = 1 question per proposition; propositions from SHARS's own decomposition in every arm.
+- **Dev (60 FActScore dev people, disjoint from SHARS's 182):** fixed greedy biographies; every proposition is scored by HalluSE with 3 and with 5 answers, by v3 with the probe's training prompt ("native") and with SHARS's messages, and by token surprise; each proposition's claim is labeled by the validated claim judge against the person's Wikipedia page.
+  - HalluSE gets its best setting: the answer count with the higher proposition AUROC, and the threshold with the highest Youden's J among its achievable values.
+  - v3 uses the context with the higher AUROC. v3 and token surprise get thresholds that flag the same share of dev propositions as tuned HalluSE (matched rejection). A second v3 threshold at its own best Youden's J is also run.
+  - Detector compute is timed on the same GPU type.
+- **Test (SHARS's 182 people, `third_party/shars/factscore_people.txt`), scored once:** greedy, SHARS+HalluSE, SHARS+v3 (matched), SHARS+v3 (own best), SHARS+surprise (matched). If HalluSE takes more than 4 minutes per person in the dev timing, every arm uses the first 120 people instead. Outputs are judged by the validated biography judge.
+- **Metrics:** response rate; supported and unsupported claims per answered biography; precision; wall-clock per biography on an L4; paired bootstrap over people (2,000 resamples).
+- **Claim tested:** SHARS+v3 (matched) has precision no more than 0.02 below SHARS+HalluSE, at least 90% of its supported claims, and at most one fifth of its wall-clock time; and higher precision than SHARS+surprise at the same rejection rate.
+
 ## Gates (decided in advance)
 | Gate | Pass condition | If it fails |
 |---|---|---|
