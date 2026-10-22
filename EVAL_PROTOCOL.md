@@ -98,6 +98,16 @@ This file was committed **before** any probe was trained. Its purpose is to fix 
 - **Metrics:** precision; supported and unsupported claims per biography; response rate; FActScore with the length penalty (γ = 10); fixes and extra tokens per biography; fix success (flagged entity now Supported) and damage (supported claims lost). Paired bootstrap over people (2,000 resamples).
 - **Claims tested:** (1) at matched fixes per biography, the probe trigger has higher precision than the uncertainty and random triggers, with the interval above 0; (2) A9 has higher precision than A1 without losing more than 5% of supported claims.
 
+## Probe-reward pilot (decided before any sample is generated)
+- **Why:** a detect-and-fix pilot on the 100 dev people showed that retrieving the person's page once reaches 0.96 precision (0.18 greedy), so rewriting flagged sentences cannot beat it. On existing data, though, the probe ranks whole biographies by judge precision far better than the model's confidence (Spearman 0.60–0.73 vs at most 0.43; 0.69 vs −0.12 with automatically found entities). That suggests using the probe as a free reward for factuality fine-tuning (DPO). This pilot checks the assumptions that idea needs.
+- **Data:** 60 of the 100 dev people (seed 0). Qwen3-4B-Instruct-2507, `Tell me a bio of {name}.`, 8 samples each at temperature 0.8, at most 512 new tokens. Each sample is scored by v3 on GLiNER entities and judged by the frozen judge.
+- **Probe reward:** F/(T+1) + 0.5·log(1+F), where T is the number of entities and F = Σ(1 − p) the expected number of correct ones. Confidence baselines: the same formula with p from max surprise or max entropy mapped to [0, 1] by rank within the pilot, plus the plain mean of each signal.
+- **Go if all three hold:**
+  1. **Diversity:** for at least 50% of people (among those with at least 2 judged samples that make claims), the best and worst samples differ by at least 0.2 in judge precision.
+  2. **Ranking:** within a person, for sample pairs whose judge precision differs by at least 0.2, the probe reward orders them correctly at least 70% of the time and at least 5 points more often than the best confidence signal.
+  3. **Best-of-8:** the sample with the highest probe reward has higher judge precision than a random sample (averaged over people), with at most 10% fewer correct claims.
+- **Otherwise:** if (1) fails, test pairs built by replacing flagged sentences with a hedge; if (2) fails, the training direction is dropped.
+
 ## Gates (decided in advance)
 | Gate | Pass condition | If it fails |
 |---|---|---|
