@@ -60,7 +60,7 @@ def analyze(df: pd.DataFrame, gap: float = 0.2) -> dict:
     signals = ["r_probe", "m_probe", *CONFIDENCE]
     hits: dict[str, list[float]] = {s: [] for s in signals}
     for _, grp in answered.groupby("name"):
-        for a, b in itertools.combinations(grp.to_dict(orient="records"), 2):
+        for a, b in itertools.combinations(grp.to_dict(orient="records"), 2):  # pyright: ignore[reportCallIssue]
             diff = a["precision"] - b["precision"]
             if abs(diff) < gap:
                 continue
