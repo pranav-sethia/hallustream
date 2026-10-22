@@ -222,6 +222,40 @@ def dev_props(names: list[str], commit: str, shard: int = 0) -> dict:
     return meta
 
 
+DB = (
+    "/cache/hf/hub/datasets--danielli2003--enwiki-20230401.db/snapshots/"
+    "f15343f7209459595eb338bf54ae80b7bfdb86d2/enwiki-20230401.db"
+)
+
+
+@app.function(image=image, volumes={CACHE_DIR: volume}, timeout=30 * 60)
+def prepare_prop_judge(setting: str = "t1_minimal") -> dict:
+    """Claim-judge requests for every dev proposition: one request per person, claims numbered
+    in table order (sentence, then proposition)."""
+    import pandas as pd
+
+    from hallustream.research.factcheck import judge, wiki
+
+    volume.reload()
+    d = ROOT / "shars" / "dev"
+    props = pd.concat([pd.read_parquet(f) for f in sorted(d.glob("props_*.parquet"))])
+    bios = {(r := json.loads(x))["name"]: r["bio"] for f in sorted(d.glob("bios_*.jsonl"))
+            for x in f.read_text().splitlines()}  # fmt: skip
+    w = wiki.WikiDB(Path(DB))
+    reqs = []
+    for name, g in props.groupby("name", sort=True):
+        ev = wiki.evidence(w.passages(str(name)), bios[str(name)])
+        reqs.append(
+            judge.claim_request(str(name), str(name), ev, g["fact_claim"].tolist(), setting)
+        )
+    out = ROOT / "judge" / "shars_dev_props"
+    out.mkdir(parents=True, exist_ok=True)
+    (out / "requests.jsonl").write_text("".join(json.dumps(r) + "\n" for r in reqs))
+    props.to_parquet(d / "props_all.parquet")
+    volume.commit()
+    return {"people": len(reqs), "props": len(props)}
+
+
 @app.function(image=image, **GPU)
 def run(
     arm: str,
@@ -299,15 +333,18 @@ def _generate(arm, model, generator, query, name, threshold, n_answers, context)
 
 if __name__ == "__main__":
     p = argparse.ArgumentParser()
-    p.add_argument("action", choices=["dev_props", "run"])
+    p.add_argument("action", choices=["dev_props", "run", "prepare_prop_judge"])
     p.add_argument("args", nargs="*")
     p.add_argument("--people", type=int, default=0, help="first N people only")
     p.add_argument("--shards", type=int, default=1)
     p.add_argument("--tag", default="")
     p.add_argument("--n-answers", type=int, default=3)
     p.add_argument("--context", default="native")
+    p.add_argument("--people-file", default="", help="JSON list of names (default: SHARS's 182)")
     a = p.parse_args()
-    if a.action == "dev_props":
+    if a.action == "prepare_prop_judge":
+        print(modal.Function.from_name("hallustream-shars", "prepare_prop_judge").remote())
+    elif a.action == "dev_props":
         from hallustream.fix.spans import split_people
         from hallustream.research.factcheck.people import eval_people
 
@@ -319,8 +356,11 @@ if __name__ == "__main__":
         print([c.get() for c in calls])
     else:
         arm, threshold = a.args[0], float(a.args[1])
-        names = (PROJECT_ROOT / "third_party" / "shars" / "factscore_people.txt").read_text()
-        names = [n.strip() for n in names.splitlines() if n.strip()]
+        if a.people_file:
+            names = json.loads(Path(a.people_file).read_text())
+        else:
+            names = (PROJECT_ROOT / "third_party" / "shars" / "factscore_people.txt").read_text()
+            names = [n.strip() for n in names.splitlines() if n.strip()]
         names = names[: a.people] if a.people else names
         fn = modal.Function.from_name("hallustream-shars", "run")
         print(fn.remote(arm, threshold, names, git_commit(), a.tag, a.n_answers, a.context))
