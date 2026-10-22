@@ -176,8 +176,9 @@ def prepare_judge(split: str, arm: str, setting: str = "t1_minimal") -> dict:
     w = wiki.WikiDB(Path(DB))
     rows = [json.loads(x) for x in (ROOT / "fix" / split / arm / "bios.jsonl").read_text()
             .splitlines()]  # fmt: skip
-    reqs = [judge.bio_request(r["name"], r["name"], wiki.evidence(w.passages(r["name"]), r["bio"]),
-                              r["bio"], setting) for r in rows]  # fmt: skip
+    reqs = [judge.bio_request(r.get("key", r["name"]), r["name"],
+                              wiki.evidence(w.passages(r["name"]), r["bio"]), r["bio"], setting)
+            for r in rows]  # fmt: skip
     d = ROOT / "judge" / f"fix_{split}_{arm}"
     d.mkdir(parents=True, exist_ok=True)
     (d / "requests.jsonl").write_text("".join(json.dumps(r) + "\n" for r in reqs))
@@ -227,6 +228,53 @@ def pilot_rag(commit: str) -> dict:
     write_run_meta(out, job="fix/pilot_rag", commit=commit, config={"hf": HF}, extra={})
     volume.commit()
     return {"rows": len(df)}
+
+
+@app.function(image=qwen35_image, **GPU)
+def sample_pilot(commit: str, n_people: int = 60, n: int = 8, temperature: float = 0.8) -> dict:
+    """Probe-reward pilot: n sampled biographies per dev person, each scored by the probe."""
+    import numpy as np
+    import pandas as pd
+    import torch
+
+    from hallustream.fix import score, spans
+    from hallustream.research.factcheck.people import BIO_PROMPT
+
+    tok, lm, det = _load()
+    names = _split("dev")[:n_people]
+    rows, t0 = [], time.time()
+    torch.manual_seed(0)
+    for name in names:
+        msgs = [{"role": "user", "content": BIO_PROMPT.format(name=name)}]
+        prompt = tok.apply_chat_template(msgs, tokenize=False, add_generation_prompt=True, **CHAT)
+        enc = tok([prompt] * n, return_tensors="pt", add_special_tokens=False).to("cuda")
+        with torch.no_grad():
+            gen = lm.generate(**enc, max_new_tokens=MAX_NEW_TOKENS, do_sample=True,
+                              temperature=temperature, top_p=0.8, top_k=20)  # fmt: skip
+        for k, ids in enumerate(gen[:, enc["input_ids"].shape[1] :]):
+            bio = tok.decode(ids, skip_special_tokens=True).strip()
+            sents = spans.sentences(bio)
+            found = spans.entities(bio, sents, threshold=0.3)
+            fw = score.forward(lm, tok, det, msgs, bio, **CHAT)
+            toks = [t for lo, hi in found if (t := score.char_to_tokens(fw, lo, hi))]
+            _, v3 = det.span_scores(fw, toks)
+            p = 1 / (1 + np.exp(-v3))
+            surprise = [float(np.nanmax(fw.nll[a : b + 1])) for a, b in toks]
+            entropy = [float(np.nanmax(fw.entropy[a : b + 1])) for a, b in toks]
+            rows.append({
+                "key": f"{name}#{k}", "name": name, "sample": k, "bio": bio,
+                "new_tokens": int((ids != tok.pad_token_id).sum()), "entities": len(toks),
+                "probe_p": p.tolist(), "surprise": surprise, "entropy": entropy,
+            })  # fmt: skip
+    out = ROOT / "fix" / "dev" / "pilot_samples"
+    out.mkdir(parents=True, exist_ok=True)
+    (out / "bios.jsonl").write_text("".join(json.dumps(r) + "\n" for r in rows))
+    pd.DataFrame(rows).drop(columns=["bio"]).to_parquet(out / "scores.parquet")
+    meta = {"people": len(names), "samples": len(rows), "seconds": round(time.time() - t0)}
+    write_run_meta(out, job="fix/sample_pilot", commit=commit,
+                   config={"hf": HF, "n": n, "temperature": temperature}, extra=meta)  # fmt: skip
+    volume.commit()
+    return meta
 
 
 def _drafts(split: str, base: str) -> dict:

@@ -100,7 +100,7 @@ This file was committed **before** any probe was trained. Its purpose is to fix 
 
 ## Probe-reward pilot (decided before any sample is generated)
 - **Why:** a detect-and-fix pilot on the 100 dev people showed that retrieving the person's page once reaches 0.96 precision (0.18 greedy), so rewriting flagged sentences cannot beat it. On existing data, though, the probe ranks whole biographies by judge precision far better than the model's confidence (Spearman 0.60–0.73 vs at most 0.43; 0.69 vs −0.12 with automatically found entities). That suggests using the probe as a free reward for factuality fine-tuning (DPO). This pilot checks the assumptions that idea needs.
-- **Data:** 60 of the 100 dev people (seed 0). Qwen3-4B-Instruct-2507, `Tell me a bio of {name}.`, 8 samples each at temperature 0.8, at most 512 new tokens. Each sample is scored by v3 on GLiNER entities and judged by the frozen judge.
+- **Data:** 60 of the 100 dev people (seed 0). Qwen3-4B-Instruct-2507, `Tell me a bio of {name}.`, 8 samples each at temperature 0.8 with the model's default top-p 0.8 and top-k 20, at most 512 new tokens. Each sample is scored by v3 on GLiNER entities and judged by the frozen judge.
 - **Probe reward:** F/(T+1) + 0.5·log(1+F), where T is the number of entities and F = Σ(1 − p) the expected number of correct ones. Confidence baselines: the same formula with p from max surprise or max entropy mapped to [0, 1] by rank within the pilot, plus the plain mean of each signal.
 - **Go if all three hold:**
   1. **Diversity:** for at least 50% of people (among those with at least 2 judged samples that make claims), the best and worst samples differ by at least 0.2 in judge precision.
