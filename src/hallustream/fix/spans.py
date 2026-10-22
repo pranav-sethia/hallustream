@@ -45,7 +45,7 @@ def sentences(text: str) -> list[tuple[int, int]]:
 
 @lru_cache(maxsize=1)
 def _gliner(device: str = "cpu"):
-    from gliner import GLiNER
+    from gliner import GLiNER  # pyright: ignore[reportMissingImports]  (Python 3.11+ only)
 
     return GLiNER.from_pretrained(GLINER_MODEL).to(device)
 

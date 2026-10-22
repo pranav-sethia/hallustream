@@ -1,6 +1,6 @@
 """Probe-reward pilot analysis (EVAL_PROTOCOL.md, "Probe-reward pilot").
 
-Run: uv run python -m hallustream.fix.pilot_reward <dir with bios.jsonl and results.jsonl>
+Run: uv run python -m hallustream.research.pilot_reward <dir with bios.jsonl and results.jsonl>
 """
 
 from __future__ import annotations
@@ -68,20 +68,19 @@ def analyze(df: pd.DataFrame, gap: float = 0.2) -> dict:
                 d = a[s] - b[s]
                 hits[s].append(0.5 if d == 0 else float(np.sign(d) == np.sign(diff)))
     groups = [grp for _, grp in df.groupby("name")]
-    best = [grp.loc[grp["r_probe"].idxmax()] for grp in groups]
-    rand_precision = [grp.loc[grp["claims"] > 0, "precision"].mean() for grp in groups]
+    best = pd.DataFrame([grp.loc[grp["r_probe"].idxmax()] for grp in groups])
+    rand = df.groupby("name")[["supported", "unsupported"]].mean()
+    rand_precision = answered.groupby("name")["precision"].mean()
     return {
         "diversity": round(float(((g["max"] - g["min"]) >= gap).mean()), 3),
         "pairs": len(hits["r_probe"]),
         "pair_accuracy": {s: round(float(np.mean(v)), 3) for s, v in hits.items()},
-        "best_of_n_precision": round(float(np.nanmean([b["precision"] for b in best])), 3),
-        "random_precision": round(float(np.nanmean(rand_precision)), 3),
-        "best_of_n_supported": round(float(np.mean([b["supported"] for b in best])), 2),
-        "random_supported": round(float(np.mean([grp["supported"].mean() for grp in groups])), 2),
-        "best_of_n_unsupported": round(float(np.mean([b["unsupported"] for b in best])), 2),
-        "random_unsupported": round(
-            float(np.mean([grp["unsupported"].mean() for grp in groups])), 2
-        ),
+        "best_of_n_precision": round(float(best["precision"].mean()), 3),
+        "random_precision": round(float(rand_precision.mean()), 3),
+        "best_of_n_supported": round(float(best["supported"].mean()), 2),
+        "random_supported": round(float(rand["supported"].mean()), 2),
+        "best_of_n_unsupported": round(float(best["unsupported"].mean()), 2),
+        "random_unsupported": round(float(rand["unsupported"].mean()), 2),
     }
 
 
