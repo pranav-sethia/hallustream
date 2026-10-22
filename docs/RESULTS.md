@@ -125,13 +125,13 @@ With the paper's span search, our pipeline reproduces the published numbers to w
 **Why:** on a model's own text, its confidence is a stronger signal than on other models' text, and v1 ignores it. The protocol in [EVAL_PROTOCOL.md](../EVAL_PROTOCOL.md) was committed before any new data existed: candidates are chosen on new people and scored once on the 500 gate people.
 
 **Dev people:**
-- 1,200 Wikidata humans drawn from random Wikipedia pages, stratified by popularity, with none of the gate people, labeled people, or anyone named in the probe's training data ([configs/dev_people.json](../configs/dev_people.json)).
+- 1,200 Wikidata humans drawn from random Wikipedia pages, stratified by popularity, with none of the gate people, labeled people, or anyone named in the probe's training questions. 42 of the 600 dev people are mentioned somewhere in the training *answers*; dev is for choosing, not testing, so they were kept ([configs/dev_people.json](../configs/dev_people.json)).
 - 600 were used here; Qwen3-4B answered 432 of them, giving 3,373 judged entities.
 
 **Judge audit on Qwen's own text:**
 - `gemini-3.5-flash` re-judged 300 dev entities with the whole Wikipedia page.
-- Supported vs Not Supported agreement: 0.856 (bar 0.85). When the judge says Not Supported, the audit model agrees 96% of the time.
-- Most disagreements are the audit model marking a correct entity wrong because of a different error in the same sentence (for example, a person's name when their birth date is wrong). That is not the per-entity labeling the probe was trained on, so the judge was kept.
+- Supported vs Not Supported agreement: 0.856 (bar 0.85) on a sample with 100 entities per label; weighted to dev's actual mix of labels it is about 0.90. When the judge says Not Supported, the audit model agrees 96% of the time; it disputes 28 of 98 of the judge's Supported labels.
+- Of those 28, about 20 are the audit model marking a correct entity wrong because of a different error in the same sentence (for example, a person's name when their birth date is wrong), which is not the per-entity labeling the probe was trained on; about 3 are audit-model mistakes, and about 3–4 are real judge misses. The judge was kept.
 
 **Candidates, 5-fold cross-validation by person on dev:**
 
@@ -143,7 +143,9 @@ With the paper's span search, our pipeline reproduces the published numbers to w
 | C: A + B | 0.791 | −0.010 [−0.040, 0.018] |
 | D: mean / last-token aggregation | 0.777 / 0.752 | −0.024 / −0.049 |
 
-A was chosen, refit on all dev people and frozen ([configs/detector_v2.json](../configs/detector_v2.json)). It uses only signals that are available while the model writes.
+A was chosen, refit on all dev people and frozen ([configs/detector_v2.json](../configs/detector_v2.json)). One input, the entity's position relative to the finished biography, is not known while the model is still writing; dropping it changes dev AUROC by less than 0.001, and later detectors leave it out.
+
+**Correction:** B and C lost here because their hidden-state penalty grid stopped at 1.0, its edge (every fold chose it), and the fit memorized the training folds. With stronger penalties B is clearly better on dev, so "refitting on own answers does not help" was wrong; see detector v3 below.
 
 **Gate people (Qwen3-4B, 404 people, 4,478 entities), scored once:**
 
@@ -159,3 +161,32 @@ A was chosen, refit on all dev people and frozen ([configs/detector_v2.json](../
 The gain on the gate people (+0.038) matches the cross-validated gain on dev (+0.040), so the choice did not overfit.
 
 **Reader mode (scoring other models' text):** the same kind of combiner, cross-validated by answer on the probe's validation set (2,394 answers, 34,314 entities written by 5 other models), adds almost nothing: +0.002 [0.001, 0.002] for Qwen3-4B (0.872 → 0.873) and +0.001 for Qwen3.5-4B (0.885 → 0.886). The model's confidence about someone else's text is a weak signal (0.62–0.67), and the fitted formula puts nearly all its weight on the probe. Reader mode therefore uses the probe alone; detector v2 is for the model's own writing.
+
+## Detector v3 and the final check on untouched people
+**Why:** an audit of v2's selection found the penalty grid for refitting on own answers too weak (see the correction above). The fix and the final check were pre-registered in [EVAL_PROTOCOL.md](../EVAL_PROTOCOL.md) before any reserved biography was generated.
+
+**Choice on the same 432 dev people** (nested 5-fold cross-validation by person; reference = v2's recipe, 0.840):
+
+| Candidate | AUROC | Gain over v2's recipe |
+|---|---|---|
+| A without position | 0.841 | +0.001 [−0.001, 0.002] |
+| **B: v1 + linear term on the layer-21 hidden state, L2 1,000** | **0.879** | **+0.039 [0.029, 0.050]** |
+| C: B + confidence signals | 0.886 | +0.046 [0.036, 0.057] |
+
+The rule picks the simplest qualifying candidate: B, frozen in [configs/detector_v3.json](../configs/detector_v3.json). It reads only the hidden state the probe already uses, so it works while the model writes.
+
+**Final check: the 600 reserved people, untouched until now** (Qwen3-4B answered 477; 3,727 judged entities, 61% Not Supported), each detector scored once:
+
+| | AUROC |
+|---|---|
+| Max entropy (model confidence) | 0.690 [0.668, 0.711] |
+| v1 (frozen probe) | 0.776 [0.751, 0.800] |
+| v2 (probe + confidence) | 0.818 [0.798, 0.839] |
+| **v3 (probe adapted to own answers)** | **0.854** [0.834, 0.873] |
+| v3 − v2 | +0.036 [0.025, 0.047] |
+| v3 − v1 | +0.078 [0.064, 0.091] |
+| v3 − max entropy | +0.164 [0.138, 0.192] |
+
+v3's gain over v2 on untouched people (+0.036) matches its cross-validated gain on dev (+0.039). **v3 is the detector for detect→fix on Qwen3-4B's own writing.** Reader mode (other models' text) keeps the frozen probe, v1.
+
+Absolute AUROCs are lower on these people than on FActScore's gate people (v1 0.776 vs 0.828; max entropy 0.690 vs 0.759). The dev and reserved people come from random Wikipedia pages and are mostly obscure, and every detector, including the baseline, drops by about the same amount.
