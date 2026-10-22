@@ -59,3 +59,30 @@ def test_forward_and_signals_line_up(tmp_path, monkeypatch):
     sents = spans.sentences(BIO)
     sig = score.sentence_signals(fw, det, sents[0], [(lo, lo + 4)])
     assert sig["n_entities"] == 1 and np.isclose(sig["v3_max"], v3[0])
+
+
+def test_triggers_flag_at_matched_rates_and_skip_sentences_without_entities():
+    import pandas as pd
+
+    from hallustream.fix import experiment as x
+
+    rng = np.random.default_rng(0)
+    rows = [{"name": f"p{p}", "sentence": i, "n_entities": int(i != 0), "v3_max": rng.normal()}
+            for p in range(50) for i in range(6)]  # fmt: skip
+    df = pd.DataFrame(rows)
+    th = x.threshold_for_rate(df, "v3_max", 1.0)
+    fl = x.flags_at(df, "v3_max", th)
+    assert sum(map(len, fl.values())) == 50 and all(0 not in v for v in fl.values())
+    rnd = x.random_flags(df, 1.0, seed=1)
+    assert 30 < sum(map(len, rnd.values())) < 70 and all(0 not in v for v in rnd.values())
+
+
+def test_draft_rewrites_keep_the_rest_and_length_penalty():
+    from hallustream.fix.engine import Draft, first_sentence, length_penalized
+
+    d = Draft.of("Ada", BIO)
+    d.fixed[1] = "She was born in Marylebone."
+    assert d.text().startswith(BIO.split("She")[0] + "She was born in Marylebone.")
+    assert d.text(upto=1) == BIO.split("She")[0]
+    assert first_sentence("She lived in London. Later she moved.\nMore") == "She lived in London."
+    assert length_penalized(0.8, 20) == 0.8 and length_penalized(0.8, 5) < 0.8 * 0.4

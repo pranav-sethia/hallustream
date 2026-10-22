@@ -6,6 +6,9 @@ Pilot (dev people):
               uv run python -m modal_jobs.fix retrieve_once dev
               uv run python -m modal_jobs.fix prepare_judge dev A1   # then judge_batch
               uv run python -m modal_jobs.fix pilot_rag
+Arms:         uv run python -m modal_jobs.fix score_drafts <split> <A0|A1> <plain|evidence>
+              uv run python -m hallustream.fix.experiment flags ... > flags.json (on the laptop)
+              uv run python -m modal_jobs.fix rewrite <split> <base> <arm> <flags.json> [--policy]
 
 Volume layout (/cache):
   configs/detector_v3.json            frozen detector (uploaded from configs/)
@@ -116,11 +119,10 @@ def pilot_triggers(commit: str) -> dict:
 
 
 def evidence_message(name: str, passages: list[str]) -> str:
+    from hallustream.fix.engine import evidence_message as message
     from hallustream.research.factcheck.people import BIO_PROMPT
 
-    listed = "\n\n".join(f"[{i + 1}] {p}" for i, p in enumerate(passages))
-    return (f"{BIO_PROMPT.format(name=name)}\n\n"
-            f"Here are passages from Wikipedia that may help:\n\n{listed}")  # fmt: skip
+    return message(BIO_PROMPT.format(name=name), passages)
 
 
 @app.function(image=qwen35_image, **GPU)
@@ -227,15 +229,174 @@ def pilot_rag(commit: str) -> dict:
     return {"rows": len(df)}
 
 
+def _drafts(split: str, base: str) -> dict:
+    """Draft biographies an arm starts from: A0 = greedy, A1 = retrieve-once."""
+    if base == "A0":
+        bios = _greedy("")
+        return {n: bios[n] for n in _split(split) if n in bios}
+    path = ROOT / "fix" / split / base / "bios.jsonl"
+    return {(r := json.loads(x))["name"]: r for x in path.read_text().splitlines()}
+
+
+@app.function(image=qwen35_image, **GPU)
+def score_drafts(split: str, base: str, context: str, commit: str) -> dict:
+    """Trigger signals for every sentence of every draft (scored once, shared by all triggers).
+
+    context: "plain" scores with the question only; "evidence" also puts the draft's
+    retrieve-once passages in the prompt (A1 drafts only).
+    """
+    import pandas as pd
+
+    from hallustream.fix import score, spans
+    from hallustream.fix.engine import Draft
+    from hallustream.research.factcheck.people import BIO_PROMPT
+
+    tok, lm, det = _load()
+    rows = []
+    for name, r in _drafts(split, base).items():
+        d = Draft.of(name, r["bio"])
+        text = d.text()
+        sents = spans.sentences(text)
+        found = spans.entities(text, sents, threshold=0.3)
+        content = (evidence_message(name, r["evidence"]) if context == "evidence"
+                   else BIO_PROMPT.format(name=name))  # fmt: skip
+        fw = score.forward(lm, tok, det, [{"role": "user", "content": content}], text, **CHAT)
+        for i, (lo, hi) in enumerate(sents):
+            sig = score.sentence_signals(fw, det, (lo, hi), found)
+            rows.append({"name": name, "sentence": i, "start": lo, "end": hi,
+                         "text": text[lo:hi], **sig})  # fmt: skip
+    df = pd.DataFrame(rows)
+    out = ROOT / "fix" / split / base
+    out.mkdir(parents=True, exist_ok=True)
+    df.to_parquet(out / f"sentences_{context}.parquet")
+    write_run_meta(out, job=f"fix/score_drafts/{split}/{base}/{context}", commit=commit,
+                   config={"hf": HF}, extra={"sentences": len(df)})  # fmt: skip
+    volume.commit()
+    return {"sentences": len(df), "people": int(df["name"].nunique())}
+
+
+@app.function(image=qwen35_image, **GPU)
+def rewrite(
+    split: str,
+    base: str,
+    arm: str,
+    flags: dict,
+    commit: str,
+    k: int = 3,
+    policy: str = "accept",
+    threshold: float = 0.0,
+    batch: int = 8,
+) -> dict:
+    """Rewrite each draft's flagged sentences in order, with top-k passages for that sentence.
+
+    flags: name -> sentence indices to fix, or to drop if arm starts with "drop".
+    policy: "accept" keeps every rewrite; "rescore" scores the new sentence with v3 and,
+    if it is still >= threshold, retries once with 5 passages and drops it if still flagged.
+    """
+    import torch
+
+    from hallustream.fix import score, spans
+    from hallustream.fix.engine import REWRITE_MAX_TOKENS, Draft, first_sentence
+    from hallustream.research.factcheck import wiki
+    from hallustream.research.factcheck.people import BIO_PROMPT
+
+    tok, lm, det = _load()
+    w = wiki.WikiDB(Path(DB))
+    drafts = {n: Draft.of(n, r["bio"]) for n, r in _drafts(split, base).items()}
+    todo = {n: sorted(v) for n, v in flags.items() if n in drafts and v}
+    stats = {"rewrites": 0, "retries": 0, "dropped": 0, "extra_tokens": 0}
+    t0 = time.time()
+
+    def passages(name, sentence, n):
+        ps = w.passages(name)
+        return [ps[j] for j in wiki.bm25_rank(f"{name} {sentence}", ps)[:n]]
+
+    def generate(jobs):  # jobs: (name, index, passages) -> new sentence per job
+        out = []
+        for i in range(0, len(jobs), batch):
+            chunk = jobs[i : i + batch]
+            texts = [
+                tok.apply_chat_template([{"role": "user", "content": evidence_message(n, ps)}],
+                                        tokenize=False, add_generation_prompt=True, **CHAT)
+                + drafts[n].text(upto=j)
+                for n, j, ps in chunk
+            ]  # fmt: skip
+            enc = tok(texts, return_tensors="pt", padding=True, add_special_tokens=False)
+            enc = enc.to("cuda")
+            with torch.no_grad():
+                gen = lm.generate(**enc, max_new_tokens=REWRITE_MAX_TOKENS, do_sample=False)
+            stats["extra_tokens"] += int(enc["attention_mask"].sum())
+            for ids in gen[:, enc["input_ids"].shape[1] :]:
+                out.append(first_sentence(tok.decode(ids, skip_special_tokens=True)))
+        return out
+
+    def still_flagged(name, j):
+        d = drafts[name]
+        text = d.text(upto=j) + d.fixed[j]
+        lo = len(d.text(upto=j))
+        found = spans.entities(text, [(lo, len(text))], threshold=0.3)
+        msgs = [{"role": "user", "content": BIO_PROMPT.format(name=name)}]
+        fw = score.forward(lm, tok, det, msgs, text, **CHAT)
+        sig = score.sentence_signals(fw, det, (lo, len(text)), found)
+        return bool(sig) and sig["v3_max"] >= threshold
+
+    rounds = max((len(v) for v in todo.values()), default=0)
+    for r in range(rounds):
+        names = [n for n, v in todo.items() if len(v) > r]
+        if arm.startswith("drop"):
+            for n in names:
+                drafts[n].fixed[todo[n][r]] = ""
+                stats["dropped"] += 1
+            continue
+        jobs = [(n, todo[n][r], passages(n, drafts[n].sents[todo[n][r]], k)) for n in names]
+        for (n, j, _), new in zip(jobs, generate(jobs), strict=True):
+            drafts[n].fixed[j] = new
+            stats["rewrites"] += 1
+        if policy == "rescore":
+            retry = [(n, j) for n, j, _ in jobs if still_flagged(n, j)]
+            jobs = [(n, j, passages(n, drafts[n].sents[j], 5)) for n, j in retry]
+            for (n, j, _), new in zip(jobs, generate(jobs), strict=True):
+                drafts[n].fixed[j] = new
+                stats["retries"] += 1
+            for n, j, _ in jobs:
+                if still_flagged(n, j):
+                    drafts[n].fixed[j] = ""
+                    stats["dropped"] += 1
+
+    out = ROOT / "fix" / split / arm / "bios.jsonl"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text("".join(
+        json.dumps({"name": n, "bio": d.text(), "fixed": {str(i): t for i, t in d.fixed.items()},
+                    "flags": todo.get(n, [])}) + "\n"
+        for n, d in drafts.items()
+    ))  # fmt: skip
+    stats["seconds"] = round(time.time() - t0)
+    config = {"hf": HF, "base": base, "k": k, "policy": policy, "threshold": threshold}
+    write_run_meta(out.parent, job=f"fix/rewrite/{split}/{arm}", commit=commit, config=config,
+                   extra=stats)  # fmt: skip
+    volume.commit()
+    return stats
+
+
 if __name__ == "__main__":
     p = argparse.ArgumentParser()
     p.add_argument("action")
     p.add_argument("args", nargs="*")
+    p.add_argument("--policy", default="accept")
+    p.add_argument("--threshold", type=float, default=0.0)
+    p.add_argument("--k", type=int, default=3)
     a = p.parse_args()
     fn = modal.Function.from_name("hallustream-fix", a.action)
     if a.action == "prepare_judge":
         print(fn.remote(*a.args))
     elif a.action == "retrieve_once":
         print(fn.remote(a.args[0], git_commit()))
+    elif a.action == "score_drafts":  # <split> <base> <context>
+        print(fn.remote(*a.args, git_commit()))
+    elif a.action == "rewrite":  # <split> <base> <arm> <flags.json>
+        split, base, arm, path = a.args
+        flags = json.loads(Path(path).read_text())["flags"]
+        print(fn.remote(split, base, arm, flags, git_commit(), k=a.k, policy=a.policy,
+                        threshold=a.threshold))  # fmt: skip
     else:
         print(fn.remote(git_commit()))
