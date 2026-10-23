@@ -177,9 +177,10 @@ def prepare_judge(split: str, arm: str, setting: str = "t1_minimal") -> dict:
     w = wiki.WikiDB(Path(DB))
     rows = [json.loads(x) for x in (ROOT / "fix" / split / arm / "bios.jsonl").read_text()
             .splitlines()]  # fmt: skip
+    # an empty answer is an abstention and is not judged
     reqs = [judge.bio_request(r.get("key", r["name"]), r["name"],
                               wiki.evidence(w.passages(r["name"]), r["bio"]), r["bio"], setting)
-            for r in rows]  # fmt: skip
+            for r in rows if r["bio"].strip()]  # fmt: skip
     d = ROOT / "judge" / f"fix_{split}_{arm}"
     d.mkdir(parents=True, exist_ok=True)
     (d / "requests.jsonl").write_text("".join(json.dumps(r) + "\n" for r in reqs))
