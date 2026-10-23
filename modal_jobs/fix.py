@@ -173,6 +173,7 @@ def _has_page(w, name: str) -> bool:
 def prepare_judge(split: str, arm: str, setting: str = "t1_minimal") -> dict:
     from hallustream.research.factcheck import judge, wiki
 
+    volume.reload()  # a warm container may not see bios written by another function
     w = wiki.WikiDB(Path(DB))
     rows = [json.loads(x) for x in (ROOT / "fix" / split / arm / "bios.jsonl").read_text()
             .splitlines()]  # fmt: skip
@@ -275,6 +276,80 @@ def sample_pilot(commit: str, n_people: int = 60, n: int = 8, temperature: float
                    config={"hf": HF, "n": n, "temperature": temperature}, extra=meta)  # fmt: skip
     volume.commit()
     return meta
+
+
+@app.function(image=qwen35_image, volumes={CACHE_DIR: volume}, timeout=30 * 60)
+def prepare_writer(run: str, names: list[str], thinking: str = "minimal") -> dict:
+    """Gemini batch requests that ask another model to write the biographies (reader study)."""
+    from hallustream.research.factcheck.people import BIO_PROMPT
+
+    config = {"maxOutputTokens": 4096, "thinkingConfig": {"thinkingLevel": thinking}}
+    reqs = [{"key": n, "request": {
+        "contents": [{"role": "user", "parts": [{"text": BIO_PROMPT.format(name=n)}]}],
+        "generationConfig": config,
+    }} for n in names]  # fmt: skip
+    d = ROOT / "judge" / run
+    d.mkdir(parents=True, exist_ok=True)
+    (d / "requests.jsonl").write_text("".join(json.dumps(r) + "\n" for r in reqs))
+    volume.commit()
+    return {"run": run, "requests": len(reqs)}
+
+
+@app.function(image=qwen35_image, volumes={CACHE_DIR: volume}, timeout=30 * 60)
+def collect_writer(run: str, split: str, arm: str) -> dict:
+    """Turn a writer batch's results into fix/<split>/<arm>/bios.jsonl."""
+    from hallustream.research.factcheck.validate import read_results
+
+    volume.reload()
+    texts, stats = read_results(ROOT / "judge" / run / "results.jsonl")
+    out = ROOT / "fix" / split / arm / "bios.jsonl"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text("".join(json.dumps({"name": n, "bio": t.strip()}) + "\n"
+                           for n, t in texts.items()))  # fmt: skip
+    volume.commit()
+    return {"bios": len(texts), **stats}
+
+
+@app.function(image=qwen35_image, **GPU)
+def read_external(split: str, arm: str, commit: str) -> dict:
+    """Reader mode: Qwen3-4B teacher-forces another model's biographies; v1 and baselines
+    are scored on every entity the judge labeled."""
+    import numpy as np
+    import pandas as pd
+
+    from hallustream.fix import score
+    from hallustream.research.factcheck import judge
+    from hallustream.research.factcheck.people import BIO_PROMPT
+
+    volume.reload()
+    tok, lm, det = _load()
+    results = _judged(f"fix_{split}_{arm}")
+    rows = []
+    for x in (ROOT / "fix" / split / arm / "bios.jsonl").read_text().splitlines():
+        r = json.loads(x)
+        try:
+            ents = judge.parse_bio(results[r["name"]])["entities"]
+        except (KeyError, ValueError):
+            continue
+        anns, _ = judge.locate(r["bio"], ents)
+        if not anns:
+            continue
+        msgs = [{"role": "user", "content": BIO_PROMPT.format(name=r["name"])}]
+        fw = score.forward(lm, tok, det, msgs, r["bio"], **CHAT)
+        toks = [score.char_to_tokens(fw, a["index"], a["index"] + len(a["span"])) for a in anns]
+        keep = [(a, t) for a, t in zip(anns, toks, strict=True) if t]
+        v1, _ = det.span_scores(fw, [t for _, t in keep])
+        for (a, (lo, hi)), x1 in zip(keep, v1, strict=True):
+            rows.append({"name": r["name"], "label": a["label"], "span": a["span"], "v1": float(x1),
+                         "nll_max": float(np.nanmax(fw.nll[lo : hi + 1])),
+                         "entropy_max": float(np.nanmax(fw.entropy[lo : hi + 1]))})  # fmt: skip
+    df = pd.DataFrame(rows)
+    out = ROOT / "fix" / split / arm
+    df.to_parquet(out / "reader_entities.parquet")
+    write_run_meta(out, job=f"fix/read_external/{split}/{arm}", commit=commit,
+                   config={"reader": HF}, extra={"rows": len(df)})  # fmt: skip
+    volume.commit()
+    return {"rows": len(df), "people": int(df["name"].nunique()) if len(df) else 0}
 
 
 def _drafts(split: str, base: str) -> dict:
@@ -446,5 +521,12 @@ if __name__ == "__main__":
         flags = json.loads(Path(path).read_text())["flags"]
         print(fn.remote(split, base, arm, flags, git_commit(), k=a.k, policy=a.policy,
                         threshold=a.threshold))  # fmt: skip
+    elif a.action == "prepare_writer":  # <run> <thinking> (people: FActScore dev + first 200 test)
+        names = json.loads(Path(a.args[2]).read_text()) if len(a.args) > 2 else None
+        print(fn.remote(a.args[0], names, a.args[1]))
+    elif a.action == "collect_writer":  # <run> <split> <arm>
+        print(fn.remote(*a.args))
+    elif a.action == "read_external":  # <split> <arm>
+        print(fn.remote(*a.args, git_commit()))
     else:
         print(fn.remote(git_commit()))
