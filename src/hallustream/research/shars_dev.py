@@ -32,10 +32,11 @@ def labeled(props: pd.DataFrame, results: dict[str, str]) -> pd.DataFrame:
     return pd.concat(parts, ignore_index=True)
 
 
-def youden(y: np.ndarray, s: np.ndarray) -> float:
-    """Threshold (flag if score > t) maximizing TPR - FPR, over the score's own values."""
+def youden(y: np.ndarray, s: np.ndarray, below: float = np.inf) -> float:
+    """Threshold (flag if score > t) maximizing TPR - FPR, over the score's own values below
+    `below`."""
     best, best_j = float("inf"), -1.0
-    for t in np.unique(s):
+    for t in np.unique(s[s < below]):
         flag = s > t
         j = flag[y == 1].mean() - flag[y == 0].mean()
         if j > best_j:
@@ -64,15 +65,17 @@ def analyze(df: pd.DataFrame) -> dict:
     sig = lambda c: 1 / (1 + np.exp(-df[c].to_numpy()))  # noqa: E731
     # HalluSE variants: plain entropy; with the claimed entity as an extra answer ("exp");
     # and SHARS's entailment check, which also flags a proposition whose entity is not in
-    # the largest answer cluster (encoded as +10, above any entropy threshold).
+    # the largest answer cluster (encoded as +10, above any entropy threshold; SHARS flags
+    # entropy > t OR not entailed, so only thresholds below 10 can be run).
     halluse = {}
     for n in (3, 5):
         halluse[f"halluse_a{n}"] = df[f"halluse_a{n}"].to_numpy()
         if f"exp_a{n}" in df:
             miss = 10 * (1 - df[f"entailed_a{n}"].to_numpy())
+            miss_exp = 10 * (1 - df[f"entailed_exp_a{n}"].to_numpy())
             halluse[f"halluse_exp_a{n}"] = df[f"exp_a{n}"].to_numpy()
             halluse[f"halluse_entail_a{n}"] = df[f"halluse_a{n}"].to_numpy() + miss
-            halluse[f"halluse_exp_entail_a{n}"] = df[f"exp_a{n}"].to_numpy() + miss
+            halluse[f"halluse_exp_entail_a{n}"] = df[f"exp_a{n}"].to_numpy() + miss_exp
     scores = {
         **halluse,
         "probe_native": sig("native_v3"), "probe_shars": sig("shars_v3"),
@@ -85,7 +88,7 @@ def analyze(df: pd.DataFrame) -> dict:
     h = max(halluse, key=lambda k: res["auroc"][k])
     p = max(("probe_native", "probe_shars"), key=lambda k: res["auroc"][k])
     s = max(("surprise_shars", "surprise_native"), key=lambda k: res["auroc"][k])
-    th_h = youden(y, scores[h])
+    th_h = youden(y, scores[h], below=10)
     rate = float((scores[h] > th_h).mean())
     choice = {
         "halluse": {"setting": h, "threshold": th_h, "flag_rate": round(rate, 3)},

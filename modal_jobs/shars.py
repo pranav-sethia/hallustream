@@ -11,7 +11,8 @@ Their code is vendored in third_party/shars (see PATCHES.md) and runs on transfo
 
 Deploy:  uv run modal deploy modal_jobs/shars.py
 Dev:     uv run python -m modal_jobs.shars dev_props      # detector comparison on fixed bios
-Test:    uv run python -m modal_jobs.shars run <arm> <threshold> [--people N]
+Test:    uv run python -m modal_jobs.shars run <arm> <threshold> [--people N] [--shards K]
+         uv run python -m modal_jobs.shars merge <arm><tag>       # after a sharded run
 """
 
 import argparse
@@ -251,14 +252,19 @@ def rescore_halluse(commit: str) -> dict:
         for n in (3, 5):
             a = answers[:n]
             if len(a) < n:
-                row |= {f"exp_a{n}": np.nan, f"entailed_a{n}": np.nan}
+                row |= {f"exp_a{n}": np.nan, f"entailed_a{n}": np.nan, f"entailed_exp_a{n}": np.nan}
                 continue
-            row[f"exp_a{n}"], _ = entropy([*a, r["entity"]])
+            row[f"exp_a{n}"], ids_exp = entropy([*a, r["entity"]])
             _, ids = entropy(a)
             entailed, _ = est.is_entailed_largest_cluster(r["entity"], a, ids)
             row[f"entailed_a{n}"] = float(entailed)
+            # With the entity among the answers, SHARS checks against those clusters instead
+            entailed, _ = est.is_entailed_largest_cluster(r["entity"], a, ids_exp)
+            row[f"entailed_exp_a{n}"] = float(entailed)
         out.append(row)
-    props = pd.concat([props.reset_index(drop=True), pd.DataFrame(out)], axis=1)
+    out = pd.DataFrame(out)
+    props = props.drop(columns=[c for c in out.columns if c in props]).reset_index(drop=True)
+    props = pd.concat([props, out], axis=1)
     props.to_parquet(d / "props_all.parquet")
     volume.commit()
     return {"props": len(props)}
@@ -309,8 +315,10 @@ def run(
     context: str = "native",
     se_expected: bool = False,
     entail_check: bool = False,
+    part: int = -1,
 ) -> dict:
-    """SHARS end to end (Following policy, rewrite on, N = 10) with one detector."""
+    """SHARS end to end (Following policy, rewrite on, N = 10) with one detector. With
+    part >= 0, writes only that slice of the people (combine the slices with `merge`)."""
     LLM, uncertainty, generator, utils = _shars()
     model = LLM.get_model(MODEL, "cuda")
     import contextlib
@@ -324,23 +332,37 @@ def run(
         query = QUERY.format(entity=name)
         t0 = time.time()
         log = io.StringIO()
+        timer = {"detect": 0.0, "decompose": 0.0}
         with contextlib.redirect_stdout(log):
             text = _generate(arm, model, generator, query, name, threshold, n_answers, context,
-                             se_expected, entail_check)  # fmt: skip
+                             se_expected, entail_check, timer)  # fmt: skip
         if utils.is_non_answer(text):
             text = ""
         aborted = "unexpected error" in log.getvalue()
         rows.append({"name": name, "bio": text, "seconds": round(time.time() - t0, 2),
+                     "detect_seconds": round(timer["detect"] - timer["decompose"], 2),
+                     "decompose_seconds": round(timer["decompose"], 2),
                      "aborted_on_error": aborted, "log": log.getvalue()[-4000:]})  # fmt: skip
         print(f"{name}: {rows[-1]['seconds']}s, {len(text)} chars, error={aborted}")
     run_name = f"{arm}{tag}"
+    config = {"model": MODEL, "arm": arm, "threshold": threshold, "n_answers": n_answers,
+              "context": context, "se_expected": se_expected,
+              "entail_check": entail_check}  # fmt: skip
+    if part >= 0:
+        out = ROOT / "shars" / "runs" / run_name / "parts"
+        out.mkdir(parents=True, exist_ok=True)
+        (out / f"{part}.jsonl").write_text("".join(json.dumps(r) + "\n" for r in rows))
+        (out / f"{part}.json").write_text(json.dumps({"commit": commit, "config": config}))
+        volume.commit()
+        return {"run": run_name, "part": part, "people": len(rows)}
+    return _write_run(run_name, rows, commit, config)
+
+
+def _write_run(run_name: str, rows: list[dict], commit: str, config: dict) -> dict:
     for out in (ROOT / "shars" / "runs" / run_name, ROOT / "fix" / "shars" / run_name):
         out.mkdir(parents=True, exist_ok=True)
         (out / "bios.jsonl").write_text("".join(json.dumps(r) + "\n" for r in rows))
     out = ROOT / "shars" / "runs" / run_name
-    config = {"model": MODEL, "arm": arm, "threshold": threshold, "n_answers": n_answers,
-              "context": context, "se_expected": se_expected,
-              "entail_check": entail_check}  # fmt: skip
     errors = sum(r["aborted_on_error"] for r in rows)
     write_run_meta(out, job=f"shars/run/{run_name}", commit=commit, config=config,
                    extra={"people": len(rows), "aborted_on_error": errors})  # fmt: skip
@@ -349,8 +371,39 @@ def run(
             "seconds": round(sum(r["seconds"] for r in rows))}  # fmt: skip
 
 
+@app.function(image=image, volumes={CACHE_DIR: volume}, timeout=10 * 60)
+def merge(run_name: str, names: list[str]) -> dict:
+    """Combine a run's slices into one bios.jsonl, in the order of `names`."""
+    volume.reload()
+    parts = ROOT / "shars" / "runs" / run_name / "parts"
+    by_name, meta = {}, None
+    for f in sorted(parts.glob("*.jsonl")):
+        for line in f.read_text().splitlines():
+            r = json.loads(line)
+            by_name[r["name"]] = r
+        meta = json.loads(f.with_suffix(".json").read_text())
+    missing = [n for n in names if n not in by_name]
+    if missing:
+        return {"run": run_name, "missing": len(missing), "first_missing": missing[:5]}
+    return _write_run(run_name, [by_name[n] for n in names], meta["commit"], meta["config"])
+
+
+def _timed(obj, method, timer, key):
+    """Add the time spent in obj.method to timer[key]."""
+    f = getattr(obj, method)
+
+    def wrapped(*args, **kwargs):
+        t0 = time.time()
+        try:
+            return f(*args, **kwargs)
+        finally:
+            timer[key] += time.time() - t0
+
+    setattr(obj, method, wrapped)
+
+
 def _generate(arm, model, generator, query, name, threshold, n_answers, context,
-              se_expected=False, entail_check=False):  # fmt: skip
+              se_expected=False, entail_check=False, timer=None):  # fmt: skip
     if arm == "naive":
         gen = generator.NaiveGenerator(model, device="cuda")
         return gen.generate(user_prompt=query, syst_prompt=SYST, entity=name, thinking=False,
@@ -367,6 +420,14 @@ def _generate(arm, model, generator, query, name, threshold, n_answers, context,
         entail_check=entail_check and arm == "halluse",
         device="cuda", temperatures=TEMPERATURES, top_k=20, top_p=0.8, **extra,
     )  # fmt: skip
+    if timer is not None:
+        # Detection = proposition scoring (incl. the entailment check); the shared
+        # decomposition into propositions is timed separately and subtracted.
+        est = gen.uct_estimator
+        _timed(est, "get_sent_props", timer, "decompose")
+        _timed(est, "get_sent_uncertainty", timer, "detect")
+        if hasattr(est, "is_entailed_largest_cluster"):
+            _timed(est, "is_entailed_largest_cluster", timer, "detect")
     return gen.generate(
         user_prompt=query,
         syst_prompt=SYST,
@@ -381,7 +442,9 @@ def _generate(arm, model, generator, query, name, threshold, n_answers, context,
 
 if __name__ == "__main__":
     p = argparse.ArgumentParser()
-    p.add_argument("action", choices=["dev_props", "run", "prepare_prop_judge", "rescore_halluse"])
+    p.add_argument(
+        "action", choices=["dev_props", "run", "merge", "prepare_prop_judge", "rescore_halluse"]
+    )
     p.add_argument("args", nargs="*")
     p.add_argument("--people", type=int, default=0, help="first N people only")
     p.add_argument("--shards", type=int, default=1)
@@ -393,7 +456,8 @@ if __name__ == "__main__":
     p.add_argument("--entail-check", action="store_true")
     a = p.parse_args()
     if a.action == "rescore_halluse":
-        print(modal.Function.from_name("hallustream-shars", "rescore_halluse").remote(git_commit()))
+        fn = modal.Function.from_name("hallustream-shars", "rescore_halluse")
+        print(fn.spawn(git_commit()).object_id)
     elif a.action == "prepare_prop_judge":
         print(modal.Function.from_name("hallustream-shars", "prepare_prop_judge").remote())
     elif a.action == "dev_props":
@@ -407,13 +471,19 @@ if __name__ == "__main__":
         calls = [fn.spawn(names[k :: a.shards], git_commit(), k) for k in range(a.shards)]
         print([c.get() for c in calls])
     else:
-        arm, threshold = a.args[0], float(a.args[1])
         if a.people_file:
             names = json.loads(Path(a.people_file).read_text())
         else:
             names = (PROJECT_ROOT / "third_party" / "shars" / "factscore_people.txt").read_text()
             names = [n.strip() for n in names.splitlines() if n.strip()]
         names = names[: a.people] if a.people else names
+        if a.action == "merge":
+            print(modal.Function.from_name("hallustream-shars", "merge").remote(a.args[0], names))
+            sys.exit()
+        arm, threshold = a.args[0], float(a.args[1])
         fn = modal.Function.from_name("hallustream-shars", "run")
-        print(fn.remote(arm, threshold, names, git_commit(), a.tag, a.n_answers, a.context,
-                        a.se_expected, a.entail_check))  # fmt: skip
+        for k in range(a.shards):
+            call = fn.spawn(arm, threshold, names[k :: a.shards], git_commit(), a.tag,
+                            a.n_answers, a.context, a.se_expected, a.entail_check,
+                            k if a.shards > 1 else -1)  # fmt: skip
+            print(call.object_id)  # poll with modal.FunctionCall.from_id(...).get()
