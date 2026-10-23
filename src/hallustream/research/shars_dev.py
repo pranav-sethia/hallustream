@@ -62,8 +62,19 @@ def analyze(df: pd.DataFrame) -> dict:
     y = df["hallucinated"].to_numpy().astype(int)
     groups = df["name"].to_numpy()
     sig = lambda c: 1 / (1 + np.exp(-df[c].to_numpy()))  # noqa: E731
+    # HalluSE variants: plain entropy; with the claimed entity as an extra answer ("exp");
+    # and SHARS's entailment check, which also flags a proposition whose entity is not in
+    # the largest answer cluster (encoded as +10, above any entropy threshold).
+    halluse = {}
+    for n in (3, 5):
+        halluse[f"halluse_a{n}"] = df[f"halluse_a{n}"].to_numpy()
+        if f"exp_a{n}" in df:
+            miss = 10 * (1 - df[f"entailed_a{n}"].to_numpy())
+            halluse[f"halluse_exp_a{n}"] = df[f"exp_a{n}"].to_numpy()
+            halluse[f"halluse_entail_a{n}"] = df[f"halluse_a{n}"].to_numpy() + miss
+            halluse[f"halluse_exp_entail_a{n}"] = df[f"exp_a{n}"].to_numpy() + miss
     scores = {
-        "halluse_a3": df["halluse_a3"].to_numpy(), "halluse_a5": df["halluse_a5"].to_numpy(),
+        **halluse,
         "probe_native": sig("native_v3"), "probe_shars": sig("shars_v3"),
         "surprise_shars": df["shars_surprise"].to_numpy(),
         "surprise_native": df["native_surprise"].to_numpy(),
@@ -71,7 +82,7 @@ def analyze(df: pd.DataFrame) -> dict:
     res = {"people": int(df["name"].nunique()), "props": int(len(y)), "dropped": n_all - len(y),
            "hallucinated_share": round(float(y.mean()), 3),
            "auroc": {k: round(auroc(y, v), 4) for k, v in scores.items()}}  # fmt: skip
-    h = max(("halluse_a3", "halluse_a5"), key=lambda k: res["auroc"][k])
+    h = max(halluse, key=lambda k: res["auroc"][k])
     p = max(("probe_native", "probe_shars"), key=lambda k: res["auroc"][k])
     s = max(("surprise_shars", "surprise_native"), key=lambda k: res["auroc"][k])
     th_h = youden(y, scores[h])

@@ -222,6 +222,48 @@ def dev_props(names: list[str], commit: str, shard: int = 0) -> dict:
     return meta
 
 
+@app.function(image=image, **GPU)
+def rescore_halluse(commit: str) -> dict:
+    """HalluSE's optional variants on the stored dev answers (no new sampling): entropy with the
+    claimed entity added as an answer (se_w_expected_answer), and SHARS's entailment check
+    (is the claimed entity in the largest answer cluster?), each for 3 and 5 answers."""
+    import numpy as np
+    import pandas as pd
+
+    LLM, uncertainty, _, _ = _shars()
+    common = dict(model=MODEL, n_questions=1, n_answers=5, entailment_type="lax",
+                  temperature=0, top_k=20, top_p=0.8, thinking=False, device="cuda")  # fmt: skip
+    est = uncertainty.QADebertaEntailment(se_w_expected_answer=False, **common)
+    volume.reload()
+    d = ROOT / "shars" / "dev"
+    props = pd.read_parquet(d / "props_all.parquet")
+    stop = ["not available", "not provided", "unknown", "unclear"]
+
+    def entropy(answers):
+        ids, u = est.get_semantic_uncertainty(answers)
+        unknown = sum(any(w in a.lower() for w in stop) for a in answers)
+        return (float(-np.log(1 / len(answers))) if unknown >= len(answers) // 2 else float(u)), ids
+
+    out = []
+    for _, r in props.iterrows():
+        row = {}
+        answers = list(r["answers"]) if r["answers"] is not None else []
+        for n in (3, 5):
+            a = answers[:n]
+            if len(a) < n:
+                row |= {f"exp_a{n}": np.nan, f"entailed_a{n}": np.nan}
+                continue
+            row[f"exp_a{n}"], _ = entropy([*a, r["entity"]])
+            _, ids = entropy(a)
+            entailed, _ = est.is_entailed_largest_cluster(r["entity"], a, ids)
+            row[f"entailed_a{n}"] = float(entailed)
+        out.append(row)
+    props = pd.concat([props.reset_index(drop=True), pd.DataFrame(out)], axis=1)
+    props.to_parquet(d / "props_all.parquet")
+    volume.commit()
+    return {"props": len(props)}
+
+
 DB = (
     "/cache/hf/hub/datasets--danielli2003--enwiki-20230401.db/snapshots/"
     "f15343f7209459595eb338bf54ae80b7bfdb86d2/enwiki-20230401.db"
@@ -265,6 +307,8 @@ def run(
     tag: str = "",
     n_answers: int = 3,
     context: str = "native",
+    se_expected: bool = False,
+    entail_check: bool = False,
 ) -> dict:
     """SHARS end to end (Following policy, rewrite on, N = 10) with one detector."""
     LLM, uncertainty, generator, utils = _shars()
@@ -281,7 +325,8 @@ def run(
         t0 = time.time()
         log = io.StringIO()
         with contextlib.redirect_stdout(log):
-            text = _generate(arm, model, generator, query, name, threshold, n_answers, context)
+            text = _generate(arm, model, generator, query, name, threshold, n_answers, context,
+                             se_expected, entail_check)  # fmt: skip
         if utils.is_non_answer(text):
             text = ""
         aborted = "unexpected error" in log.getvalue()
@@ -294,7 +339,8 @@ def run(
         (out / "bios.jsonl").write_text("".join(json.dumps(r) + "\n" for r in rows))
     out = ROOT / "shars" / "runs" / run_name
     config = {"model": MODEL, "arm": arm, "threshold": threshold, "n_answers": n_answers,
-              "context": context}  # fmt: skip
+              "context": context, "se_expected": se_expected,
+              "entail_check": entail_check}  # fmt: skip
     errors = sum(r["aborted_on_error"] for r in rows)
     write_run_meta(out, job=f"shars/run/{run_name}", commit=commit, config=config,
                    extra={"people": len(rows), "aborted_on_error": errors})  # fmt: skip
@@ -303,20 +349,22 @@ def run(
             "seconds": round(sum(r["seconds"] for r in rows))}  # fmt: skip
 
 
-def _generate(arm, model, generator, query, name, threshold, n_answers, context):
+def _generate(arm, model, generator, query, name, threshold, n_answers, context,
+              se_expected=False, entail_check=False):  # fmt: skip
     if arm == "naive":
         gen = generator.NaiveGenerator(model, device="cuda")
         return gen.generate(user_prompt=query, syst_prompt=SYST, entity=name, thinking=False,
                             max_new_tokens=1024, temperatures=[0], top_k=20, top_p=0.8)  # fmt: skip
     est = "DeBERTa" if arm == "halluse" else "probe"
     signal = "v3" if arm == "probe" else "surprise"
-    extra = ({"se_w_expected_answer": False} if arm == "halluse"
+    extra = ({"se_w_expected_answer": se_expected} if arm == "halluse"
              else {"signal": signal, "context": context})  # fmt: skip
     gen = generator.UncertaintyGenerator(
         model, uncertainty_estimator=est, uncertainty_base_model=MODEL,
         uncertainty_model_thinking=False, n_questions=1, n_answers=n_answers,
         entailment_type="lax", uncertainty_threshold=threshold, max_resample_attempts=10,
-        max_repetition_attempts=10, rewrite=True, resample_policy="natural", entail_check=False,
+        max_repetition_attempts=10, rewrite=True, resample_policy="natural",
+        entail_check=entail_check and arm == "halluse",
         device="cuda", temperatures=TEMPERATURES, top_k=20, top_p=0.8, **extra,
     )  # fmt: skip
     return gen.generate(
@@ -333,7 +381,7 @@ def _generate(arm, model, generator, query, name, threshold, n_answers, context)
 
 if __name__ == "__main__":
     p = argparse.ArgumentParser()
-    p.add_argument("action", choices=["dev_props", "run", "prepare_prop_judge"])
+    p.add_argument("action", choices=["dev_props", "run", "prepare_prop_judge", "rescore_halluse"])
     p.add_argument("args", nargs="*")
     p.add_argument("--people", type=int, default=0, help="first N people only")
     p.add_argument("--shards", type=int, default=1)
@@ -341,8 +389,12 @@ if __name__ == "__main__":
     p.add_argument("--n-answers", type=int, default=3)
     p.add_argument("--context", default="native")
     p.add_argument("--people-file", default="", help="JSON list of names (default: SHARS's 182)")
+    p.add_argument("--se-expected", action="store_true")
+    p.add_argument("--entail-check", action="store_true")
     a = p.parse_args()
-    if a.action == "prepare_prop_judge":
+    if a.action == "rescore_halluse":
+        print(modal.Function.from_name("hallustream-shars", "rescore_halluse").remote(git_commit()))
+    elif a.action == "prepare_prop_judge":
         print(modal.Function.from_name("hallustream-shars", "prepare_prop_judge").remote())
     elif a.action == "dev_props":
         from hallustream.fix.spans import split_people
@@ -363,4 +415,5 @@ if __name__ == "__main__":
             names = [n.strip() for n in names.splitlines() if n.strip()]
         names = names[: a.people] if a.people else names
         fn = modal.Function.from_name("hallustream-shars", "run")
-        print(fn.remote(arm, threshold, names, git_commit(), a.tag, a.n_answers, a.context))
+        print(fn.remote(arm, threshold, names, git_commit(), a.tag, a.n_answers, a.context,
+                        a.se_expected, a.entail_check))  # fmt: skip
