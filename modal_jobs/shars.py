@@ -325,6 +325,8 @@ def run(
     import contextlib
     import io
 
+    import torch
+
     if arm != "naive":
         uncertainty.ESTIMATORS["probe"] = _probe_estimators()
 
@@ -346,8 +348,10 @@ def run(
         rows.append({"name": name, "bio": text, "seconds": round(time.time() - t0, 2),
                      "detect_seconds": round(timer["detect"] - timer["decompose"], 2),
                      "decompose_seconds": round(timer["decompose"], 2),
-                     "aborted_on_error": aborted, "log": log.getvalue()[-4000:]})  # fmt: skip
-        print(f"{name}: {rows[-1]['seconds']}s, {len(text)} chars, error={aborted}")
+                     "aborted_on_error": aborted, "log": log.getvalue()[-4000:],
+                     "gpu_gb": round(torch.cuda.memory_allocated() / 1e9, 2)})  # fmt: skip
+        print(f"{name}: {rows[-1]['seconds']}s, {len(text)} chars, error={aborted}, "
+              f"detect {rows[-1]['detect_seconds']}s, gpu {rows[-1]['gpu_gb']} GB")  # fmt: skip
     run_name = f"{arm}{tag}"
     config = {"model": MODEL, "arm": arm, "threshold": threshold, "n_answers": n_answers,
               "context": context, "se_expected": se_expected,
