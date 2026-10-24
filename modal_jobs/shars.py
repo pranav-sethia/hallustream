@@ -287,7 +287,8 @@ def prepare_prop_judge(setting: str = "t1_minimal") -> dict:
 
     volume.reload()
     d = ROOT / "shars" / "dev"
-    props = pd.concat([pd.read_parquet(f) for f in sorted(d.glob("props_*.parquet"))])
+    shards = sorted(d.glob("props_[0-9]*.parquet"))  # the shards, not props_all itself
+    props = pd.concat([pd.read_parquet(f) for f in shards])
     bios = {(r := json.loads(x))["name"]: r["bio"] for f in sorted(d.glob("bios_*.jsonl"))
             for x in f.read_text().splitlines()}  # fmt: skip
     w = wiki.WikiDB(Path(DB))

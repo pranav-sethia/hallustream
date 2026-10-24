@@ -29,7 +29,9 @@ def labeled(props: pd.DataFrame, results: dict[str, str]) -> pd.DataFrame:
         except (KeyError, ValueError):
             continue
         parts.append(g.assign(hallucinated=[lab == "Not Supported" for lab in labels]))
-    return pd.concat(parts, ignore_index=True)
+    # A proposition listed twice (e.g. a table built twice) counts once
+    key = ["name", "sentence_idx", "entity", "fact_claim"]
+    return pd.concat(parts, ignore_index=True).drop_duplicates(key)
 
 
 def youden(y: np.ndarray, s: np.ndarray, below: float = np.inf) -> float:
