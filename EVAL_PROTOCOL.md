@@ -120,6 +120,13 @@ This file was committed **before** any probe was trained. Its purpose is to fix 
 - **Metrics:** response rate; supported and unsupported claims per answered biography; precision; wall-clock per biography on an L4; paired bootstrap over people (2,000 resamples).
 - **Claim tested:** SHARS+v3 (matched) has precision no more than 0.02 below SHARS+HalluSE, at least 90% of its supported claims, and detection compute at most one tenth of HalluSE's (time spent scoring propositions); and higher precision than SHARS+surprise at the same rejection rate. End-to-end wall-clock is reported for every arm.
 - **Amendment (after the 2-person pipeline pilot on dev people, before any dev label or test output):** the first version required SHARS+v3 to use at most one fifth of SHARS+HalluSE's end-to-end wall-clock. The pilot showed 30 s vs 72–81 s per person: SHARS's own token-by-token sentence generation and per-sentence decomposition call are shared by every arm and dominate the runtime, while proposition scoring itself took 0.05 s (v3) vs about 6 s (HalluSE) per proposition. The compute criterion is therefore stated on detection compute, the part being replaced; end-to-end time stays reported. HalluSE took under 4 minutes per person, so the test uses all 182 people.
+- **Frozen dev choices (56 dev people, 1,974 propositions, 67.6% labeled hallucinated; recorded before any test output):**
+  - Proposition AUROC: HalluSE 0.51 (plain, 3 or 5 answers), 0.64 with both options and 5 answers (best), v3 0.74 (native context), token surprise 0.67 (SHARS context). v3 − best HalluSE +0.10 [0.04, 0.16].
+  - The entailment check is computed exactly as SHARS runs it with `se_w_expected_answer` (the claimed entity joins the clusters), and since SHARS flags "entropy > θ or not entailed", only thresholds that rule can express are considered.
+  - SHARS+HalluSE: 5 answers, `se_w_expected_answer` and `entail_check` on, θ = 1.5607 (flags 45.2% of dev propositions).
+  - SHARS+v3 matched: native context, θ = 0.5988 on the probe probability (flags 45.2%). SHARS+v3 own best: θ = 0.4017 (flags 66.0%).
+  - SHARS+surprise matched: SHARS context, θ = 0.5645 nats (flags 45.2%).
+  - Precision is the mean over answered biographies of supported / all claims (FActScore's convention); pooled precision is also reported. An empty biography is an abstention. Detection compute is the time inside proposition scoring (including the entailment check) minus SHARS's shared decomposition call, per biography.
 
 ## Gates (decided in advance)
 | Gate | Pass condition | If it fails |
