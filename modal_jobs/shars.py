@@ -102,6 +102,7 @@ def _probe_estimators():
         def __init__(self, signal="v3", context="native", **kwargs):
             super().__init__(**kwargs)
             self.signal, self.context = signal, context
+            self.n_props = self.n_unlocated = 0  # propositions whose entity is not in the text
             probes = [ROOT / "probes" / "qwen3_L21" / f"seed{k}.safetensors" for k in range(5)]
             self.det = score.Detector(probes, ROOT / "configs" / "detector_v3.json")
 
@@ -135,8 +136,10 @@ def _probe_estimators():
             props = self.get_sent_props(sentence, query_entity)
             scores = self.sentence_scores(user_query, text_sofar, sentence, query_entity, props)
             kept = []
+            self.n_props += len(props)
             for prop, s in zip(props, scores, strict=True):
                 if s is None:
+                    self.n_unlocated += 1
                     continue
                 x = s[self.signal]
                 prop.uncertainty = x if self.signal == "surprise" else float(1 / (1 + np.exp(-x)))
@@ -318,9 +321,10 @@ def run(
     se_expected: bool = False,
     entail_check: bool = False,
     part: int = -1,
+    rewrite: bool = True,
 ) -> dict:
-    """SHARS end to end (Following policy, rewrite on, N = 10) with one detector. With
-    part >= 0, writes only that slice of the people (combine the slices with `merge`)."""
+    """SHARS end to end (Following policy, N = 10, rewrite on unless turned off) with one
+    detector. With part >= 0, writes only that slice of the people (combine with `merge`)."""
     LLM, uncertainty, generator, utils = _shars()
     model = LLM.get_model(MODEL, "cuda")
     import contextlib
@@ -334,13 +338,16 @@ def run(
     timer = {"detect": 0.0, "decompose": 0.0}
     with contextlib.redirect_stdout(io.StringIO()):
         gen = _generator(arm, model, generator, threshold, n_answers, context, se_expected,
-                         entail_check, timer)  # fmt: skip
+                         entail_check, timer, rewrite)  # fmt: skip
+    est = getattr(gen, "uct_estimator", None)
     rows = []
     for name in names:
         query = QUERY.format(entity=name)
         t0 = time.time()
         log = io.StringIO()
         timer.update(detect=0.0, decompose=0.0)
+        if hasattr(est, "n_props"):
+            est.n_props = est.n_unlocated = 0
         with contextlib.redirect_stdout(log):
             text = _generate(gen, query, name)
         if utils.is_non_answer(text):
@@ -349,14 +356,16 @@ def run(
         rows.append({"name": name, "bio": text, "seconds": round(time.time() - t0, 2),
                      "detect_seconds": round(timer["detect"] - timer["decompose"], 2),
                      "decompose_seconds": round(timer["decompose"], 2),
-                     "aborted_on_error": aborted, "log": log.getvalue()[-4000:],
+                     "aborted_on_error": aborted, "log": log.getvalue(),
+                     "props": getattr(est, "n_props", None),
+                     "unlocated": getattr(est, "n_unlocated", None),
                      "gpu_gb": round(torch.cuda.memory_allocated() / 1e9, 2)})  # fmt: skip
         print(f"{name}: {rows[-1]['seconds']}s, {len(text)} chars, error={aborted}, "
               f"detect {rows[-1]['detect_seconds']}s, gpu {rows[-1]['gpu_gb']} GB")  # fmt: skip
     run_name = f"{arm}{tag}"
     config = {"model": MODEL, "arm": arm, "threshold": threshold, "n_answers": n_answers,
               "context": context, "se_expected": se_expected,
-              "entail_check": entail_check}  # fmt: skip
+              "entail_check": entail_check, "rewrite": rewrite}  # fmt: skip
     if part >= 0:
         out = ROOT / "shars" / "runs" / run_name / "parts"
         out.mkdir(parents=True, exist_ok=True)
@@ -412,7 +421,7 @@ def _timed(obj, method, timer, key):
 
 
 def _generator(arm, model, generator, threshold=0.0, n_answers=3, context="native",
-               se_expected=False, entail_check=False, timer=None):  # fmt: skip
+               se_expected=False, entail_check=False, timer=None, rewrite=True):  # fmt: skip
     """One SHARS generator per run, reused for every person (as in SHARS's own main.py)."""
     if arm == "naive":
         return generator.NaiveGenerator(model, device="cuda")
@@ -424,7 +433,7 @@ def _generator(arm, model, generator, threshold=0.0, n_answers=3, context="nativ
         model, uncertainty_estimator=est, uncertainty_base_model=MODEL,
         uncertainty_model_thinking=False, n_questions=1, n_answers=n_answers,
         entailment_type="lax", uncertainty_threshold=threshold, max_resample_attempts=10,
-        max_repetition_attempts=10, rewrite=True, resample_policy="natural",
+        max_repetition_attempts=10, rewrite=rewrite, resample_policy="natural",
         entail_check=entail_check and arm == "halluse",
         device="cuda", temperatures=TEMPERATURES, top_k=20, top_p=0.8, **extra,
     )  # fmt: skip
@@ -459,6 +468,7 @@ if __name__ == "__main__":
     p.add_argument("--people-file", default="", help="JSON list of names (default: SHARS's 182)")
     p.add_argument("--se-expected", action="store_true")
     p.add_argument("--entail-check", action="store_true")
+    p.add_argument("--no-rewrite", action="store_true")
     a = p.parse_args()
     if a.action == "rescore_halluse":
         fn = modal.Function.from_name("hallustream-shars", "rescore_halluse")
@@ -488,7 +498,8 @@ if __name__ == "__main__":
         arm, threshold = a.args[0], float(a.args[1])
         fn = modal.Function.from_name("hallustream-shars", "run")
         for k in range(a.shards):
-            call = fn.spawn(arm, threshold, names[k :: a.shards], git_commit(), a.tag,
-                            a.n_answers, a.context, a.se_expected, a.entail_check,
-                            k if a.shards > 1 else -1)  # fmt: skip
+            call = fn.spawn(arm, threshold, names[k :: a.shards], git_commit(), tag=a.tag,
+                            n_answers=a.n_answers, context=a.context, se_expected=a.se_expected,
+                            entail_check=a.entail_check, part=k if a.shards > 1 else -1,
+                            rewrite=not a.no_rewrite)  # fmt: skip
             print(call.object_id)  # poll with modal.FunctionCall.from_id(...).get()
