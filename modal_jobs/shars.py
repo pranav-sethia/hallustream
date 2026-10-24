@@ -181,10 +181,11 @@ def dev_props(names: list[str], commit: str, shard: int = 0) -> dict:
                   temperature=0, top_k=20, top_p=0.8, thinking=False, device="cuda")  # fmt: skip
     halluse = uncertainty.QADebertaEntailment(se_w_expected_answer=False, **common)
     probe = _probe_estimators()(signal="v3", context="native", **common)
+    naive = _generator("naive", model, generator)
     rows, bios, t_halluse, t_probe = [], [], 0.0, 0.0
     for name in names:
         query = QUERY.format(entity=name)
-        bio = _generate("naive", model, generator, query, name, 0.0, 3, "native")
+        bio = _generate(naive, query, name)
         bios.append({"name": name, "bio": bio, "non_answer": bool(utils.is_non_answer(bio))})
         if utils.is_non_answer(bio):
             continue
@@ -327,15 +328,18 @@ def run(
     if arm != "naive":
         uncertainty.ESTIMATORS["probe"] = _probe_estimators()
 
+    timer = {"detect": 0.0, "decompose": 0.0}
+    with contextlib.redirect_stdout(io.StringIO()):
+        gen = _generator(arm, model, generator, threshold, n_answers, context, se_expected,
+                         entail_check, timer)  # fmt: skip
     rows = []
     for name in names:
         query = QUERY.format(entity=name)
         t0 = time.time()
         log = io.StringIO()
-        timer = {"detect": 0.0, "decompose": 0.0}
+        timer.update(detect=0.0, decompose=0.0)
         with contextlib.redirect_stdout(log):
-            text = _generate(arm, model, generator, query, name, threshold, n_answers, context,
-                             se_expected, entail_check, timer)  # fmt: skip
+            text = _generate(gen, query, name)
         if utils.is_non_answer(text):
             text = ""
         aborted = "unexpected error" in log.getvalue()
@@ -402,12 +406,11 @@ def _timed(obj, method, timer, key):
     setattr(obj, method, wrapped)
 
 
-def _generate(arm, model, generator, query, name, threshold, n_answers, context,
-              se_expected=False, entail_check=False, timer=None):  # fmt: skip
+def _generator(arm, model, generator, threshold=0.0, n_answers=3, context="native",
+               se_expected=False, entail_check=False, timer=None):  # fmt: skip
+    """One SHARS generator per run, reused for every person (as in SHARS's own main.py)."""
     if arm == "naive":
-        gen = generator.NaiveGenerator(model, device="cuda")
-        return gen.generate(user_prompt=query, syst_prompt=SYST, entity=name, thinking=False,
-                            max_new_tokens=1024, temperatures=[0], top_k=20, top_p=0.8)  # fmt: skip
+        return generator.NaiveGenerator(model, device="cuda")
     est = "DeBERTa" if arm == "halluse" else "probe"
     signal = "v3" if arm == "probe" else "surprise"
     extra = ({"se_w_expected_answer": se_expected} if arm == "halluse"
@@ -428,16 +431,13 @@ def _generate(arm, model, generator, query, name, threshold, n_answers, context,
         _timed(est, "get_sent_uncertainty", timer, "detect")
         if hasattr(est, "is_entailed_largest_cluster"):
             _timed(est, "is_entailed_largest_cluster", timer, "detect")
-    return gen.generate(
-        user_prompt=query,
-        syst_prompt=SYST,
-        entity=name,
-        thinking=False,
-        max_new_tokens=1024,
-        temperatures=TEMPERATURES,
-        top_k=20,
-        top_p=0.8,
-    )
+    return gen
+
+
+def _generate(gen, query, name):
+    temps = [0] if type(gen).__name__ == "NaiveGenerator" else TEMPERATURES
+    return gen.generate(user_prompt=query, syst_prompt=SYST, entity=name, thinking=False,
+                        max_new_tokens=1024, temperatures=temps, top_k=20, top_p=0.8)  # fmt: skip
 
 
 if __name__ == "__main__":
