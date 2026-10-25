@@ -190,3 +190,45 @@ The rule picks the simplest qualifying candidate: B, frozen in [configs/detector
 v3's gain over v2 on untouched people (+0.036) matches its cross-validated gain on dev (+0.039). **v3 is the detector for detect→fix on Qwen3-4B's own writing.** Reader mode (other models' text) keeps the frozen probe, v1.
 
 Absolute AUROCs are lower on these people than on FActScore's gate people (v1 0.776 vs 0.828; max entropy 0.690 vs 0.759). The dev and reserved people come from random Wikipedia pages and are mostly obscure, and every detector, including the baseline, drops by about the same amount.
+
+## SHARS with the probe as its detector (test, 60 people)
+**Question:** [SHARS](https://arxiv.org/abs/2606.03628) (ICML 2026) writes a biography sentence by sentence. Each sentence is split into facts, a detector scores every fact, and the sentence is then kept, rewritten from its trusted facts, or redone. SHARS's own detector, HalluSE, asks a question about each fact and samples answers. Does v3 work better as the detector, at a fraction of the cost?
+
+**Setup:**
+- Model: Qwen3-4B-Instruct-2507, using SHARS's code unchanged (`third_party/shars`) apart from the detector.
+- Settings: SHARS's Following policy, rewriting on, 10 tries per sentence.
+- People: the first 60 of a fixed random order of SHARS's 182 FActScore people. None of them appear in the probe's training data.
+- Labels: every biography is labeled by the validated biography judge.
+- Detector settings were chosen on separate dev people. They and the claims below were fixed in [EVAL_PROTOCOL.md](../EVAL_PROTOCOL.md) before any test output.
+
+| Per person (60) | Greedy | SHARS + HalluSE | **SHARS + v3** | SHARS + v3, stricter | SHARS + token surprise |
+|---|---|---|---|---|---|
+| Supported claims | 3.10 | 3.98 | **4.03** | 3.63 | 3.82 |
+| Unsupported claims | 6.95 | 5.20 | **3.33** | 1.55 | 4.25 |
+| Precision (answered) | 0.284 | 0.382 | **0.475** | 0.590 | 0.442 |
+| Answered | 88% | 90% | 85% | 72% | 88% |
+| Specific unsupported claims¹ | 4.10 | 2.78 | **1.62** | 0.78 | 2.10 |
+| Detection seconds per fact | – | 5.76 | **0.051** | 0.030 | 0.037 |
+| Seconds per biography (L4) | 7.5 | 231.6 | **59.5** | 37.9 | 38.4 |
+
+¹ claims with a number or a capitalized word that isn't the person's name (places, titles, dates); a rough split from generic claims like "has been active in the entertainment industry".
+
+**SHARS + v3 vs SHARS + HalluSE (paired over the 60 people):**
+
+| | Difference [95% interval] |
+|---|---|
+| Unsupported claims | **−1.87 [−2.75, −0.95]** (−36%) |
+| Supported claims | +0.05 [−0.70, +0.83] |
+| Precision (51 people answered by both) | +0.086 [−0.005, +0.185] |
+| Specific unsupported claims | −1.17 [−1.65, −0.65] |
+| Specific supported claims | −0.08 [−0.40, +0.25] |
+
+- **Fewer false claims than SHARS's own detector: yes.** About a third fewer unsupported claims at the same number of supported claims.
+- **Matches it on precision: yes.** The interval stays above −0.05. Higher precision is likely but not established at this sample size.
+- **Detection cost: about 110× lower.** That's 0.051 vs 5.76 s per fact, or 1.7 vs 186 s per biography. SHARS runs end to end 3.9× faster.
+- **The stricter v3 setting** cuts unsupported claims by 70% (−3.65 [−4.65, −2.67]) with precision +0.16 [+0.07, +0.26]. It keeps 91% of HalluSE's supported claims but answers fewer people (72% vs 90%).
+- **Against the free token-surprise signal** at the same dev flag rate, v3 has fewer unsupported claims (−0.92 [−1.92, +0.13]) and slightly higher precision (+0.03), but neither difference is established. Surprise also beats HalluSE on unsupported claims (−0.95 [−1.72, −0.20]). In SHARS on this model, the cheap internal signals are at least as useful as sampling answers.
+- **Rewriting:** across 650 rewrites in all arms, none kept a flagged fact; 6–10% dropped a trusted one.
+- **Caveat:** SHARS often replaces a removed false claim with a generic true one. The specific-claim rows show that v3 removes specific false claims without losing specific true ones.
+
+Step 1 on 40 separate dev people (greedy vs SHARS + v3, plus rewriting on vs off) is in the protocol.
