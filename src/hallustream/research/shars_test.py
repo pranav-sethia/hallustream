@@ -10,6 +10,7 @@ Run: uv run python -m hallustream.research.shars_test <dir> naive halluse probe_
 from __future__ import annotations
 
 import json
+import re
 import sys
 from collections import Counter
 from pathlib import Path
@@ -17,7 +18,36 @@ from pathlib import Path
 import pandas as pd
 
 from hallustream.fix.experiment import paired, per_bio, summary
+from hallustream.research.factcheck import judge
+from hallustream.research.factcheck.validate import read_results
 from hallustream.research.shars_log import parse
+
+PRONOUNS = {"He", "She", "His", "Her", "They", "Their", "The", "I", "It", "This"}
+
+
+def specific(claim: str, name: str) -> bool:
+    """A claim with a number or a capitalized word (past the first word) that is not part of
+    the person's name, e.g. a place, title, date or organization. A rough split of concrete
+    facts from generic ones ("has been active in the entertainment industry")."""
+    own = set(re.findall(r"\w+", name.lower()))
+    words = re.findall(r"[A-Za-z][\w'-]*|\d+", claim)
+    return any(w.isdigit() or (i > 0 and w[0].isupper() and w.lower() not in own
+                               and w not in PRONOUNS) for i, w in enumerate(words))  # fmt: skip
+
+
+def specific_counts(d: Path) -> pd.DataFrame:
+    """Specific supported / unsupported claims per person (0 for abstentions)."""
+    results, _ = read_results(d / "results.jsonl")
+    rows = []
+    for line in (d / "bios.jsonl").read_text().splitlines():
+        name = json.loads(line)["name"]
+        claims = judge.parse_bio(results[name])["claims"] if name in results else []
+        rows.append({"name": name,
+                     "specific_supported": sum(lab == "Supported" and specific(t, name)
+                                               for t, lab in claims),
+                     "specific_unsupported": sum(lab != "Supported" and specific(t, name)
+                                                 for t, lab in claims)})  # fmt: skip
+    return pd.DataFrame(rows)
 
 
 def arm_table(d: Path) -> pd.DataFrame:
@@ -34,6 +64,7 @@ def arm_table(d: Path) -> pd.DataFrame:
         print(f"{d.name}: {int(missing.sum())} answered biographies without a judge result")
     df = df[~missing].copy()
     df["responded"] = df["responded"].astype(bool)
+    df = df.merge(specific_counts(d), on="name", how="left")
     for c in ("detect_seconds", "decompose_seconds"):
         if c not in df:
             df[c] = 0.0
@@ -70,12 +101,23 @@ def report(arms: dict[str, pd.DataFrame]) -> dict:
             "precision_pooled": round(float(df["supported"].sum() / max(df["claims"].sum(), 1)), 4),
             "seconds_per_bio": round(float(df["seconds"].mean()), 1),
             "detect_seconds_per_bio": round(float(df["detect_seconds"].mean()), 2),
+            "specific_supported_per_bio": round(float(df["specific_supported"].mean()), 2),
+            "specific_unsupported_per_bio": round(float(df["specific_unsupported"].mean()), 2),
             "aborted_on_error": int(df.get("aborted_on_error", pd.Series(0)).sum()),
             "log": log_stats(df),
         }  # fmt: skip
+        props = out["arms"][k]["log"].get("per_person", {}).get("props")
+        if props:
+            out["arms"][k]["detect_seconds_per_prop"] = round(
+                float(df["detect_seconds"].mean()) / props, 4
+            )
     pairs = [(a, b) for b in ("naive", "halluse") if b in arms for a in arms if a != b]
+    pairs += [
+        (a, b) for a in arms for b in arms if a.startswith("probe") and b.startswith("logprob")
+    ]
     out["paired"] = {f"{a}-{b}": {c: paired(arms[a], arms[b], c)
-                                  for c in ("precision", "supported", "unsupported")}
+                                  for c in ("precision", "supported", "unsupported",
+                                            "specific_supported", "specific_unsupported")}
                      for a, b in pairs}  # fmt: skip
     return out
 

@@ -145,6 +145,32 @@ This file was committed **before** any probe was trained. Its purpose is to fix 
   - **Go / no-go for the HalluSE test:** SHARS+v3 at θ = 0.5988 with rewriting must have fewer unsupported claims per person than greedy (paired 95% interval below 0) and higher precision (interval above 0). Otherwise the HalluSE test is not run.
   - **Rewriting:** the test keeps rewriting on (SHARS's recommended setting) unless, at θ = 0.5988, turning it off gives both higher precision and at least as many supported claims per person.
   - The test (people from `configs/shars_test_order.json`, a fixed random order of SHARS's 182, first N), its arms, thresholds and claims are written here after step 1 and before any test output. The greedy test arm already generated is kept; its judge results are not read before then.
+- **Step 1 result (40 end-to-end dev people):** all three checks passed (0 errors, 0 unplaced propositions, every answer judged). SHARS+v3 at θ = 0.5988 vs greedy: unsupported claims −4.1 per person [−5.4, −2.8], precision +0.23 [+0.12, +0.34], supported claims +1.0 [+0.2, +1.75]. Turning rewriting off lowered both precision (0.47 vs 0.56) and supported claims (3.85 vs 4.45), so rewriting stays on. 0% of 92 rewrites kept a flagged entity. Much of the added supported content is generic, so specific claims are tracked separately (below).
+- **Step 2: the test (written before any of its outputs).**
+  - **People:** the first 60 of `configs/shars_test_order.json`. The size is set by the remaining budget, since HalluSE takes 2–4 minutes per person.
+  - **Arms**, all with SHARS's Following policy, rewriting, N = 10 and the decoding above:
+    - greedy: the test run already generated, restricted to these 60 people
+    - SHARS+HalluSE: 5 answers, `se_w_expected_answer` and `entail_check`, θ = 1.676
+    - SHARS+v3 (native) at θ = 0.5988 (main) and θ = 0.4522
+    - SHARS+surprise (SHARS context) at θ = 0.5645, which flags the same 45% of dev propositions as v3 at θ = 0.5988
+  - **Judge:** the validated biography judge, the same for every arm.
+  - **Main comparison** (SHARS+v3 at θ = 0.5988 vs SHARS+HalluSE, paired over the 60 people, 2,000 bootstrap resamples):
+    - (1) unsupported claims per person
+    - (2) supported claims per person
+    - (3) precision over people answered in both arms
+    - (4) detection seconds per proposition and per biography
+  - **Claims, stated before the result:**
+    - "fewer false claims than SHARS's detector": the interval for (1) is below 0 and (2) is at least 90% of HalluSE's
+    - "matches SHARS's detector": (2) is at least 90% of HalluSE's and the interval for (3) lies above −0.05
+    - "detection at most a tenth of HalluSE's cost": (4)
+    - Anything else is reported as it is.
+  - **Secondary:**
+    - v3 at θ = 0.4522 vs HalluSE
+    - v3 vs surprise at the same dev flag rate
+    - specific supported and unsupported claims (claims with a number or a capitalized non-name word, `shars_test.specific`)
+    - response rate; end-to-end seconds; SHARS's sentence decisions and rewrite checks
+    - every arm vs greedy
+  - **No changes after outputs are seen:** no reruns and no setting changes. An arm with errors on more than 3 of 60 people is reported with the errors, not rerun.
 
 ## Gates (decided in advance)
 | Gate | Pass condition | If it fails |
