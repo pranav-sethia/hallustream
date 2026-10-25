@@ -31,6 +31,7 @@ def submit(run: str, model: str = JUDGE_MODEL, first: int = 0) -> str:
     from google.genai import types
 
     client = genai.Client()
+    volume.reload()  # requests are written by other apps' functions
     d = ROOT / "judge" / run
     if first:
         lines = (d / "requests.jsonl").read_text().splitlines()[:first]
