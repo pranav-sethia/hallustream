@@ -29,6 +29,9 @@ class WikiDB:
     def __init__(self, path: Path):
         self.conn = sqlite3.connect(f"file:{path}?mode=ro", uri=True, check_same_thread=False)
 
+    def close(self) -> None:
+        self.conn.close()
+
     def passages(self, title: str) -> list[str]:
         row = self.conn.execute("SELECT text FROM documents WHERE title = ?", (title,)).fetchone()
         if row is None:

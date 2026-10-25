@@ -181,6 +181,7 @@ def prepare_judge(split: str, arm: str, setting: str = "t1_minimal") -> dict:
     reqs = [judge.bio_request(r.get("key", r["name"]), r["name"],
                               wiki.evidence(w.passages(r["name"]), r["bio"]), r["bio"], setting)
             for r in rows if r["bio"].strip()]  # fmt: skip
+    w.close()  # an open file on the volume blocks the next call's volume.reload()
     d = ROOT / "judge" / f"fix_{split}_{arm}"
     d.mkdir(parents=True, exist_ok=True)
     (d / "requests.jsonl").write_text("".join(json.dumps(r) + "\n" for r in reqs))
