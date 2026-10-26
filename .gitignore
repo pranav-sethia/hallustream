@@ -16,6 +16,8 @@ results/
 *.npy
 *.parquet
 *.safetensors
+# ...except the bundled probe (about 10 KB per seed)
+!src/hallustream/weights/**/*.safetensors
 *.bin
 
 # Python

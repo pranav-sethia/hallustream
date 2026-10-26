@@ -36,6 +36,11 @@ def main(argv: list[str] | None = None, detector: Detector | None = None) -> int
         threshold: str | float = float(a.threshold)
     except ValueError:
         threshold = a.threshold
+    if detector is None:
+        from transformers.utils import logging
+
+        logging.disable_progress_bar()  # keep the terminal for the answer
+        logging.set_verbosity_error()
     det = detector or Detector.from_pretrained(a.weights, device=a.device)
     color = not a.no_color and sys.stdout.isatty()
     text, printed, found = "", 0, []

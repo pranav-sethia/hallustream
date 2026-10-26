@@ -135,8 +135,10 @@ class Detector:
             model.to(device or _default_device())  # pyright: ignore[reportArgumentType]
             model.eval()
         tokenizer = tokenizer or AutoTokenizer.from_pretrained(meta["hf_id"])
-        probe = Probe(sorted(d.glob("probe_seed*.safetensors")), d / "v3.json",
-                      device=str(model.device))  # fmt: skip
+        seeds = sorted(d.glob("probe_seed*.safetensors"))
+        if not seeds:
+            raise FileNotFoundError(f"no probe weights (probe_seed*.safetensors) in {d}")
+        probe = Probe(seeds, d / "v3.json", device=str(model.device))
         if probe.weight.shape[0] != model.config.hidden_size:
             raise ValueError(f"probe width {probe.weight.shape[0]} does not match the model")
         th = d / "thresholds.json"

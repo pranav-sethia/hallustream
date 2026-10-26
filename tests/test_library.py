@@ -150,3 +150,13 @@ def test_refusals_and_pronouns_are_not_scored(tiny):
             "She was born in 1815.")  # fmt: skip
     found = {e.text for e in tiny.score("Tell me about Ada Lovelace.", text).entities}
     assert found == {"was", "born", "in", "1815"}  # the refusal is skipped, and "She" too
+
+
+def test_the_package_ships_its_probe_weights():
+    from hallustream.detector import _weights_dir
+
+    d = _weights_dir("qwen3-4b")
+    names = sorted(p.name for p in d.iterdir())
+    assert [n for n in names if n.startswith("probe_seed")] == [f"probe_seed{k}.safetensors"
+                                                                for k in range(5)]  # fmt: skip
+    assert {"v3.json", "model.json", "thresholds.json"} <= set(names)
