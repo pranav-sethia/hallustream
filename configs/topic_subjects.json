@@ -1,0 +1,4635 @@
+{
+ "note": "Non-human Wikidata items from random enwiki-20230401 pages, 25 per category x sitelink bucket ((1, 3), (4, 10), (11, 30), (31, None)); excludes subjects named in the probe's data",
+ "titles_checked": 60000,
+ "items": 35825,
+ "subjects": [
+  {
+   "name": "Suillus brunnescens",
+   "category": "living_thing",
+   "bucket": 0,
+   "sitelinks": 3,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Haploporus cylindrosporus",
+   "category": "living_thing",
+   "bucket": 0,
+   "sitelinks": 2,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Rosa 'Perfume Delight'",
+   "category": "living_thing",
+   "bucket": 0,
+   "sitelinks": 3,
+   "classes": [
+    "rose cultivar"
+   ]
+  },
+  {
+   "name": "Tripteridia cavilinea",
+   "category": "living_thing",
+   "bucket": 0,
+   "sitelinks": 3,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Hypsopygia datames",
+   "category": "living_thing",
+   "bucket": 0,
+   "sitelinks": 3,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Aidos yamouna",
+   "category": "living_thing",
+   "bucket": 0,
+   "sitelinks": 3,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Digrammia imparilata",
+   "category": "living_thing",
+   "bucket": 0,
+   "sitelinks": 3,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Mesalina arnoldi",
+   "category": "living_thing",
+   "bucket": 0,
+   "sitelinks": 2,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Lycomorpha regulus",
+   "category": "living_thing",
+   "bucket": 0,
+   "sitelinks": 2,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Hibbertia (trilobite)",
+   "category": "living_thing",
+   "bucket": 0,
+   "sitelinks": 2,
+   "classes": [
+    "fossil taxon"
+   ]
+  },
+  {
+   "name": "Vascoceratidae",
+   "category": "living_thing",
+   "bucket": 0,
+   "sitelinks": 3,
+   "classes": [
+    "fossil taxon"
+   ]
+  },
+  {
+   "name": "Scrobipalpa helmuti",
+   "category": "living_thing",
+   "bucket": 0,
+   "sitelinks": 3,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Stenorhachis",
+   "category": "living_thing",
+   "bucket": 0,
+   "sitelinks": 1,
+   "classes": [
+    "fossil taxon"
+   ]
+  },
+  {
+   "name": "Epiricania",
+   "category": "living_thing",
+   "bucket": 0,
+   "sitelinks": 1,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Leuconitocris basilewskyi",
+   "category": "living_thing",
+   "bucket": 0,
+   "sitelinks": 2,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Givira hypomelaleuca",
+   "category": "living_thing",
+   "bucket": 0,
+   "sitelinks": 3,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Oiorhinus",
+   "category": "living_thing",
+   "bucket": 0,
+   "sitelinks": 3,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Trypherus frisoni",
+   "category": "living_thing",
+   "bucket": 0,
+   "sitelinks": 3,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Uncites",
+   "category": "living_thing",
+   "bucket": 0,
+   "sitelinks": 3,
+   "classes": [
+    "fossil taxon"
+   ]
+  },
+  {
+   "name": "Craspedortha montana",
+   "category": "living_thing",
+   "bucket": 0,
+   "sitelinks": 3,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Marshalliella",
+   "category": "living_thing",
+   "bucket": 0,
+   "sitelinks": 3,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Cacama moorei",
+   "category": "living_thing",
+   "bucket": 0,
+   "sitelinks": 2,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Elaphocephala",
+   "category": "living_thing",
+   "bucket": 0,
+   "sitelinks": 3,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Caenorhabditis latens",
+   "category": "living_thing",
+   "bucket": 0,
+   "sitelinks": 1,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Rogellia",
+   "category": "living_thing",
+   "bucket": 0,
+   "sitelinks": 2,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Bulbophyllum vietnamense",
+   "category": "living_thing",
+   "bucket": 1,
+   "sitelinks": 10,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Zealanapis",
+   "category": "living_thing",
+   "bucket": 1,
+   "sitelinks": 10,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Galium aristatum",
+   "category": "living_thing",
+   "bucket": 1,
+   "sitelinks": 10,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Semioscopis strigulana",
+   "category": "living_thing",
+   "bucket": 1,
+   "sitelinks": 5,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Utah physa",
+   "category": "living_thing",
+   "bucket": 1,
+   "sitelinks": 7,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Conus ateralbus",
+   "category": "living_thing",
+   "bucket": 1,
+   "sitelinks": 8,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Josia similis",
+   "category": "living_thing",
+   "bucket": 1,
+   "sitelinks": 6,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Callionymus semeiophor",
+   "category": "living_thing",
+   "bucket": 1,
+   "sitelinks": 10,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Bebearia intermedia",
+   "category": "living_thing",
+   "bucket": 1,
+   "sitelinks": 5,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Leucotmemis margariphera",
+   "category": "living_thing",
+   "bucket": 1,
+   "sitelinks": 6,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Potamites hydroimperator",
+   "category": "living_thing",
+   "bucket": 1,
+   "sitelinks": 4,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Suavotrochus lubricus",
+   "category": "living_thing",
+   "bucket": 1,
+   "sitelinks": 6,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Calliteara horsfieldii",
+   "category": "living_thing",
+   "bucket": 1,
+   "sitelinks": 4,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Megachile gigantea",
+   "category": "living_thing",
+   "bucket": 1,
+   "sitelinks": 6,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Pegomya rufescens",
+   "category": "living_thing",
+   "bucket": 1,
+   "sitelinks": 7,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Labeobarbus iphthimostoma",
+   "category": "living_thing",
+   "bucket": 1,
+   "sitelinks": 9,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Wiedemannia bifida",
+   "category": "living_thing",
+   "bucket": 1,
+   "sitelinks": 5,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Eilema marwitziana",
+   "category": "living_thing",
+   "bucket": 1,
+   "sitelinks": 4,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Stenocercus johaberfellneri",
+   "category": "living_thing",
+   "bucket": 1,
+   "sitelinks": 5,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Procloeon rufostrigatum",
+   "category": "living_thing",
+   "bucket": 1,
+   "sitelinks": 5,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Pharyngolepis",
+   "category": "living_thing",
+   "bucket": 1,
+   "sitelinks": 4,
+   "classes": [
+    "fossil taxon"
+   ]
+  },
+  {
+   "name": "Sarosa ignicornis",
+   "category": "living_thing",
+   "bucket": 1,
+   "sitelinks": 6,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Goniophlebium",
+   "category": "living_thing",
+   "bucket": 1,
+   "sitelinks": 10,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Asymbletia",
+   "category": "living_thing",
+   "bucket": 1,
+   "sitelinks": 5,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Spinipogon luxuria",
+   "category": "living_thing",
+   "bucket": 1,
+   "sitelinks": 4,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Acmaeops septentrionis",
+   "category": "living_thing",
+   "bucket": 2,
+   "sitelinks": 20,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Aubria masako",
+   "category": "living_thing",
+   "bucket": 2,
+   "sitelinks": 13,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "White-tailed jay",
+   "category": "living_thing",
+   "bucket": 2,
+   "sitelinks": 27,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Leptostylus signaticauda",
+   "category": "living_thing",
+   "bucket": 2,
+   "sitelinks": 11,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Western clawed frog",
+   "category": "living_thing",
+   "bucket": 2,
+   "sitelinks": 21,
+   "classes": [
+    "taxon",
+    "model organism"
+   ]
+  },
+  {
+   "name": "Thyridolepis",
+   "category": "living_thing",
+   "bucket": 2,
+   "sitelinks": 13,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Sparganiaceae",
+   "category": "living_thing",
+   "bucket": 2,
+   "sitelinks": 19,
+   "classes": [
+    "taxon",
+    "synonym"
+   ]
+  },
+  {
+   "name": "Abies fargesii",
+   "category": "living_thing",
+   "bucket": 2,
+   "sitelinks": 25,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Shelley's starling",
+   "category": "living_thing",
+   "bucket": 2,
+   "sitelinks": 25,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Oplegnathus",
+   "category": "living_thing",
+   "bucket": 2,
+   "sitelinks": 14,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Granite spiny lizard",
+   "category": "living_thing",
+   "bucket": 2,
+   "sitelinks": 12,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Diadelia holobrunnea",
+   "category": "living_thing",
+   "bucket": 2,
+   "sitelinks": 11,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Yellow-spotted agama",
+   "category": "living_thing",
+   "bucket": 2,
+   "sitelinks": 14,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Golden whorltail iguana",
+   "category": "living_thing",
+   "bucket": 2,
+   "sitelinks": 11,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Vicia pannonica",
+   "category": "living_thing",
+   "bucket": 2,
+   "sitelinks": 22,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Anisolepis grilli",
+   "category": "living_thing",
+   "bucket": 2,
+   "sitelinks": 11,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Cleisthenes pinetorum",
+   "category": "living_thing",
+   "bucket": 2,
+   "sitelinks": 11,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Psilorhynchus",
+   "category": "living_thing",
+   "bucket": 2,
+   "sitelinks": 14,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Curassanthura bermudensis",
+   "category": "living_thing",
+   "bucket": 2,
+   "sitelinks": 13,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Dermogenys",
+   "category": "living_thing",
+   "bucket": 2,
+   "sitelinks": 16,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Bulbophyllum beccarii",
+   "category": "living_thing",
+   "bucket": 2,
+   "sitelinks": 12,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Plumbeous hawk",
+   "category": "living_thing",
+   "bucket": 2,
+   "sitelinks": 27,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Mindoro black rat",
+   "category": "living_thing",
+   "bucket": 2,
+   "sitelinks": 23,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Atractus pantostictus",
+   "category": "living_thing",
+   "bucket": 2,
+   "sitelinks": 12,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Arthrobotrys",
+   "category": "living_thing",
+   "bucket": 2,
+   "sitelinks": 12,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Juniperus communis",
+   "category": "living_thing",
+   "bucket": 3,
+   "sitelinks": 94,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Sea urchin",
+   "category": "living_thing",
+   "bucket": 3,
+   "sitelinks": 95,
+   "classes": [
+    "taxon",
+    "model organism"
+   ]
+  },
+  {
+   "name": "Russula emetica",
+   "category": "living_thing",
+   "bucket": 3,
+   "sitelinks": 45,
+   "classes": [
+    "taxon",
+    "mycorrhizal fungus"
+   ]
+  },
+  {
+   "name": "Brazilian three-banded armadillo",
+   "category": "living_thing",
+   "bucket": 3,
+   "sitelinks": 37,
+   "classes": [
+    "taxon",
+    "Lazarus taxon",
+    "recombination"
+   ]
+  },
+  {
+   "name": "Iris sibirica",
+   "category": "living_thing",
+   "bucket": 3,
+   "sitelinks": 39,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Snow petrel",
+   "category": "living_thing",
+   "bucket": 3,
+   "sitelinks": 41,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Horsfield's bush lark",
+   "category": "living_thing",
+   "bucket": 3,
+   "sitelinks": 31,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Calceolaria",
+   "category": "living_thing",
+   "bucket": 3,
+   "sitelinks": 38,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Vaccinium",
+   "category": "living_thing",
+   "bucket": 3,
+   "sitelinks": 73,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Lemna",
+   "category": "living_thing",
+   "bucket": 3,
+   "sitelinks": 51,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Small blue",
+   "category": "living_thing",
+   "bucket": 3,
+   "sitelinks": 31,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Devon Rex",
+   "category": "living_thing",
+   "bucket": 3,
+   "sitelinks": 36,
+   "classes": [
+    "cat breed"
+   ]
+  },
+  {
+   "name": "Tree swallow",
+   "category": "living_thing",
+   "bucket": 3,
+   "sitelinks": 35,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Hippeastrum",
+   "category": "living_thing",
+   "bucket": 3,
+   "sitelinks": 42,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Prunus armeniaca",
+   "category": "living_thing",
+   "bucket": 3,
+   "sitelinks": 130,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Black-nest swiftlet",
+   "category": "living_thing",
+   "bucket": 3,
+   "sitelinks": 33,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Mountain bluebird",
+   "category": "living_thing",
+   "bucket": 3,
+   "sitelinks": 39,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Zosteraceae",
+   "category": "living_thing",
+   "bucket": 3,
+   "sitelinks": 42,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Garcinia indica",
+   "category": "living_thing",
+   "bucket": 3,
+   "sitelinks": 32,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Uakari",
+   "category": "living_thing",
+   "bucket": 3,
+   "sitelinks": 38,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Cyprinidae",
+   "category": "living_thing",
+   "bucket": 3,
+   "sitelinks": 79,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Dalmatian pelican",
+   "category": "living_thing",
+   "bucket": 3,
+   "sitelinks": 75,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Shorea robusta",
+   "category": "living_thing",
+   "bucket": 3,
+   "sitelinks": 48,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Andrographis paniculata",
+   "category": "living_thing",
+   "bucket": 3,
+   "sitelinks": 49,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "Javan banded pitta",
+   "category": "living_thing",
+   "bucket": 3,
+   "sitelinks": 32,
+   "classes": [
+    "taxon"
+   ]
+  },
+  {
+   "name": "2008 Intense Football League season",
+   "category": "event",
+   "bucket": 0,
+   "sitelinks": 1,
+   "classes": [
+    "sports season"
+   ]
+  },
+  {
+   "name": "Cycling at the 2016 Summer Paralympics \u2013 Men's individual pursuit C3",
+   "category": "event",
+   "bucket": 0,
+   "sitelinks": 1,
+   "classes": [
+    "Paralympic sporting event"
+   ]
+  },
+  {
+   "name": "1942 Princeton Tigers men's soccer team",
+   "category": "event",
+   "bucket": 0,
+   "sitelinks": 1,
+   "classes": [
+    "sports season of a sports club"
+   ]
+  },
+  {
+   "name": "1957\u201358 Stoke City F.C. season",
+   "category": "event",
+   "bucket": 0,
+   "sitelinks": 1,
+   "classes": [
+    "association football team season"
+   ]
+  },
+  {
+   "name": "1976 Stockholm Open \u2013 Singles",
+   "category": "event",
+   "bucket": 0,
+   "sitelinks": 2,
+   "classes": [
+    "tennis event"
+   ]
+  },
+  {
+   "name": "1983 World Table Tennis Championships \u2013 Women's singles",
+   "category": "event",
+   "bucket": 0,
+   "sitelinks": 2,
+   "classes": [
+    "sporting event"
+   ]
+  },
+  {
+   "name": "1917 Williams Ephs football team",
+   "category": "event",
+   "bucket": 0,
+   "sitelinks": 1,
+   "classes": [
+    "American football team season"
+   ]
+  },
+  {
+   "name": "1951 Seychellois parliamentary election",
+   "category": "event",
+   "bucket": 0,
+   "sitelinks": 1,
+   "classes": [
+    "Seychellois parliamentary election"
+   ]
+  },
+  {
+   "name": "Tanzania at the 1990 Commonwealth Games",
+   "category": "event",
+   "bucket": 0,
+   "sitelinks": 1,
+   "classes": [
+    "nation at sport competition"
+   ]
+  },
+  {
+   "name": "2019 Rivers State gubernatorial election",
+   "category": "event",
+   "bucket": 0,
+   "sitelinks": 2,
+   "classes": [
+    "gubernatorial election"
+   ]
+  },
+  {
+   "name": "Sandland (Antalya)",
+   "category": "event",
+   "bucket": 0,
+   "sitelinks": 1,
+   "classes": [
+    "recurring event"
+   ]
+  },
+  {
+   "name": "2009\u201310 Serbian League West",
+   "category": "event",
+   "bucket": 0,
+   "sitelinks": 2,
+   "classes": [
+    "sports season"
+   ]
+  },
+  {
+   "name": "Rock Comic Con",
+   "category": "event",
+   "bucket": 0,
+   "sitelinks": 2,
+   "classes": [
+    "music festival"
+   ]
+  },
+  {
+   "name": "2004 United States Senate election in Nevada",
+   "category": "event",
+   "bucket": 0,
+   "sitelinks": 2,
+   "classes": [
+    "United States Senate election in Nevada"
+   ]
+  },
+  {
+   "name": "2000\u201301 Los Angeles Kings season",
+   "category": "event",
+   "bucket": 0,
+   "sitelinks": 1,
+   "classes": [
+    "ice hockey team season"
+   ]
+  },
+  {
+   "name": "2021\u201322 Adelaide Lightning season",
+   "category": "event",
+   "bucket": 0,
+   "sitelinks": 1,
+   "classes": [
+    "basketball team season"
+   ]
+  },
+  {
+   "name": "2009\u201310 Savannah State Tigers basketball team",
+   "category": "event",
+   "bucket": 0,
+   "sitelinks": 1,
+   "classes": [
+    "basketball team season"
+   ]
+  },
+  {
+   "name": "Athletics at the 1987 Summer Universiade \u2013 Men's 4 \u00d7 100 metres relay",
+   "category": "event",
+   "bucket": 0,
+   "sitelinks": 1,
+   "classes": [
+    "sporting event"
+   ]
+  },
+  {
+   "name": "Gymnastics at the 2015 Summer Universiade \u2013 Women's uneven bars",
+   "category": "event",
+   "bucket": 0,
+   "sitelinks": 1,
+   "classes": [
+    "sporting event"
+   ]
+  },
+  {
+   "name": "2017 FC Ordabasy season",
+   "category": "event",
+   "bucket": 0,
+   "sitelinks": 1,
+   "classes": [
+    "association football team season"
+   ]
+  },
+  {
+   "name": "1952 Vermont Catamounts football team",
+   "category": "event",
+   "bucket": 0,
+   "sitelinks": 1,
+   "classes": [
+    "sports season of a sports club"
+   ]
+  },
+  {
+   "name": "2014 World Junior Championships in Athletics \u2013 Men's pole vault",
+   "category": "event",
+   "bucket": 0,
+   "sitelinks": 3,
+   "classes": [
+    "sporting event"
+   ]
+  },
+  {
+   "name": "1970\u201371 SK Rapid Wien season",
+   "category": "event",
+   "bucket": 0,
+   "sitelinks": 1,
+   "classes": [
+    "association football team season"
+   ]
+  },
+  {
+   "name": "Finswimming at the 2017 World Games \u2013 Women's 50 m apnoea",
+   "category": "event",
+   "bucket": 0,
+   "sitelinks": 1,
+   "classes": [
+    "sporting event",
+    "sport competition at a multi-sport event"
+   ]
+  },
+  {
+   "name": "2015\u201316 Adelaide United FC season",
+   "category": "event",
+   "bucket": 0,
+   "sitelinks": 1,
+   "classes": [
+    "association football team season"
+   ]
+  },
+  {
+   "name": "1997 Russian Second League",
+   "category": "event",
+   "bucket": 1,
+   "sitelinks": 5,
+   "classes": [
+    "sports season"
+   ]
+  },
+  {
+   "name": "2004 European Women's Artistic Gymnastics Championships",
+   "category": "event",
+   "bucket": 1,
+   "sitelinks": 8,
+   "classes": [
+    "sports season"
+   ]
+  },
+  {
+   "name": "1920 Svenska M\u00e4sterskapet",
+   "category": "event",
+   "bucket": 1,
+   "sitelinks": 5,
+   "classes": [
+    "sports season"
+   ]
+  },
+  {
+   "name": "2008 Sark general election",
+   "category": "event",
+   "bucket": 1,
+   "sitelinks": 5,
+   "classes": [
+    "Sark general election"
+   ]
+  },
+  {
+   "name": "1975\u201376 Football League First Division",
+   "category": "event",
+   "bucket": 1,
+   "sitelinks": 9,
+   "classes": [
+    "sports season"
+   ]
+  },
+  {
+   "name": "Virgin Islands at the 2010 Summer Youth Olympics",
+   "category": "event",
+   "bucket": 1,
+   "sitelinks": 6,
+   "classes": [
+    "nation at sport competition"
+   ]
+  },
+  {
+   "name": "2001 Grand Prix de Tennis de Lyon",
+   "category": "event",
+   "bucket": 1,
+   "sitelinks": 7,
+   "classes": [
+    "ATP Lyon Open",
+    "tennis tournament edition"
+   ]
+  },
+  {
+   "name": "2015\u201316 Swiss Cup",
+   "category": "event",
+   "bucket": 1,
+   "sitelinks": 9,
+   "classes": [
+    "sports season"
+   ]
+  },
+  {
+   "name": "1994 Kyrgyzstan League",
+   "category": "event",
+   "bucket": 1,
+   "sitelinks": 6,
+   "classes": [
+    "sports season"
+   ]
+  },
+  {
+   "name": "2013 BGL Luxembourg Open \u2013 Doubles",
+   "category": "event",
+   "bucket": 1,
+   "sitelinks": 5,
+   "classes": [
+    "tennis event"
+   ]
+  },
+  {
+   "name": "2021 French Open \u2013 Wheelchair women's doubles",
+   "category": "event",
+   "bucket": 1,
+   "sitelinks": 6,
+   "classes": [
+    "tennis event"
+   ]
+  },
+  {
+   "name": "1950\u201351 AHL season",
+   "category": "event",
+   "bucket": 1,
+   "sitelinks": 5,
+   "classes": [
+    "sports season"
+   ]
+  },
+  {
+   "name": "1972 Laotian parliamentary election",
+   "category": "event",
+   "bucket": 1,
+   "sitelinks": 5,
+   "classes": [
+    "Laotian parliamentary election"
+   ]
+  },
+  {
+   "name": "1985 Copa Per\u00fa",
+   "category": "event",
+   "bucket": 1,
+   "sitelinks": 4,
+   "classes": [
+    "sports season"
+   ]
+  },
+  {
+   "name": "UFC Fight Night: Chiesa vs. Lee",
+   "category": "event",
+   "bucket": 1,
+   "sitelinks": 8,
+   "classes": [
+    "mixed martial arts event"
+   ]
+  },
+  {
+   "name": "2001 Grand Prix SAR La Princesse Lalla Meryem \u2013 Singles",
+   "category": "event",
+   "bucket": 1,
+   "sitelinks": 4,
+   "classes": [
+    "tennis event"
+   ]
+  },
+  {
+   "name": "1940 Pacific typhoon season",
+   "category": "event",
+   "bucket": 1,
+   "sitelinks": 4,
+   "classes": [
+    "Pacific typhoon season"
+   ]
+  },
+  {
+   "name": "Football at the 1988 Summer Olympics \u2013 Men's team squads",
+   "category": "event",
+   "bucket": 1,
+   "sitelinks": 4,
+   "classes": [
+    "list of participants in sport tournament"
+   ]
+  },
+  {
+   "name": "Orange Trophy",
+   "category": "event",
+   "bucket": 1,
+   "sitelinks": 6,
+   "classes": [
+    "friendly association football tournament"
+   ]
+  },
+  {
+   "name": "Cheltenham Gold Cup",
+   "category": "event",
+   "bucket": 1,
+   "sitelinks": 5,
+   "classes": [
+    "horse race",
+    "recurring sporting event"
+   ]
+  },
+  {
+   "name": "June 2011 Jisr ash-Shughur clashes",
+   "category": "event",
+   "bucket": 1,
+   "sitelinks": 10,
+   "classes": [
+    "siege"
+   ]
+  },
+  {
+   "name": "Swimming at the 2016 European Aquatics Championships \u2013 Men's 50 metre backstroke",
+   "category": "event",
+   "bucket": 1,
+   "sitelinks": 5,
+   "classes": [
+    "sporting event"
+   ]
+  },
+  {
+   "name": "1959\u201360 Mexican Primera Divisi\u00f3n season",
+   "category": "event",
+   "bucket": 1,
+   "sitelinks": 9,
+   "classes": [
+    "sports season"
+   ]
+  },
+  {
+   "name": "1928 Latvian Higher League",
+   "category": "event",
+   "bucket": 1,
+   "sitelinks": 9,
+   "classes": [
+    "sports season"
+   ]
+  },
+  {
+   "name": "1978 European Athletics Championships \u2013 Men's shot put",
+   "category": "event",
+   "bucket": 1,
+   "sitelinks": 4,
+   "classes": [
+    "sporting event"
+   ]
+  },
+  {
+   "name": "2015 Women's Ice Hockey World Championships",
+   "category": "event",
+   "bucket": 2,
+   "sitelinks": 12,
+   "classes": [
+    "sports season",
+    "recurring sporting event edition"
+   ]
+  },
+  {
+   "name": "1997 FA Charity Shield",
+   "category": "event",
+   "bucket": 2,
+   "sitelinks": 11,
+   "classes": [
+    "sports season"
+   ]
+  },
+  {
+   "name": "Freedom Cup",
+   "category": "event",
+   "bucket": 2,
+   "sitelinks": 11,
+   "classes": [
+    "rugby union trophy or award",
+    "recurring sporting event",
+    "rugby union competition"
+   ]
+  },
+  {
+   "name": "1988 French Open",
+   "category": "event",
+   "bucket": 2,
+   "sitelinks": 16,
+   "classes": [
+    "French Open",
+    "tennis tournament edition"
+   ]
+  },
+  {
+   "name": "EuroBasket 2015 qualification",
+   "category": "event",
+   "bucket": 2,
+   "sitelinks": 13,
+   "classes": [
+    "sporting event"
+   ]
+  },
+  {
+   "name": "1996\u201397 Czech First League",
+   "category": "event",
+   "bucket": 2,
+   "sitelinks": 15,
+   "classes": [
+    "sports season"
+   ]
+  },
+  {
+   "name": "1964 Wimbledon Championships",
+   "category": "event",
+   "bucket": 2,
+   "sitelinks": 11,
+   "classes": [
+    "Wimbledon Championships",
+    "tennis tournament edition"
+   ]
+  },
+  {
+   "name": "1934\u201335 FA Cup",
+   "category": "event",
+   "bucket": 2,
+   "sitelinks": 13,
+   "classes": [
+    "sports season"
+   ]
+  },
+  {
+   "name": "2015\u201316 Swiss Super League",
+   "category": "event",
+   "bucket": 2,
+   "sitelinks": 15,
+   "classes": [
+    "sports season"
+   ]
+  },
+  {
+   "name": "2014\u201315 Copa del Rey",
+   "category": "event",
+   "bucket": 2,
+   "sitelinks": 22,
+   "classes": [
+    "sports season"
+   ]
+  },
+  {
+   "name": "1999 Armenian Premier League",
+   "category": "event",
+   "bucket": 2,
+   "sitelinks": 13,
+   "classes": [
+    "sports season"
+   ]
+  },
+  {
+   "name": "Rink Hockey European Championship",
+   "category": "event",
+   "bucket": 2,
+   "sitelinks": 11,
+   "classes": [
+    "recurring sporting event"
+   ]
+  },
+  {
+   "name": "2017 East Timorese presidential election",
+   "category": "event",
+   "bucket": 2,
+   "sitelinks": 16,
+   "classes": [
+    "presidential election"
+   ]
+  },
+  {
+   "name": "1972 British Grand Prix",
+   "category": "event",
+   "bucket": 2,
+   "sitelinks": 22,
+   "classes": [
+    "recurring sporting event edition"
+   ]
+  },
+  {
+   "name": "WWE Hell in a Cell",
+   "category": "event",
+   "bucket": 2,
+   "sitelinks": 21,
+   "classes": [
+    "recurring event",
+    "wrestling event"
+   ]
+  },
+  {
+   "name": "La Violencia",
+   "category": "event",
+   "bucket": 2,
+   "sitelinks": 23,
+   "classes": [
+    "civil war"
+   ]
+  },
+  {
+   "name": "1991 European Judo Championships",
+   "category": "event",
+   "bucket": 2,
+   "sitelinks": 12,
+   "classes": [
+    "recurring sporting event edition"
+   ]
+  },
+  {
+   "name": "AEW All Out",
+   "category": "event",
+   "bucket": 2,
+   "sitelinks": 11,
+   "classes": [
+    "recurring sporting event"
+   ]
+  },
+  {
+   "name": "1976 European Super Cup",
+   "category": "event",
+   "bucket": 2,
+   "sitelinks": 23,
+   "classes": [
+    "sports season"
+   ]
+  },
+  {
+   "name": "2018 Argentina Open",
+   "category": "event",
+   "bucket": 2,
+   "sitelinks": 13,
+   "classes": [
+    "Buenos Aires tennis tournament",
+    "tennis tournament edition"
+   ]
+  },
+  {
+   "name": "1978 Tabas earthquake",
+   "category": "event",
+   "bucket": 2,
+   "sitelinks": 11,
+   "classes": [
+    "earthquake"
+   ]
+  },
+  {
+   "name": "Battle of Gestilren",
+   "category": "event",
+   "bucket": 2,
+   "sitelinks": 11,
+   "classes": [
+    "battle"
+   ]
+  },
+  {
+   "name": "Cyclone Batsirai",
+   "category": "event",
+   "bucket": 2,
+   "sitelinks": 14,
+   "classes": [
+    "tropical cyclone"
+   ]
+  },
+  {
+   "name": "Mauritius at the 2012 Summer Olympics",
+   "category": "event",
+   "bucket": 2,
+   "sitelinks": 17,
+   "classes": [
+    "Olympic delegation"
+   ]
+  },
+  {
+   "name": "2014 Latvian Higher League",
+   "category": "event",
+   "bucket": 2,
+   "sitelinks": 16,
+   "classes": [
+    "sports season"
+   ]
+  },
+  {
+   "name": "1973 Formula One season",
+   "category": "event",
+   "bucket": 3,
+   "sitelinks": 37,
+   "classes": [
+    "sports season",
+    "Formula One season"
+   ]
+  },
+  {
+   "name": "Uzbekistan Super League",
+   "category": "event",
+   "bucket": 3,
+   "sitelinks": 32,
+   "classes": [
+    "association football league",
+    "recurring sporting event"
+   ]
+  },
+  {
+   "name": "1960 United States presidential election",
+   "category": "event",
+   "bucket": 3,
+   "sitelinks": 36,
+   "classes": [
+    "United States presidential election"
+   ]
+  },
+  {
+   "name": "Handball at the 2024 Summer Olympics",
+   "category": "event",
+   "bucket": 3,
+   "sitelinks": 41,
+   "classes": [
+    "Olympic sports discipline event"
+   ]
+  },
+  {
+   "name": "Youth Olympic Games",
+   "category": "event",
+   "bucket": 3,
+   "sitelinks": 65,
+   "classes": [
+    "recurring sporting event"
+   ]
+  },
+  {
+   "name": "Madrid Open (tennis)",
+   "category": "event",
+   "bucket": 3,
+   "sitelinks": 36,
+   "classes": [
+    "recurring tennis tournament"
+   ]
+  },
+  {
+   "name": "Bobsleigh at the 2018 Winter Olympics",
+   "category": "event",
+   "bucket": 3,
+   "sitelinks": 33,
+   "classes": [
+    "Olympic sports discipline event",
+    "sports competition"
+   ]
+  },
+  {
+   "name": "2000 Summer Paralympics",
+   "category": "event",
+   "bucket": 3,
+   "sitelinks": 33,
+   "classes": [
+    "Summer Paralympic Games",
+    "recurring sporting event edition"
+   ]
+  },
+  {
+   "name": "2013 Bahrain Grand Prix",
+   "category": "event",
+   "bucket": 3,
+   "sitelinks": 32,
+   "classes": [
+    "Bahrain Grand Prix",
+    "recurring sporting event edition"
+   ]
+  },
+  {
+   "name": "Battle of Zenta",
+   "category": "event",
+   "bucket": 3,
+   "sitelinks": 36,
+   "classes": [
+    "battle"
+   ]
+  },
+  {
+   "name": "Djibouti at the Olympics",
+   "category": "event",
+   "bucket": 3,
+   "sitelinks": 32,
+   "classes": [
+    "Olympic delegation"
+   ]
+  },
+  {
+   "name": "Halabja massacre",
+   "category": "event",
+   "bucket": 3,
+   "sitelinks": 37,
+   "classes": [
+    "war crime",
+    "mass murder",
+    "genocidal massacre"
+   ]
+  },
+  {
+   "name": "1999\u20132000 UEFA Champions League",
+   "category": "event",
+   "bucket": 3,
+   "sitelinks": 44,
+   "classes": [
+    "sports season"
+   ]
+  },
+  {
+   "name": "Panama at the Olympics",
+   "category": "event",
+   "bucket": 3,
+   "sitelinks": 32,
+   "classes": [
+    "Olympic delegation"
+   ]
+  },
+  {
+   "name": "Volleyball at the 2012 Summer Olympics",
+   "category": "event",
+   "bucket": 3,
+   "sitelinks": 35,
+   "classes": [
+    "Olympic sports discipline event"
+   ]
+  },
+  {
+   "name": "Insurgency in Khyber Pakhtunkhwa",
+   "category": "event",
+   "bucket": 3,
+   "sitelinks": 39,
+   "classes": [
+    "war"
+   ]
+  },
+  {
+   "name": "Gymnastics at the 2024 Summer Olympics",
+   "category": "event",
+   "bucket": 3,
+   "sitelinks": 37,
+   "classes": [
+    "Olympic sports discipline event"
+   ]
+  },
+  {
+   "name": "Battle of Dien Bien Phu",
+   "category": "event",
+   "bucket": 3,
+   "sitelinks": 59,
+   "classes": [
+    "battle"
+   ]
+  },
+  {
+   "name": "Nuclear warfare",
+   "category": "event",
+   "bucket": 3,
+   "sitelinks": 69,
+   "classes": [
+    "hypothetical war"
+   ]
+  },
+  {
+   "name": "1978\u201379 UEFA Cup",
+   "category": "event",
+   "bucket": 3,
+   "sitelinks": 31,
+   "classes": [
+    "sports season"
+   ]
+  },
+  {
+   "name": "Krishna Janmashtami",
+   "category": "event",
+   "bucket": 3,
+   "sitelinks": 41,
+   "classes": [
+    "festival"
+   ]
+  },
+  {
+   "name": "2016 Spanish Grand Prix",
+   "category": "event",
+   "bucket": 3,
+   "sitelinks": 32,
+   "classes": [
+    "recurring sporting event edition"
+   ]
+  },
+  {
+   "name": "2007 Australian Grand Prix",
+   "category": "event",
+   "bucket": 3,
+   "sitelinks": 33,
+   "classes": [
+    "recurring sporting event edition"
+   ]
+  },
+  {
+   "name": "1964 Summer Olympics medal table",
+   "category": "event",
+   "bucket": 3,
+   "sitelinks": 35,
+   "classes": [
+    "Olympic medal table"
+   ]
+  },
+  {
+   "name": "1956 Formula One season",
+   "category": "event",
+   "bucket": 3,
+   "sitelinks": 37,
+   "classes": [
+    "sports season",
+    "Formula One season"
+   ]
+  },
+  {
+   "name": "Kauffman Vodka",
+   "category": "organization",
+   "bucket": 0,
+   "sitelinks": 1,
+   "classes": [
+    "alcohol brand"
+   ]
+  },
+  {
+   "name": "People's Science Institute",
+   "category": "organization",
+   "bucket": 0,
+   "sitelinks": 2,
+   "classes": [
+    "organization",
+    "nonprofit organization"
+   ]
+  },
+  {
+   "name": "Improvising Artists",
+   "category": "organization",
+   "bucket": 0,
+   "sitelinks": 3,
+   "classes": [
+    "record label"
+   ]
+  },
+  {
+   "name": "U.S. Peace Council",
+   "category": "organization",
+   "bucket": 0,
+   "sitelinks": 1,
+   "classes": [
+    "organization"
+   ]
+  },
+  {
+   "name": "Missouri State Lady Bears basketball",
+   "category": "organization",
+   "bucket": 0,
+   "sitelinks": 1,
+   "classes": [
+    "NCAA Division I women's basketball team"
+   ]
+  },
+  {
+   "name": "The University Centre for Studies in Namibia",
+   "category": "organization",
+   "bucket": 0,
+   "sitelinks": 1,
+   "classes": [
+    "higher education institution"
+   ]
+  },
+  {
+   "name": "Lincoln County High School (Nevada)",
+   "category": "organization",
+   "bucket": 0,
+   "sitelinks": 1,
+   "classes": [
+    "high school"
+   ]
+  },
+  {
+   "name": "University of Bandundu",
+   "category": "organization",
+   "bucket": 0,
+   "sitelinks": 3,
+   "classes": [
+    "university"
+   ]
+  },
+  {
+   "name": "Federazione delle Leghe coloniche",
+   "category": "organization",
+   "bucket": 0,
+   "sitelinks": 1,
+   "classes": [
+    "labor union"
+   ]
+  },
+  {
+   "name": "One Iowa",
+   "category": "organization",
+   "bucket": 0,
+   "sitelinks": 1,
+   "classes": [
+    "advocacy group",
+    "LGBTQ+ rights organization"
+   ]
+  },
+  {
+   "name": "Gran Fury",
+   "category": "organization",
+   "bucket": 0,
+   "sitelinks": 1,
+   "classes": [
+    "artist collective",
+    "disability rights organization"
+   ]
+  },
+  {
+   "name": "Heron International",
+   "category": "organization",
+   "bucket": 0,
+   "sitelinks": 2,
+   "classes": [
+    "business"
+   ]
+  },
+  {
+   "name": "Suru Alliance",
+   "category": "organization",
+   "bucket": 0,
+   "sitelinks": 2,
+   "classes": [
+    "political party",
+    "political coalition"
+   ]
+  },
+  {
+   "name": "Ottawa Business Journal",
+   "category": "organization",
+   "bucket": 0,
+   "sitelinks": 1,
+   "classes": [
+    "website",
+    "periodical",
+    "business periodical"
+   ]
+  },
+  {
+   "name": "Dhrupad Kendra Bhopal",
+   "category": "organization",
+   "bucket": 0,
+   "sitelinks": 3,
+   "classes": [
+    "organization"
+   ]
+  },
+  {
+   "name": "Carlton Cards",
+   "category": "organization",
+   "bucket": 0,
+   "sitelinks": 3,
+   "classes": [
+    "business"
+   ]
+  },
+  {
+   "name": "Midlands Christian College",
+   "category": "organization",
+   "bucket": 0,
+   "sitelinks": 1,
+   "classes": [
+    "boarding school"
+   ]
+  },
+  {
+   "name": "Plopsa",
+   "category": "organization",
+   "bucket": 0,
+   "sitelinks": 2,
+   "classes": [
+    "business"
+   ]
+  },
+  {
+   "name": "Aberlour House (school)",
+   "category": "organization",
+   "bucket": 0,
+   "sitelinks": 2,
+   "classes": [
+    "school"
+   ]
+  },
+  {
+   "name": "Joint Information Operations Warfare Center",
+   "category": "organization",
+   "bucket": 0,
+   "sitelinks": 1,
+   "classes": [
+    "government agency"
+   ]
+  },
+  {
+   "name": "Roth & Rau",
+   "category": "organization",
+   "bucket": 0,
+   "sitelinks": 2,
+   "classes": [
+    "business",
+    "enterprise"
+   ]
+  },
+  {
+   "name": "Ball State Cardinals women's basketball",
+   "category": "organization",
+   "bucket": 0,
+   "sitelinks": 1,
+   "classes": [
+    "college sports team",
+    "basketball team",
+    "NCAA Division I women's basketball team"
+   ]
+  },
+  {
+   "name": "F\u00e9d\u00e9ration Libanaise des Eclaireuses et des Guides",
+   "category": "organization",
+   "bucket": 0,
+   "sitelinks": 2,
+   "classes": [
+    "organization"
+   ]
+  },
+  {
+   "name": "Roladin",
+   "category": "organization",
+   "bucket": 0,
+   "sitelinks": 3,
+   "classes": [
+    "business",
+    "caf\u00e9 chain"
+   ]
+  },
+  {
+   "name": "American Zionist Council",
+   "category": "organization",
+   "bucket": 0,
+   "sitelinks": 2,
+   "classes": [
+    "advocacy group",
+    "Jewish organization"
+   ]
+  },
+  {
+   "name": "Stadio Sergio Lanfranchi",
+   "category": "organization",
+   "bucket": 1,
+   "sitelinks": 7,
+   "classes": [
+    "rugby union venue"
+   ]
+  },
+  {
+   "name": "IGR Remscheid",
+   "category": "organization",
+   "bucket": 1,
+   "sitelinks": 4,
+   "classes": [
+    "association football club"
+   ]
+  },
+  {
+   "name": "Communist Party (Bosnia and Herzegovina)",
+   "category": "organization",
+   "bucket": 1,
+   "sitelinks": 4,
+   "classes": [
+    "political party"
+   ]
+  },
+  {
+   "name": "Gibraltar Heritage Trust",
+   "category": "organization",
+   "bucket": 1,
+   "sitelinks": 4,
+   "classes": [
+    "charitable organization"
+   ]
+  },
+  {
+   "name": "Ruth Bancroft Garden",
+   "category": "organization",
+   "bucket": 1,
+   "sitelinks": 4,
+   "classes": [
+    "nonprofit organization",
+    "botanical garden"
+   ]
+  },
+  {
+   "name": "MFC Ayat",
+   "category": "organization",
+   "bucket": 1,
+   "sitelinks": 4,
+   "classes": [
+    "futsal club"
+   ]
+  },
+  {
+   "name": "University of Wales Trinity Saint David",
+   "category": "organization",
+   "bucket": 1,
+   "sitelinks": 8,
+   "classes": [
+    "university"
+   ]
+  },
+  {
+   "name": "Ingo Armenia",
+   "category": "organization",
+   "bucket": 1,
+   "sitelinks": 5,
+   "classes": [
+    "insurance company"
+   ]
+  },
+  {
+   "name": "Mandume ya Ndemufayo University",
+   "category": "organization",
+   "bucket": 1,
+   "sitelinks": 5,
+   "classes": [
+    "public university"
+   ]
+  },
+  {
+   "name": "T\u017dV Gredelj",
+   "category": "organization",
+   "bucket": 1,
+   "sitelinks": 8,
+   "classes": [
+    "business"
+   ]
+  },
+  {
+   "name": "Woodbrooke Quaker Study Centre",
+   "category": "organization",
+   "bucket": 1,
+   "sitelinks": 5,
+   "classes": [
+    "college",
+    "charitable organization"
+   ]
+  },
+  {
+   "name": "Victoria Highlanders FC",
+   "category": "organization",
+   "bucket": 1,
+   "sitelinks": 4,
+   "classes": [
+    "association football club"
+   ]
+  },
+  {
+   "name": "Commissione Nazionale per le Societ\u00e0 e la Borsa",
+   "category": "organization",
+   "bucket": 1,
+   "sitelinks": 9,
+   "classes": [
+    "registration authority",
+    "Independent adminstrative authority",
+    "financial regulatory agency"
+   ]
+  },
+  {
+   "name": "Jeune Europe",
+   "category": "organization",
+   "bucket": 1,
+   "sitelinks": 5,
+   "classes": [
+    "organization",
+    "political movement"
+   ]
+  },
+  {
+   "name": "NFTO (cycling team)",
+   "category": "organization",
+   "bucket": 1,
+   "sitelinks": 8,
+   "classes": [
+    "UCI Continental Team"
+   ]
+  },
+  {
+   "name": "North German Missionary Society",
+   "category": "organization",
+   "bucket": 1,
+   "sitelinks": 5,
+   "classes": [
+    "Christian missionary society"
+   ]
+  },
+  {
+   "name": "Brauerei Egg",
+   "category": "organization",
+   "bucket": 1,
+   "sitelinks": 5,
+   "classes": [
+    "brewery",
+    "business"
+   ]
+  },
+  {
+   "name": "12th Congress of the Russian Communist Party (Bolsheviks)",
+   "category": "organization",
+   "bucket": 1,
+   "sitelinks": 9,
+   "classes": [
+    "party conference",
+    "Congress of the Communist Party of the Soviet Union"
+   ]
+  },
+  {
+   "name": "Ulger (theater)",
+   "category": "organization",
+   "bucket": 1,
+   "sitelinks": 4,
+   "classes": [
+    "puppetry company",
+    "puppetry building"
+   ]
+  },
+  {
+   "name": "Estadio General Santander",
+   "category": "organization",
+   "bucket": 1,
+   "sitelinks": 9,
+   "classes": [
+    "association football venue"
+   ]
+  },
+  {
+   "name": "Kurobe Gorge Railway",
+   "category": "organization",
+   "bucket": 1,
+   "sitelinks": 6,
+   "classes": [
+    "rail company (Japan)"
+   ]
+  },
+  {
+   "name": "Denel Land Systems",
+   "category": "organization",
+   "bucket": 1,
+   "sitelinks": 5,
+   "classes": [
+    "business"
+   ]
+  },
+  {
+   "name": "Frost Bank",
+   "category": "organization",
+   "bucket": 1,
+   "sitelinks": 5,
+   "classes": [
+    "bank",
+    "financial institution",
+    "business",
+    "public company"
+   ]
+  },
+  {
+   "name": "Xinjiang Tianshan Leopard F.C.",
+   "category": "organization",
+   "bucket": 1,
+   "sitelinks": 9,
+   "classes": [
+    "association football club"
+   ]
+  },
+  {
+   "name": "Party of the Swedes",
+   "category": "organization",
+   "bucket": 1,
+   "sitelinks": 9,
+   "classes": [
+    "political party"
+   ]
+  },
+  {
+   "name": "Kazakhstan Temir Joly",
+   "category": "organization",
+   "bucket": 2,
+   "sitelinks": 26,
+   "classes": [
+    "railway company"
+   ]
+  },
+  {
+   "name": "Tonga Football Association",
+   "category": "organization",
+   "bucket": 2,
+   "sitelinks": 21,
+   "classes": [
+    "nonprofit organization",
+    "association football federation"
+   ]
+  },
+  {
+   "name": "Sydney Thunder",
+   "category": "organization",
+   "bucket": 2,
+   "sitelinks": 11,
+   "classes": [
+    "cricket team"
+   ]
+  },
+  {
+   "name": "PostBus Switzerland",
+   "category": "organization",
+   "bucket": 2,
+   "sitelinks": 15,
+   "classes": [
+    "transport company",
+    "business"
+   ]
+  },
+  {
+   "name": "Marimekko",
+   "category": "organization",
+   "bucket": 2,
+   "sitelinks": 27,
+   "classes": [
+    "business",
+    "enterprise"
+   ]
+  },
+  {
+   "name": "Al Ittihad Alexandria Club",
+   "category": "organization",
+   "bucket": 2,
+   "sitelinks": 22,
+   "classes": [
+    "association football club"
+   ]
+  },
+  {
+   "name": "Leninist Komsomol of the Russian Federation",
+   "category": "organization",
+   "bucket": 2,
+   "sitelinks": 11,
+   "classes": [
+    "youth organization"
+   ]
+  },
+  {
+   "name": "Timken Company",
+   "category": "organization",
+   "bucket": 2,
+   "sitelinks": 13,
+   "classes": [
+    "public company",
+    "enterprise",
+    "business"
+   ]
+  },
+  {
+   "name": "ZFK CSKA Moscow",
+   "category": "organization",
+   "bucket": 2,
+   "sitelinks": 12,
+   "classes": [
+    "women's association football team"
+   ]
+  },
+  {
+   "name": "Maring\u00e1 Futebol Clube",
+   "category": "organization",
+   "bucket": 2,
+   "sitelinks": 11,
+   "classes": [
+    "association football club"
+   ]
+  },
+  {
+   "name": "Uni\u00e3o S\u00e3o Jo\u00e3o Esporte Clube",
+   "category": "organization",
+   "bucket": 2,
+   "sitelinks": 17,
+   "classes": [
+    "association football club"
+   ]
+  },
+  {
+   "name": "Stade Michel d'Ornano",
+   "category": "organization",
+   "bucket": 2,
+   "sitelinks": 26,
+   "classes": [
+    "sports venue",
+    "association football venue"
+   ]
+  },
+  {
+   "name": "Ziggo",
+   "category": "organization",
+   "bucket": 2,
+   "sitelinks": 11,
+   "classes": [
+    "telecommunications company",
+    "enterprise",
+    "business"
+   ]
+  },
+  {
+   "name": "American Recordings (record label)",
+   "category": "organization",
+   "bucket": 2,
+   "sitelinks": 17,
+   "classes": [
+    "record label"
+   ]
+  },
+  {
+   "name": "Democratic Action (Venezuela)",
+   "category": "organization",
+   "bucket": 2,
+   "sitelinks": 22,
+   "classes": [
+    "political party"
+   ]
+  },
+  {
+   "name": "NV Arena",
+   "category": "organization",
+   "bucket": 2,
+   "sitelinks": 16,
+   "classes": [
+    "association football venue"
+   ]
+  },
+  {
+   "name": "BC Khimki",
+   "category": "organization",
+   "bucket": 2,
+   "sitelinks": 29,
+   "classes": [
+    "basketball team"
+   ]
+  },
+  {
+   "name": "Fisher-Price",
+   "category": "organization",
+   "bucket": 2,
+   "sitelinks": 20,
+   "classes": [
+    "brand",
+    "business",
+    "subsidiary company"
+   ]
+  },
+  {
+   "name": "Wilkes-Barre/Scranton Penguins",
+   "category": "organization",
+   "bucket": 2,
+   "sitelinks": 16,
+   "classes": [
+    "ice hockey team"
+   ]
+  },
+  {
+   "name": "Czechoslovak Group",
+   "category": "organization",
+   "bucket": 2,
+   "sitelinks": 17,
+   "classes": [
+    "holding company",
+    "business"
+   ]
+  },
+  {
+   "name": "Uruguay women's national volleyball team",
+   "category": "organization",
+   "bucket": 2,
+   "sitelinks": 14,
+   "classes": [
+    "women\u2019s national volleyball team"
+   ]
+  },
+  {
+   "name": "Olympic Real de Bangui",
+   "category": "organization",
+   "bucket": 2,
+   "sitelinks": 11,
+   "classes": [
+    "association football club"
+   ]
+  },
+  {
+   "name": "New Right (Israel)",
+   "category": "organization",
+   "bucket": 2,
+   "sitelinks": 22,
+   "classes": [
+    "political party",
+    "parliamentary group"
+   ]
+  },
+  {
+   "name": "Playrix",
+   "category": "organization",
+   "bucket": 2,
+   "sitelinks": 12,
+   "classes": [
+    "video game developer",
+    "business"
+   ]
+  },
+  {
+   "name": "Rh\u00f4ne-Poulenc",
+   "category": "organization",
+   "bucket": 2,
+   "sitelinks": 19,
+   "classes": [
+    "business",
+    "enterprise"
+   ]
+  },
+  {
+   "name": "University of G\u00f6ttingen",
+   "category": "organization",
+   "bucket": 3,
+   "sitelinks": 82,
+   "classes": [
+    "comprehensive university",
+    "campus university",
+    "public university",
+    "Stiftungshochschule"
+   ]
+  },
+  {
+   "name": "Aberystwyth",
+   "category": "organization",
+   "bucket": 3,
+   "sitelinks": 59,
+   "classes": [
+    "community",
+    "college town",
+    "market town"
+   ]
+  },
+  {
+   "name": "Arizona State University",
+   "category": "organization",
+   "bucket": 3,
+   "sitelinks": 44,
+   "classes": [
+    "university",
+    "open-access publisher",
+    "public educational institution of the United States"
+   ]
+  },
+  {
+   "name": "Mainz",
+   "category": "organization",
+   "bucket": 3,
+   "sitelinks": 150,
+   "classes": [
+    "college town",
+    "big city",
+    "urban municipality in Germany",
+    "urban district of Rhineland-Palatinate"
+   ]
+  },
+  {
+   "name": "Hamar Municipality",
+   "category": "organization",
+   "bucket": 3,
+   "sitelinks": 69,
+   "classes": [
+    "organization",
+    "municipality of Norway"
+   ]
+  },
+  {
+   "name": "Gulf Air",
+   "category": "organization",
+   "bucket": 3,
+   "sitelinks": 40,
+   "classes": [
+    "airline"
+   ]
+  },
+  {
+   "name": "Los Angeles Lakers",
+   "category": "organization",
+   "bucket": 3,
+   "sitelinks": 86,
+   "classes": [
+    "basketball team"
+   ]
+  },
+  {
+   "name": "Austria national football team",
+   "category": "organization",
+   "bucket": 3,
+   "sitelinks": 78,
+   "classes": [
+    "men's national association football team"
+   ]
+  },
+  {
+   "name": "Kyoto Sanga FC",
+   "category": "organization",
+   "bucket": 3,
+   "sitelinks": 34,
+   "classes": [
+    "association football club"
+   ]
+  },
+  {
+   "name": "Extremely high frequency",
+   "category": "organization",
+   "bucket": 3,
+   "sitelinks": 36,
+   "classes": [
+    "ITU radio band"
+   ]
+  },
+  {
+   "name": "Nigeria national football team",
+   "category": "organization",
+   "bucket": 3,
+   "sitelinks": 78,
+   "classes": [
+    "men's national association football team"
+   ]
+  },
+  {
+   "name": "Schutzstaffel",
+   "category": "organization",
+   "bucket": 3,
+   "sitelinks": 97,
+   "classes": [
+    "paramilitary organization",
+    "military organization",
+    "squadron"
+   ]
+  },
+  {
+   "name": "Bolivia national football team",
+   "category": "organization",
+   "bucket": 3,
+   "sitelinks": 62,
+   "classes": [
+    "men's national association football team"
+   ]
+  },
+  {
+   "name": "Crici\u00fama Esporte Clube",
+   "category": "organization",
+   "bucket": 3,
+   "sitelinks": 33,
+   "classes": [
+    "association football club"
+   ]
+  },
+  {
+   "name": "Wrexham A.F.C.",
+   "category": "organization",
+   "bucket": 3,
+   "sitelinks": 47,
+   "classes": [
+    "association football club"
+   ]
+  },
+  {
+   "name": "Kahoot!",
+   "category": "organization",
+   "bucket": 3,
+   "sitelinks": 36,
+   "classes": [
+    "business",
+    "online service",
+    "public company"
+   ]
+  },
+  {
+   "name": "Turkmen Soviet Socialist Republic",
+   "category": "organization",
+   "bucket": 3,
+   "sitelinks": 77,
+   "classes": [
+    "republic of the Soviet Union"
+   ]
+  },
+  {
+   "name": "Van Gogh Museum",
+   "category": "organization",
+   "bucket": 3,
+   "sitelinks": 60,
+   "classes": [
+    "museum",
+    "art museum",
+    "cultural institution"
+   ]
+  },
+  {
+   "name": "Technical University of Denmark",
+   "category": "organization",
+   "bucket": 3,
+   "sitelinks": 32,
+   "classes": [
+    "university of technology",
+    "public university"
+   ]
+  },
+  {
+   "name": "FC Pyunik",
+   "category": "organization",
+   "bucket": 3,
+   "sitelinks": 51,
+   "classes": [
+    "association football club"
+   ]
+  },
+  {
+   "name": "Organization of American States",
+   "category": "organization",
+   "bucket": 3,
+   "sitelinks": 92,
+   "classes": [
+    "international organization"
+   ]
+  },
+  {
+   "name": "Musavat",
+   "category": "organization",
+   "bucket": 3,
+   "sitelinks": 31,
+   "classes": [
+    "political party"
+   ]
+  },
+  {
+   "name": "Catenaccio",
+   "category": "organization",
+   "bucket": 3,
+   "sitelinks": 33,
+   "classes": [
+    "association football terminology"
+   ]
+  },
+  {
+   "name": "Toronto Blue Jays",
+   "category": "organization",
+   "bucket": 3,
+   "sitelinks": 39,
+   "classes": [
+    "baseball team",
+    "expansion team"
+   ]
+  },
+  {
+   "name": "Ukrainian Association of Football",
+   "category": "organization",
+   "bucket": 3,
+   "sitelinks": 44,
+   "classes": [
+    "association football federation"
+   ]
+  },
+  {
+   "name": "Sazanami Cherry",
+   "category": "creative_work",
+   "bucket": 0,
+   "sitelinks": 3,
+   "classes": [
+    "manga series"
+   ]
+  },
+  {
+   "name": "Songs About the Ocean",
+   "category": "creative_work",
+   "bucket": 0,
+   "sitelinks": 1,
+   "classes": [
+    "album"
+   ]
+  },
+  {
+   "name": "Dronningens vagtmester",
+   "category": "creative_work",
+   "bucket": 0,
+   "sitelinks": 3,
+   "classes": [
+    "film"
+   ]
+  },
+  {
+   "name": "When a Cat Faces West",
+   "category": "creative_work",
+   "bucket": 0,
+   "sitelinks": 2,
+   "classes": [
+    "manga series"
+   ]
+  },
+  {
+   "name": "High on the Hog (book)",
+   "category": "creative_work",
+   "bucket": 0,
+   "sitelinks": 1,
+   "classes": [
+    "literary work"
+   ]
+  },
+  {
+   "name": "Guilt (1931 film)",
+   "category": "creative_work",
+   "bucket": 0,
+   "sitelinks": 1,
+   "classes": [
+    "film"
+   ]
+  },
+  {
+   "name": "Terrell County Sun",
+   "category": "creative_work",
+   "bucket": 0,
+   "sitelinks": 1,
+   "classes": [
+    "newspaper"
+   ]
+  },
+  {
+   "name": "Dial a Prayer",
+   "category": "creative_work",
+   "bucket": 0,
+   "sitelinks": 2,
+   "classes": [
+    "film"
+   ]
+  },
+  {
+   "name": "Blonde Alibi",
+   "category": "creative_work",
+   "bucket": 0,
+   "sitelinks": 3,
+   "classes": [
+    "film"
+   ]
+  },
+  {
+   "name": "Mott the Hoople (novel)",
+   "category": "creative_work",
+   "bucket": 0,
+   "sitelinks": 1,
+   "classes": [
+    "literary work"
+   ]
+  },
+  {
+   "name": "W30EG-D",
+   "category": "creative_work",
+   "bucket": 0,
+   "sitelinks": 1,
+   "classes": [
+    "television station"
+   ]
+  },
+  {
+   "name": "Ladies Hit Squad (song)",
+   "category": "creative_work",
+   "bucket": 0,
+   "sitelinks": 1,
+   "classes": [
+    "single"
+   ]
+  },
+  {
+   "name": "Short Circuit (TV series)",
+   "category": "creative_work",
+   "bucket": 0,
+   "sitelinks": 2,
+   "classes": [
+    "animated short film series"
+   ]
+  },
+  {
+   "name": "Bangladesh National Film Award for Best Actor",
+   "category": "creative_work",
+   "bucket": 0,
+   "sitelinks": 2,
+   "classes": [
+    "Bangladesh National Film Awards",
+    "award for best leading actor",
+    "film award category"
+   ]
+  },
+  {
+   "name": "A Sectioned Beam",
+   "category": "creative_work",
+   "bucket": 0,
+   "sitelinks": 1,
+   "classes": [
+    "extended play"
+   ]
+  },
+  {
+   "name": "Gravy Deco",
+   "category": "creative_work",
+   "bucket": 0,
+   "sitelinks": 1,
+   "classes": [
+    "album"
+   ]
+  },
+  {
+   "name": "Master of Illusion (album)",
+   "category": "creative_work",
+   "bucket": 0,
+   "sitelinks": 3,
+   "classes": [
+    "album"
+   ]
+  },
+  {
+   "name": "The White House Doctor",
+   "category": "creative_work",
+   "bucket": 0,
+   "sitelinks": 1,
+   "classes": [
+    "literary work"
+   ]
+  },
+  {
+   "name": "The Ultimate Dance Battle",
+   "category": "creative_work",
+   "bucket": 0,
+   "sitelinks": 2,
+   "classes": [
+    "television program"
+   ]
+  },
+  {
+   "name": "Bunshinsaba (2012 film)",
+   "category": "creative_work",
+   "bucket": 0,
+   "sitelinks": 1,
+   "classes": [
+    "film"
+   ]
+  },
+  {
+   "name": "War of the Monster Trucks",
+   "category": "creative_work",
+   "bucket": 0,
+   "sitelinks": 2,
+   "classes": [
+    "magazine"
+   ]
+  },
+  {
+   "name": "Game of Talents",
+   "category": "creative_work",
+   "bucket": 0,
+   "sitelinks": 1,
+   "classes": [
+    "television series"
+   ]
+  },
+  {
+   "name": "Chant de Linos",
+   "category": "creative_work",
+   "bucket": 0,
+   "sitelinks": 2,
+   "classes": [
+    "musical work/composition"
+   ]
+  },
+  {
+   "name": "Spaniards (band)",
+   "category": "creative_work",
+   "bucket": 0,
+   "sitelinks": 1,
+   "classes": [
+    "musical group"
+   ]
+  },
+  {
+   "name": "Oh-Oh, I'm Falling in Love Again",
+   "category": "creative_work",
+   "bucket": 0,
+   "sitelinks": 1,
+   "classes": [
+    "musical work/composition"
+   ]
+  },
+  {
+   "name": "The Flame of Life",
+   "category": "creative_work",
+   "bucket": 1,
+   "sitelinks": 9,
+   "classes": [
+    "film"
+   ]
+  },
+  {
+   "name": "The Dreamer (1965 film)",
+   "category": "creative_work",
+   "bucket": 1,
+   "sitelinks": 5,
+   "classes": [
+    "film"
+   ]
+  },
+  {
+   "name": "La Cause du peuple",
+   "category": "creative_work",
+   "bucket": 1,
+   "sitelinks": 5,
+   "classes": [
+    "newspaper"
+   ]
+  },
+  {
+   "name": "Call of Duty: World at War (Nintendo DS)",
+   "category": "creative_work",
+   "bucket": 1,
+   "sitelinks": 6,
+   "classes": [
+    "video game"
+   ]
+  },
+  {
+   "name": "Daisuki da yo",
+   "category": "creative_work",
+   "bucket": 1,
+   "sitelinks": 6,
+   "classes": [
+    "single"
+   ]
+  },
+  {
+   "name": "Homecoming (1984 film)",
+   "category": "creative_work",
+   "bucket": 1,
+   "sitelinks": 10,
+   "classes": [
+    "film"
+   ]
+  },
+  {
+   "name": "A Love Under an Umbrella",
+   "category": "creative_work",
+   "bucket": 1,
+   "sitelinks": 5,
+   "classes": [
+    "film"
+   ]
+  },
+  {
+   "name": "All About It",
+   "category": "creative_work",
+   "bucket": 1,
+   "sitelinks": 7,
+   "classes": [
+    "single"
+   ]
+  },
+  {
+   "name": "Alien Resurrection (video game)",
+   "category": "creative_work",
+   "bucket": 1,
+   "sitelinks": 9,
+   "classes": [
+    "video game"
+   ]
+  },
+  {
+   "name": "Exodus Fall",
+   "category": "creative_work",
+   "bucket": 1,
+   "sitelinks": 5,
+   "classes": [
+    "film"
+   ]
+  },
+  {
+   "name": "The Miracle According to Salom\u00e9",
+   "category": "creative_work",
+   "bucket": 1,
+   "sitelinks": 5,
+   "classes": [
+    "film"
+   ]
+  },
+  {
+   "name": "Happy Game",
+   "category": "creative_work",
+   "bucket": 1,
+   "sitelinks": 9,
+   "classes": [
+    "video game"
+   ]
+  },
+  {
+   "name": "Shikand-gumanig Vizar",
+   "category": "creative_work",
+   "bucket": 1,
+   "sitelinks": 6,
+   "classes": [
+    "written work"
+   ]
+  },
+  {
+   "name": "Jerry, Jerry, Quite Contrary",
+   "category": "creative_work",
+   "bucket": 1,
+   "sitelinks": 6,
+   "classes": [
+    "animated short film"
+   ]
+  },
+  {
+   "name": "Lies and Truth",
+   "category": "creative_work",
+   "bucket": 1,
+   "sitelinks": 7,
+   "classes": [
+    "single"
+   ]
+  },
+  {
+   "name": "Singhasan Battisi",
+   "category": "creative_work",
+   "bucket": 1,
+   "sitelinks": 10,
+   "classes": [
+    "literary work"
+   ]
+  },
+  {
+   "name": "Tumble Leaf",
+   "category": "creative_work",
+   "bucket": 1,
+   "sitelinks": 4,
+   "classes": [
+    "animated television series"
+   ]
+  },
+  {
+   "name": "The Seeker (The Who song)",
+   "category": "creative_work",
+   "bucket": 1,
+   "sitelinks": 7,
+   "classes": [
+    "musical work/composition"
+   ]
+  },
+  {
+   "name": "Tahdhib al-Athar",
+   "category": "creative_work",
+   "bucket": 1,
+   "sitelinks": 6,
+   "classes": [
+    "work"
+   ]
+  },
+  {
+   "name": "The Good Old Boys (film)",
+   "category": "creative_work",
+   "bucket": 1,
+   "sitelinks": 8,
+   "classes": [
+    "television film"
+   ]
+  },
+  {
+   "name": "Poland in the Eurovision Song Contest 2010",
+   "category": "creative_work",
+   "bucket": 1,
+   "sitelinks": 8,
+   "classes": [
+    "nation in the Eurovision Song Contest"
+   ]
+  },
+  {
+   "name": "The Treasure of Bird Island",
+   "category": "creative_work",
+   "bucket": 1,
+   "sitelinks": 7,
+   "classes": [
+    "animated film"
+   ]
+  },
+  {
+   "name": "The Dog Problem",
+   "category": "creative_work",
+   "bucket": 1,
+   "sitelinks": 6,
+   "classes": [
+    "film"
+   ]
+  },
+  {
+   "name": "Once Upon a Planet",
+   "category": "creative_work",
+   "bucket": 1,
+   "sitelinks": 6,
+   "classes": [
+    "animated series episode",
+    "Star Trek episode"
+   ]
+  },
+  {
+   "name": "The Del-Vikings",
+   "category": "creative_work",
+   "bucket": 1,
+   "sitelinks": 10,
+   "classes": [
+    "musical group"
+   ]
+  },
+  {
+   "name": "The Hymn of Death",
+   "category": "creative_work",
+   "bucket": 2,
+   "sitelinks": 14,
+   "classes": [
+    "television series"
+   ]
+  },
+  {
+   "name": "Steal This Film",
+   "category": "creative_work",
+   "bucket": 2,
+   "sitelinks": 12,
+   "classes": [
+    "short film"
+   ]
+  },
+  {
+   "name": "International Superstar Soccer",
+   "category": "creative_work",
+   "bucket": 2,
+   "sitelinks": 12,
+   "classes": [
+    "video game series"
+   ]
+  },
+  {
+   "name": "La Chair de l'orchid\u00e9e",
+   "category": "creative_work",
+   "bucket": 2,
+   "sitelinks": 11,
+   "classes": [
+    "film"
+   ]
+  },
+  {
+   "name": "Stormbreaker (film)",
+   "category": "creative_work",
+   "bucket": 2,
+   "sitelinks": 25,
+   "classes": [
+    "film"
+   ]
+  },
+  {
+   "name": "Now & Then (The Carpenters album)",
+   "category": "creative_work",
+   "bucket": 2,
+   "sitelinks": 14,
+   "classes": [
+    "album"
+   ]
+  },
+  {
+   "name": "A Caribbean Mystery",
+   "category": "creative_work",
+   "bucket": 2,
+   "sitelinks": 28,
+   "classes": [
+    "literary work"
+   ]
+  },
+  {
+   "name": "French Fried Vacation",
+   "category": "creative_work",
+   "bucket": 2,
+   "sitelinks": 14,
+   "classes": [
+    "film"
+   ]
+  },
+  {
+   "name": "Girls5eva",
+   "category": "creative_work",
+   "bucket": 2,
+   "sitelinks": 11,
+   "classes": [
+    "television series"
+   ]
+  },
+  {
+   "name": "My Boyfriend's Back (film)",
+   "category": "creative_work",
+   "bucket": 2,
+   "sitelinks": 12,
+   "classes": [
+    "film"
+   ]
+  },
+  {
+   "name": "Resident Evil: Operation Raccoon City",
+   "category": "creative_work",
+   "bucket": 2,
+   "sitelinks": 20,
+   "classes": [
+    "video game"
+   ]
+  },
+  {
+   "name": "Role Play",
+   "category": "creative_work",
+   "bucket": 2,
+   "sitelinks": 12,
+   "classes": [
+    "film"
+   ]
+  },
+  {
+   "name": "Souls of Mischief",
+   "category": "creative_work",
+   "bucket": 2,
+   "sitelinks": 12,
+   "classes": [
+    "musical group"
+   ]
+  },
+  {
+   "name": "De Wilhelmus",
+   "category": "creative_work",
+   "bucket": 2,
+   "sitelinks": 11,
+   "classes": [
+    "musical work/composition"
+   ]
+  },
+  {
+   "name": "Roose Bolton",
+   "category": "creative_work",
+   "bucket": 2,
+   "sitelinks": 12,
+   "classes": [
+    "A Song of Ice and Fire character",
+    "Game of Thrones character",
+    "fictional human"
+   ]
+  },
+  {
+   "name": "Asian studies",
+   "category": "creative_work",
+   "bucket": 2,
+   "sitelinks": 11,
+   "classes": [
+    "field of study",
+    "academic major",
+    "field of work",
+    "academic discipline"
+   ]
+  },
+  {
+   "name": "Be Silent, My Sorrow, Be Silent",
+   "category": "creative_work",
+   "bucket": 2,
+   "sitelinks": 18,
+   "classes": [
+    "film"
+   ]
+  },
+  {
+   "name": "Murder Is Easy",
+   "category": "creative_work",
+   "bucket": 2,
+   "sitelinks": 27,
+   "classes": [
+    "literary work"
+   ]
+  },
+  {
+   "name": "Henry Chinaski",
+   "category": "creative_work",
+   "bucket": 2,
+   "sitelinks": 14,
+   "classes": [
+    "literary character",
+    "fictional human",
+    "film character"
+   ]
+  },
+  {
+   "name": "Gilmore Girls: A Year in the Life",
+   "category": "creative_work",
+   "bucket": 2,
+   "sitelinks": 18,
+   "classes": [
+    "television series"
+   ]
+  },
+  {
+   "name": "November (2004 film)",
+   "category": "creative_work",
+   "bucket": 2,
+   "sitelinks": 11,
+   "classes": [
+    "film"
+   ]
+  },
+  {
+   "name": "Small Talk (song)",
+   "category": "creative_work",
+   "bucket": 2,
+   "sitelinks": 18,
+   "classes": [
+    "single"
+   ]
+  },
+  {
+   "name": "Tenjho Tenge",
+   "category": "creative_work",
+   "bucket": 2,
+   "sitelinks": 20,
+   "classes": [
+    "manga series"
+   ]
+  },
+  {
+   "name": "Fitzwilliam Virginal Book",
+   "category": "creative_work",
+   "bucket": 2,
+   "sitelinks": 11,
+   "classes": [
+    "manuscript",
+    "musical work/composition"
+   ]
+  },
+  {
+   "name": "Octahedron (album)",
+   "category": "creative_work",
+   "bucket": 2,
+   "sitelinks": 18,
+   "classes": [
+    "album"
+   ]
+  },
+  {
+   "name": "Bridget Jones: The Edge of Reason",
+   "category": "creative_work",
+   "bucket": 3,
+   "sitelinks": 39,
+   "classes": [
+    "film"
+   ]
+  },
+  {
+   "name": "Suzume",
+   "category": "creative_work",
+   "bucket": 3,
+   "sitelinks": 39,
+   "classes": [
+    "anime film"
+   ]
+  },
+  {
+   "name": "HIStory: Past, Present and Future, Book I",
+   "category": "creative_work",
+   "bucket": 3,
+   "sitelinks": 41,
+   "classes": [
+    "album"
+   ]
+  },
+  {
+   "name": "American Made (film)",
+   "category": "creative_work",
+   "bucket": 3,
+   "sitelinks": 32,
+   "classes": [
+    "film"
+   ]
+  },
+  {
+   "name": "La fille du r\u00e9giment",
+   "category": "creative_work",
+   "bucket": 3,
+   "sitelinks": 34,
+   "classes": [
+    "dramatico-musical work"
+   ]
+  },
+  {
+   "name": "Fifty Shades of Grey (film)",
+   "category": "creative_work",
+   "bucket": 3,
+   "sitelinks": 55,
+   "classes": [
+    "film"
+   ]
+  },
+  {
+   "name": "The Big Heat",
+   "category": "creative_work",
+   "bucket": 3,
+   "sitelinks": 37,
+   "classes": [
+    "film"
+   ]
+  },
+  {
+   "name": "Are We There Yet? (film)",
+   "category": "creative_work",
+   "bucket": 3,
+   "sitelinks": 31,
+   "classes": [
+    "film"
+   ]
+  },
+  {
+   "name": "Killer Queen",
+   "category": "creative_work",
+   "bucket": 3,
+   "sitelinks": 37,
+   "classes": [
+    "single"
+   ]
+  },
+  {
+   "name": "Ottoman wars in Europe",
+   "category": "creative_work",
+   "bucket": 3,
+   "sitelinks": 42,
+   "classes": [
+    "series of wars"
+   ]
+  },
+  {
+   "name": "Mackenna's Gold",
+   "category": "creative_work",
+   "bucket": 3,
+   "sitelinks": 35,
+   "classes": [
+    "film"
+   ]
+  },
+  {
+   "name": "The Rundown",
+   "category": "creative_work",
+   "bucket": 3,
+   "sitelinks": 40,
+   "classes": [
+    "film"
+   ]
+  },
+  {
+   "name": "Queen II",
+   "category": "creative_work",
+   "bucket": 3,
+   "sitelinks": 50,
+   "classes": [
+    "album"
+   ]
+  },
+  {
+   "name": "Boss (video games)",
+   "category": "creative_work",
+   "bucket": 3,
+   "sitelinks": 40,
+   "classes": [
+    "stock character",
+    "video game term"
+   ]
+  },
+  {
+   "name": "Bolero (Spanish dance)",
+   "category": "creative_work",
+   "bucket": 3,
+   "sitelinks": 31,
+   "classes": [
+    "music genre",
+    "musical form",
+    "type of dance"
+   ]
+  },
+  {
+   "name": "Volkswagen Tiguan",
+   "category": "creative_work",
+   "bucket": 3,
+   "sitelinks": 34,
+   "classes": [
+    "car model series"
+   ]
+  },
+  {
+   "name": "Street Fighter (1994 film)",
+   "category": "creative_work",
+   "bucket": 3,
+   "sitelinks": 32,
+   "classes": [
+    "film"
+   ]
+  },
+  {
+   "name": "Men of Honor",
+   "category": "creative_work",
+   "bucket": 3,
+   "sitelinks": 36,
+   "classes": [
+    "film"
+   ]
+  },
+  {
+   "name": "The Sunday Times",
+   "category": "creative_work",
+   "bucket": 3,
+   "sitelinks": 43,
+   "classes": [
+    "weekly newspaper"
+   ]
+  },
+  {
+   "name": "Comfortably Numb",
+   "category": "creative_work",
+   "bucket": 3,
+   "sitelinks": 31,
+   "classes": [
+    "musical work/composition"
+   ]
+  },
+  {
+   "name": "The Brothers Grimm (film)",
+   "category": "creative_work",
+   "bucket": 3,
+   "sitelinks": 46,
+   "classes": [
+    "film"
+   ]
+  },
+  {
+   "name": "Anastasia (1997 film)",
+   "category": "creative_work",
+   "bucket": 3,
+   "sitelinks": 73,
+   "classes": [
+    "animated film"
+   ]
+  },
+  {
+   "name": "Meshuggah",
+   "category": "creative_work",
+   "bucket": 3,
+   "sitelinks": 43,
+   "classes": [
+    "musical group"
+   ]
+  },
+  {
+   "name": "Head-On (film)",
+   "category": "creative_work",
+   "bucket": 3,
+   "sitelinks": 37,
+   "classes": [
+    "film"
+   ]
+  },
+  {
+   "name": "Gaudeamus igitur",
+   "category": "creative_work",
+   "bucket": 3,
+   "sitelinks": 52,
+   "classes": [
+    "drinking song",
+    "commercium song"
+   ]
+  },
+  {
+   "name": "Bagby Branch",
+   "category": "place",
+   "bucket": 0,
+   "sitelinks": 2,
+   "classes": [
+    "river"
+   ]
+  },
+  {
+   "name": "KGFT",
+   "category": "place",
+   "bucket": 0,
+   "sitelinks": 1,
+   "classes": [
+    "radio station"
+   ]
+  },
+  {
+   "name": "Kokatsura-ike Dam",
+   "category": "place",
+   "bucket": 0,
+   "sitelinks": 3,
+   "classes": [
+    "dam"
+   ]
+  },
+  {
+   "name": "WMJT",
+   "category": "place",
+   "bucket": 0,
+   "sitelinks": 1,
+   "classes": [
+    "radio station"
+   ]
+  },
+  {
+   "name": "Dermott Commercial Historic District",
+   "category": "place",
+   "bucket": 0,
+   "sitelinks": 1,
+   "classes": [
+    "historic district"
+   ]
+  },
+  {
+   "name": "Dropping Lick Creek",
+   "category": "place",
+   "bucket": 0,
+   "sitelinks": 2,
+   "classes": [
+    "river"
+   ]
+  },
+  {
+   "name": "Tasker\u2013Morris station",
+   "category": "place",
+   "bucket": 0,
+   "sitelinks": 3,
+   "classes": [
+    "underground railway station",
+    "underground station",
+    "metro station"
+   ]
+  },
+  {
+   "name": "Sergeant Clark House",
+   "category": "place",
+   "bucket": 0,
+   "sitelinks": 1,
+   "classes": [
+    "house"
+   ]
+  },
+  {
+   "name": "Lupire",
+   "category": "place",
+   "bucket": 0,
+   "sitelinks": 1,
+   "classes": [
+    "commune of Angola"
+   ]
+  },
+  {
+   "name": "Thingu railway station",
+   "category": "place",
+   "bucket": 0,
+   "sitelinks": 2,
+   "classes": [
+    "railway station",
+    "station located on surface"
+   ]
+  },
+  {
+   "name": "Buttonwoods Museum",
+   "category": "place",
+   "bucket": 0,
+   "sitelinks": 2,
+   "classes": [
+    "museum"
+   ]
+  },
+  {
+   "name": "Blantonia Plantation",
+   "category": "place",
+   "bucket": 0,
+   "sitelinks": 1,
+   "classes": [
+    "house"
+   ]
+  },
+  {
+   "name": "Bunnahabhain",
+   "category": "place",
+   "bucket": 0,
+   "sitelinks": 3,
+   "classes": [
+    "village"
+   ]
+  },
+  {
+   "name": "Fisherman Island (Maine)",
+   "category": "place",
+   "bucket": 0,
+   "sitelinks": 2,
+   "classes": [
+    "island"
+   ]
+  },
+  {
+   "name": "Gilbert House (Worthington, Ohio)",
+   "category": "place",
+   "bucket": 0,
+   "sitelinks": 2,
+   "classes": [
+    "house"
+   ]
+  },
+  {
+   "name": "Big Sandy Creek (Sabine River tributary)",
+   "category": "place",
+   "bucket": 0,
+   "sitelinks": 2,
+   "classes": [
+    "river"
+   ]
+  },
+  {
+   "name": "Malwathu Maha Viharaya",
+   "category": "place",
+   "bucket": 0,
+   "sitelinks": 3,
+   "classes": [
+    "Buddhist temple"
+   ]
+  },
+  {
+   "name": "Aberystwyth Arts Centre",
+   "category": "place",
+   "bucket": 0,
+   "sitelinks": 3,
+   "classes": [
+    "movie theater",
+    "arts center",
+    "theatre building",
+    "concert hall"
+   ]
+  },
+  {
+   "name": "Carmen de Patagones Airport",
+   "category": "place",
+   "bucket": 0,
+   "sitelinks": 2,
+   "classes": [
+    "aerodrome",
+    "airport"
+   ]
+  },
+  {
+   "name": "Matonge (Kinshasa)",
+   "category": "place",
+   "bucket": 0,
+   "sitelinks": 2,
+   "classes": [
+    "neighborhood"
+   ]
+  },
+  {
+   "name": "Sanctuary of Carbayu",
+   "category": "place",
+   "bucket": 0,
+   "sitelinks": 3,
+   "classes": [
+    "church building",
+    "monument"
+   ]
+  },
+  {
+   "name": "R586 road (Ireland)",
+   "category": "place",
+   "bucket": 0,
+   "sitelinks": 1,
+   "classes": [
+    "road"
+   ]
+  },
+  {
+   "name": "Jesar",
+   "category": "place",
+   "bucket": 0,
+   "sitelinks": 3,
+   "classes": [
+    "village in India"
+   ]
+  },
+  {
+   "name": "Nidi railway station",
+   "category": "place",
+   "bucket": 0,
+   "sitelinks": 3,
+   "classes": [
+    "railway station"
+   ]
+  },
+  {
+   "name": "Pekhu Baghakhor",
+   "category": "place",
+   "bucket": 0,
+   "sitelinks": 1,
+   "classes": [
+    "human settlement"
+   ]
+  },
+  {
+   "name": "Winslow\u2013Lindbergh Regional Airport",
+   "category": "place",
+   "bucket": 1,
+   "sitelinks": 9,
+   "classes": [
+    "airport"
+   ]
+  },
+  {
+   "name": "Puthencruz",
+   "category": "place",
+   "bucket": 1,
+   "sitelinks": 9,
+   "classes": [
+    "town"
+   ]
+  },
+  {
+   "name": "S\u0142upy Du\u017ce",
+   "category": "place",
+   "bucket": 1,
+   "sitelinks": 8,
+   "classes": [
+    "village of Poland"
+   ]
+  },
+  {
+   "name": "Sobaeksan National Park",
+   "category": "place",
+   "bucket": 1,
+   "sitelinks": 9,
+   "classes": [
+    "national park"
+   ]
+  },
+  {
+   "name": "Enpuku-ji",
+   "category": "place",
+   "bucket": 1,
+   "sitelinks": 8,
+   "classes": [
+    "Buddhist temple"
+   ]
+  },
+  {
+   "name": "Little Bernera",
+   "category": "place",
+   "bucket": 1,
+   "sitelinks": 10,
+   "classes": [
+    "island"
+   ]
+  },
+  {
+   "name": "Birse",
+   "category": "place",
+   "bucket": 1,
+   "sitelinks": 7,
+   "classes": [
+    "village"
+   ]
+  },
+  {
+   "name": "Kilcash Castle",
+   "category": "place",
+   "bucket": 1,
+   "sitelinks": 6,
+   "classes": [
+    "castle"
+   ]
+  },
+  {
+   "name": "Eslamabad-e Mugui",
+   "category": "place",
+   "bucket": 1,
+   "sitelinks": 10,
+   "classes": [
+    "village"
+   ]
+  },
+  {
+   "name": "Gownjuk-e Olya",
+   "category": "place",
+   "bucket": 1,
+   "sitelinks": 6,
+   "classes": [
+    "village"
+   ]
+  },
+  {
+   "name": "Pyunik Training Centre",
+   "category": "place",
+   "bucket": 1,
+   "sitelinks": 7,
+   "classes": [
+    "stadium"
+   ]
+  },
+  {
+   "name": "Wandolin",
+   "category": "place",
+   "bucket": 1,
+   "sitelinks": 4,
+   "classes": [
+    "village of Poland"
+   ]
+  },
+  {
+   "name": "Czy\u017cew, Masovian Voivodeship",
+   "category": "place",
+   "bucket": 1,
+   "sitelinks": 7,
+   "classes": [
+    "village of Poland"
+   ]
+  },
+  {
+   "name": "Lullingstone",
+   "category": "place",
+   "bucket": 1,
+   "sitelinks": 8,
+   "classes": [
+    "village",
+    "civil parish"
+   ]
+  },
+  {
+   "name": "Dolnik, Lower Silesian Voivodeship",
+   "category": "place",
+   "bucket": 1,
+   "sitelinks": 10,
+   "classes": [
+    "village of Poland"
+   ]
+  },
+  {
+   "name": "Kazimen station",
+   "category": "place",
+   "bucket": 1,
+   "sitelinks": 7,
+   "classes": [
+    "railway station",
+    "metro station",
+    "underground station"
+   ]
+  },
+  {
+   "name": "B\u00fcrn\u00fck, Mengen",
+   "category": "place",
+   "bucket": 1,
+   "sitelinks": 7,
+   "classes": [
+    "village of Turkey"
+   ]
+  },
+  {
+   "name": "Baxter Park",
+   "category": "place",
+   "bucket": 1,
+   "sitelinks": 4,
+   "classes": [
+    "park"
+   ]
+  },
+  {
+   "name": "\u00c7omaklar, Devrek",
+   "category": "place",
+   "bucket": 1,
+   "sitelinks": 7,
+   "classes": [
+    "village of Turkey"
+   ]
+  },
+  {
+   "name": "Str\u00f3\u017ca, Lublin Voivodeship",
+   "category": "place",
+   "bucket": 1,
+   "sitelinks": 8,
+   "classes": [
+    "village of Poland"
+   ]
+  },
+  {
+   "name": "Andronovo, Nesvoysky Selsoviet, Vologodsky District, Vologda Oblast",
+   "category": "place",
+   "bucket": 1,
+   "sitelinks": 4,
+   "classes": [
+    "hamlet"
+   ]
+  },
+  {
+   "name": "Nuclear power in the United Arab Emirates",
+   "category": "place",
+   "bucket": 1,
+   "sitelinks": 5,
+   "classes": [
+    "aspect in a geographic region"
+   ]
+  },
+  {
+   "name": "Mazian, Gilan",
+   "category": "place",
+   "bucket": 1,
+   "sitelinks": 10,
+   "classes": [
+    "village"
+   ]
+  },
+  {
+   "name": "Umananda Island",
+   "category": "place",
+   "bucket": 1,
+   "sitelinks": 10,
+   "classes": [
+    "island",
+    "river island"
+   ]
+  },
+  {
+   "name": "Skrzynka Ma\u0142a",
+   "category": "place",
+   "bucket": 1,
+   "sitelinks": 7,
+   "classes": [
+    "village of Poland"
+   ]
+  },
+  {
+   "name": "Episkopi Bay",
+   "category": "place",
+   "bucket": 2,
+   "sitelinks": 16,
+   "classes": [
+    "bay"
+   ]
+  },
+  {
+   "name": "Chaloupky",
+   "category": "place",
+   "bucket": 2,
+   "sitelinks": 25,
+   "classes": [
+    "municipality of the Czech Republic"
+   ]
+  },
+  {
+   "name": "Nagyf\u00fcged",
+   "category": "place",
+   "bucket": 2,
+   "sitelinks": 18,
+   "classes": [
+    "municipality of Hungary"
+   ]
+  },
+  {
+   "name": "Lakeshore, Ontario",
+   "category": "place",
+   "bucket": 2,
+   "sitelinks": 14,
+   "classes": [
+    "town",
+    "lower-tier municipality of Ontario"
+   ]
+  },
+  {
+   "name": "Granity",
+   "category": "place",
+   "bucket": 2,
+   "sitelinks": 11,
+   "classes": [
+    "town"
+   ]
+  },
+  {
+   "name": "European route E92",
+   "category": "place",
+   "bucket": 2,
+   "sitelinks": 20,
+   "classes": [
+    "road"
+   ]
+  },
+  {
+   "name": "San Antonio de Oriente",
+   "category": "place",
+   "bucket": 2,
+   "sitelinks": 14,
+   "classes": [
+    "municipality of Honduras"
+   ]
+  },
+  {
+   "name": "Azemmour",
+   "category": "place",
+   "bucket": 2,
+   "sitelinks": 30,
+   "classes": [
+    "commune of Morocco",
+    "urban commune of Morocco"
+   ]
+  },
+  {
+   "name": "Villeneuve-l\u00e8s-Charnod",
+   "category": "place",
+   "bucket": 2,
+   "sitelinks": 27,
+   "classes": [
+    "commune of France",
+    "delegated commune"
+   ]
+  },
+  {
+   "name": "Finnish submarine Vesikko",
+   "category": "place",
+   "bucket": 2,
+   "sitelinks": 14,
+   "classes": [
+    "submarine",
+    "museum ship",
+    "preserved watercraft"
+   ]
+  },
+  {
+   "name": "Rosh Tzurim",
+   "category": "place",
+   "bucket": 2,
+   "sitelinks": 12,
+   "classes": [
+    "kibbutz",
+    "Israeli settlement",
+    "Nahal settlement"
+   ]
+  },
+  {
+   "name": "Creil station",
+   "category": "place",
+   "bucket": 2,
+   "sitelinks": 14,
+   "classes": [
+    "railway station",
+    "S-Bahn station"
+   ]
+  },
+  {
+   "name": "Bundesautobahn 14",
+   "category": "place",
+   "bucket": 2,
+   "sitelinks": 22,
+   "classes": [
+    "road"
+   ]
+  },
+  {
+   "name": "Elnora, Alberta",
+   "category": "place",
+   "bucket": 2,
+   "sitelinks": 11,
+   "classes": [
+    "village in Alberta"
+   ]
+  },
+  {
+   "name": "Mehdya, Morocco",
+   "category": "place",
+   "bucket": 2,
+   "sitelinks": 16,
+   "classes": [
+    "urban commune of Morocco"
+   ]
+  },
+  {
+   "name": "Kri\u0161ka Vas",
+   "category": "place",
+   "bucket": 2,
+   "sitelinks": 12,
+   "classes": [
+    "human settlement"
+   ]
+  },
+  {
+   "name": "Klyuch Bedeyevo",
+   "category": "place",
+   "bucket": 2,
+   "sitelinks": 14,
+   "classes": [
+    "hamlet",
+    "village",
+    "administrative divisions of Russia"
+   ]
+  },
+  {
+   "name": "Pamlico Sound",
+   "category": "place",
+   "bucket": 2,
+   "sitelinks": 16,
+   "classes": [
+    "bay"
+   ]
+  },
+  {
+   "name": "Yekan-e Sadi",
+   "category": "place",
+   "bucket": 2,
+   "sitelinks": 11,
+   "classes": [
+    "village"
+   ]
+  },
+  {
+   "name": "Czerniejew",
+   "category": "place",
+   "bucket": 2,
+   "sitelinks": 11,
+   "classes": [
+    "village of Poland"
+   ]
+  },
+  {
+   "name": "Q\u0131raql\u0131, Khachmaz",
+   "category": "place",
+   "bucket": 2,
+   "sitelinks": 11,
+   "classes": [
+    "human settlement"
+   ]
+  },
+  {
+   "name": "Munich-Pasing station",
+   "category": "place",
+   "bucket": 2,
+   "sitelinks": 13,
+   "classes": [
+    "station located on surface",
+    "inter-city rail station",
+    "S-Bahn station",
+    "junction station"
+   ]
+  },
+  {
+   "name": "Crugers, New York",
+   "category": "place",
+   "bucket": 2,
+   "sitelinks": 17,
+   "classes": [
+    "census-designated place in the United States",
+    "unincorporated community"
+   ]
+  },
+  {
+   "name": "Piotrk\u00f3w Pierwszy",
+   "category": "place",
+   "bucket": 2,
+   "sitelinks": 17,
+   "classes": [
+    "village of Poland"
+   ]
+  },
+  {
+   "name": "Las Coloradas, Argentina",
+   "category": "place",
+   "bucket": 2,
+   "sitelinks": 13,
+   "classes": [
+    "municipality",
+    "locality"
+   ]
+  },
+  {
+   "name": "Rouffigny",
+   "category": "place",
+   "bucket": 3,
+   "sitelinks": 32,
+   "classes": [
+    "commune of France",
+    "delegated commune"
+   ]
+  },
+  {
+   "name": "Sainte-Orse",
+   "category": "place",
+   "bucket": 3,
+   "sitelinks": 39,
+   "classes": [
+    "commune of France"
+   ]
+  },
+  {
+   "name": "Len\u00e7\u00f3is Maranhenses National Park",
+   "category": "place",
+   "bucket": 3,
+   "sitelinks": 48,
+   "classes": [
+    "World Heritage Site",
+    "national park",
+    "natural heritage"
+   ]
+  },
+  {
+   "name": "M\u00e9ntrida, Toledo",
+   "category": "place",
+   "bucket": 3,
+   "sitelinks": 36,
+   "classes": [
+    "municipality of Spain"
+   ]
+  },
+  {
+   "name": "Molezuelas de la Carballeda",
+   "category": "place",
+   "bucket": 3,
+   "sitelinks": 35,
+   "classes": [
+    "municipality of Spain"
+   ]
+  },
+  {
+   "name": "Sainte-C\u00e9rotte",
+   "category": "place",
+   "bucket": 3,
+   "sitelinks": 34,
+   "classes": [
+    "commune of France"
+   ]
+  },
+  {
+   "name": "Hochstetten-Dhaun",
+   "category": "place",
+   "bucket": 3,
+   "sitelinks": 35,
+   "classes": [
+    "municipality without town privileges in Germany"
+   ]
+  },
+  {
+   "name": "Wilson County, North Carolina",
+   "category": "place",
+   "bucket": 3,
+   "sitelinks": 46,
+   "classes": [
+    "county of North Carolina"
+   ]
+  },
+  {
+   "name": "Monnai",
+   "category": "place",
+   "bucket": 3,
+   "sitelinks": 31,
+   "classes": [
+    "commune of France",
+    "delegated commune"
+   ]
+  },
+  {
+   "name": "Rosh HaAyin",
+   "category": "place",
+   "bucket": 3,
+   "sitelinks": 39,
+   "classes": [
+    "city",
+    "city council"
+   ]
+  },
+  {
+   "name": "Saint-Python",
+   "category": "place",
+   "bucket": 3,
+   "sitelinks": 40,
+   "classes": [
+    "commune of France"
+   ]
+  },
+  {
+   "name": "Damscheid",
+   "category": "place",
+   "bucket": 3,
+   "sitelinks": 33,
+   "classes": [
+    "municipality without town privileges in Germany"
+   ]
+  },
+  {
+   "name": "Nunspeet",
+   "category": "place",
+   "bucket": 3,
+   "sitelinks": 43,
+   "classes": [
+    "municipality of the Netherlands"
+   ]
+  },
+  {
+   "name": "Quernheim",
+   "category": "place",
+   "bucket": 3,
+   "sitelinks": 35,
+   "classes": [
+    "municipality without town privileges in Germany"
+   ]
+  },
+  {
+   "name": "Draize",
+   "category": "place",
+   "bucket": 3,
+   "sitelinks": 49,
+   "classes": [
+    "commune of France"
+   ]
+  },
+  {
+   "name": "Alcoa, Tennessee",
+   "category": "place",
+   "bucket": 3,
+   "sitelinks": 35,
+   "classes": [
+    "city in the United States"
+   ]
+  },
+  {
+   "name": "Jaisalmer",
+   "category": "place",
+   "bucket": 3,
+   "sitelinks": 68,
+   "classes": [
+    "city"
+   ]
+  },
+  {
+   "name": "Singida Region",
+   "category": "place",
+   "bucket": 3,
+   "sitelinks": 44,
+   "classes": [
+    "administrative region",
+    "region of Tanzania"
+   ]
+  },
+  {
+   "name": "Tervuren",
+   "category": "place",
+   "bucket": 3,
+   "sitelinks": 46,
+   "classes": [
+    "municipality of Belgium"
+   ]
+  },
+  {
+   "name": "Herrenberg",
+   "category": "place",
+   "bucket": 3,
+   "sitelinks": 55,
+   "classes": [
+    "urban municipality in Germany",
+    "Greater district town in Baden-W\u00fcrttemberg"
+   ]
+  },
+  {
+   "name": "Volusia County, Florida",
+   "category": "place",
+   "bucket": 3,
+   "sitelinks": 55,
+   "classes": [
+    "county of Florida"
+   ]
+  },
+  {
+   "name": "Hita, Guadalajara",
+   "category": "place",
+   "bucket": 3,
+   "sitelinks": 32,
+   "classes": [
+    "municipality of Spain"
+   ]
+  },
+  {
+   "name": "Arthaz-Pont-Notre-Dame",
+   "category": "place",
+   "bucket": 3,
+   "sitelinks": 43,
+   "classes": [
+    "commune of France"
+   ]
+  },
+  {
+   "name": "Nassiet",
+   "category": "place",
+   "bucket": 3,
+   "sitelinks": 35,
+   "classes": [
+    "commune of France"
+   ]
+  },
+  {
+   "name": "Champdeniers",
+   "category": "place",
+   "bucket": 3,
+   "sitelinks": 40,
+   "classes": [
+    "commune of France"
+   ]
+  }
+ ]
+}
