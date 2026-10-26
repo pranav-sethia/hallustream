@@ -7,7 +7,7 @@
 
 ![Qwen3-4B writing a biography; likely made-up facts are highlighted as each sentence is checked](docs/img/stream.gif)
 
-*A real, unedited run (Qwen3-4B, greedy decoding). Most flags land on invented facts: her birth date, her mother, a brother and a film she never acted in. It also misses the invented father "Rajesh Advani" and debut film "Dil Dhadakne Do", and flags "Mumbai", which is true.*
+*A real, unedited run (Qwen3-4B, greedy decoding). Most flags land on invented facts: her birth date, her mother, a brother, and films and years she was never in. It misses the invented father "Rajesh Advani" and the wrong debut film "Dil Dhadakne Do", and it flags "Mumbai", which is true.*
 
 ## Results
 **Inside SHARS (ICML 2026), the probe beats SHARS's own detector.** [SHARS](https://arxiv.org/abs/2606.03628) writes sentence by sentence: it splits each sentence into facts, asks a detector which facts are made up, and keeps, rewrites or redoes the sentence. Its detector, HalluSE, asks the model a question about every fact and samples several answers. We replaced HalluSE with the probe and changed nothing else. Results on 60 held-out FActScore people, with Qwen3-4B, pre-registered:
@@ -42,23 +42,37 @@ All numbers, with intervals and caveats, are in [docs/RESULTS.md](docs/RESULTS.m
 ## Use it
 ```bash
 pip install "hallustream[entities] @ git+https://github.com/pranav-sethia/hallustream"
-hallustream "Tell me a bio of Kiara Advani."
+```
+| Command | What it does |
+|---|---|
+| `hallustream "Tell me about Lake Tahoe."` | Answers, highlighting likely made-up details as each sentence is checked |
+| `hallustream chat` | The same, in a conversation |
+| `hallustream score "Tell me about Lake Tahoe." answer.txt` | Checks an answer the model already wrote |
+| `hallustream batch prompts.jsonl -o results.jsonl` | Checks a file of prompts or answers and writes JSON lines |
+
+After each answer comes a short list:
+```
+12 of 21 details are likely made up:
+   98%  Sushmita Dev
+   98%  May 12, 1993
+   ...
+Risk is the estimated chance a detail is made up; flagged from 74%.
 ```
 ```python
 from hallustream import Detector
 
 det = Detector.from_pretrained("qwen3-4b")  # Qwen3-4B-Instruct-2507 + the bundled probe
-for ev in det.stream("Tell me a bio of Kiara Advani."):
-    print(ev.text, end="")  # entities arrive with a risk as each sentence ends
-
-report = det.score("Tell me a bio of Kiara Advani.", answer)  # or check an answer it already wrote
-print(report.highlight("ansi"))
+# write and check an answer; also det.score(prompt, answer) and live det.stream(prompt)
+report = det.generate("Tell me a bio of Kiara Advani.")
+print(report.summary())
+report.flagged  # [Entity(text, start, end, risk, flagged), ...]
 ```
-- **Accuracy:** with entities found automatically, the shipped package scores 0.876 AUROC on held-out biographies and 0.827 on other topics.
+- **Accuracy:** with details found automatically, 0.876 AUROC on held-out biographies and 0.827 on other topics.
+- **Risk you can read:** on held-out text, details given 90–100% risk were false 92–93% of the time.
 - **Speed:** it adds 5% per generated token.
 - **Same numbers as the research:** it reproduces the evaluated detector's scores to within 0.0001.
 
-Thresholds, measurements and limits are in [docs/LIBRARY.md](docs/LIBRARY.md). You can also try it on a free GPU in [Colab](https://colab.research.google.com/github/pranav-sethia/hallustream/blob/main/notebooks/quickstart.ipynb).
+Who it is for, recipes, what gets checked, thresholds, measurements and limits are all in [docs/LIBRARY.md](docs/LIBRARY.md). You can also try it on a free GPU in [Colab](https://colab.research.google.com/github/pranav-sethia/hallustream/blob/main/notebooks/quickstart.ipynb).
 
 ## How it works
 1. **Probe.** A logistic classifier on one middle layer of the model (layer 21 of Qwen3-4B, chosen by a sweep over every layer). It scores each entity's tokens. It was trained with the recipe and labeled data of Obeso et al. (2025): about 20,000 long answers on topics from the Apollo 11 landing to corporate law, written by five other models, with every entity marked supported or not by web search.

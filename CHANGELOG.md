@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Library design: commands `ask` (default), `chat`, `score` and `batch`; `generate()`; a plain summary after each answer ("12 of 21 details are likely made up", riskiest first, risk in %); `to_dict()` and notebook display; presets renamed `balanced` / `strict`; a notice when an answer is cut off. Only specific details are checked now (generic lowercase words skipped, roles kept): 16-19% fewer flags, 96-99% of found false details kept, AUROC unchanged. Risk checked as a probability on held-out text (calibration error 0.033 / 0.044). New README GIF from a clean-install run.
 - Library (v0.1.0): `Detector.from_pretrained("qwen3-4b")` with `score()`, `highlight()`, live `stream()`, the `hallustream` command and a SHARS plug-in; probe weights bundled; refusals and pronouns are not scored. Checked on Qwen3-4B: matches the research scores to within 0.0001, 0.876 / 0.827 AUROC with automatic entity finding on held-out biographies / topics, +5.0% time per generated token. README GIF, results chart and Colab quickstart.
 - Detector checked beyond biographies: 0.834 vs 0.668 for the model's confidence on 496 non-person subjects (pre-registered).
 - SHARS (ICML 2026) with the probe as its detector: on 60 held-out FActScore people, 36% fewer false claims than SHARS's own detector at equal true claims, ~110x less detection time (pre-registered). Earlier steps: dev detector comparison, an end-to-end check on 40 dev people, and a 2-person smoke test of every arm.

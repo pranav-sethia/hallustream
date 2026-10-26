@@ -14,6 +14,8 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
 
+from hallustream.detector import Entity, Report
+
 FONT = "/System/Library/Fonts/Menlo.ttc"
 W, COLS, SIZE, PAD, LINE = 980, 82, 17, 22, 26
 BG, GRAY, WHITE, RED, DIM, GREEN = "#14161a", "#6f7680", "#e8eaed", "#c62828", "#9aa0a8", "#7fd1a0"
@@ -61,8 +63,8 @@ def render(run: dict, out: Path, hold: float = 3.5) -> None:
     frames, durations = [], []
     t_end = events[-1]["t"]
     n_frames = int(t_end * FPS) + 1
-    flagged_all = [x for e in events for x in e["entities"] if x["flagged"]]
-    checked_all = [x for e in events for x in e["entities"]]
+    found = [Entity(**x) for e in events for x in e["entities"]]
+    summary = Report(text, found, 0.0).summary().splitlines()[0].rstrip(":") + " (red)"
     for f in range(n_frames + 1):
         t = min(f / FPS, t_end)
         shown = [e for e in events if e["t"] <= t]
@@ -89,9 +91,7 @@ def render(run: dict, out: Path, hold: float = 3.5) -> None:
                 x += cw
             y += LINE
         if f == n_frames:
-            msg = (f"{len(checked_all)} facts checked, {len(flagged_all)} flagged as likely made "
-                   "up (red)")  # fmt: skip
-            d.text((PAD, y + LINE), msg, font=font, fill=DIM)
+            d.text((PAD, y + LINE), summary, font=font, fill=DIM)
         frames.append(img.convert("P", palette=Image.Palette.ADAPTIVE, colors=32))
         durations.append(int(hold * 1000) if f == n_frames else int(1000 / FPS))
     frames[0].save(out, save_all=True, append_images=frames[1:], duration=durations, loop=0,
