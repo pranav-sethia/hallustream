@@ -191,6 +191,40 @@ v3's gain over v2 on untouched people (+0.036) matches its cross-validated gain 
 
 Absolute AUROCs are lower on these people than on FActScore's gate people (v1 0.776 vs 0.828; max entropy 0.690 vs 0.759). The dev and reserved people come from random Wikipedia pages and are mostly obscure, and every detector, including the baseline, drops by about the same amount.
 
+## Other topics: Qwen3-4B's own writing about subjects other than people
+**Question:** v3 was adapted and tested on biographies. Does it work on other subjects? The setup and pass bar were fixed in [EVAL_PROTOCOL.md](../EVAL_PROTOCOL.md) before any subject was sampled.
+
+**Setup:**
+- Subjects: 500 random Wikipedia pages that are not people ([configs/topic_subjects.json](../configs/topic_subjects.json)). 100 each of living things, events, organizations, creative works and places, spread evenly over four popularity levels. None is named in the probe's data.
+- Writing: `Tell me about {name}.`, greedy decoding.
+- Judge: the same judge with "person" replaced by "subject" in its instructions.
+- Judge check: `gemini-3.5-flash` re-judged 300 entities with the whole article and agreed on Supported vs Not Supported 85.9% of the time (bar 0.85; biographies: 85.6%).
+
+**Result** (496 subjects, 4,549 judged entities, 53% Not Supported):
+
+| | AUROC |
+|---|---|
+| **v3** | **0.834** |
+| v1 (the probe before adaptation) | 0.777 |
+| Max entropy (model confidence) | 0.668 |
+| Max surprise | 0.667 |
+| v3 − max entropy | **+0.166 [0.138, 0.193]** |
+| v1 − max entropy | +0.109 [0.079, 0.139] |
+| v3 − v1 | +0.056 [0.046, 0.066] |
+
+| By category | v3 | Max entropy |
+|---|---|---|
+| Living things | 0.792 | 0.551 |
+| Events | 0.860 | 0.763 |
+| Organizations | 0.862 | 0.701 |
+| Creative works | 0.793 | 0.624 |
+| Places | 0.839 | 0.644 |
+
+- **The detector works beyond biographies:** v3 beats the model's confidence by +0.17, about the same margin as on the 600 reserved people (+0.164, 0.854 vs 0.690).
+- **The adaptation to the model's own writing carries over:** v3 beats v1 by +0.056 even though it was fitted only on biographies.
+- Checks: 0.5% of judged entities could not be found in the text, and teacher forcing reproduced 98.9% of the greedy tokens. 239 of 500 texts hit the 512-token limit; entities touching the cut-off end are dropped, as for biographies.
+- Categories come from Wikidata class labels and are approximate (a Soviet republic is filed as an organization, a radio station as a place).
+
 ## Ideas tried and stopped
 Each of these was pre-registered in [EVAL_PROTOCOL.md](../EVAL_PROTOCOL.md) with a stop rule, run on dev people only, and stopped by that rule.
 

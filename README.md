@@ -22,6 +22,7 @@ False claims: −1.87 per person, 95% interval [−2.75, −0.95].
 | Other models' long answers on many topics (144,676 held-out entities), Qwen3.5-4B | **0.867** | 0.630 |
 | Same, Qwen3-4B | **0.854** | 0.678 |
 | Qwen3-4B's own biographies, 600 untouched people (probe adapted to its own writing) | **0.854** | 0.690 |
+| Qwen3-4B's own writing about 496 other subjects (places, organizations, events, works, species) | **0.834** | 0.668 |
 
 Example from the test (Mike Trivisonno):
 - SHARS + HalluSE kept "He played college basketball at the University of California, Los Angeles. Mike Trivisonno played in the NBA for the Boston Celtics." (10 false claims in all).
@@ -44,7 +45,7 @@ All numbers, with intervals and caveats, are in [docs/RESULTS.md](docs/RESULTS.m
 ## Limits
 - It needs the model's hidden states, so it works on open-weight models, and each model needs its own probe.
 - It holds back what the model would make up; it cannot add knowledge the model lacks. Retrieval does that when a source is available.
-- The own-answer and SHARS tests are on biographies (FActScore, the standard benchmark, where each subject has one Wikipedia page). Other topics are being tested.
+- The SHARS test is on biographies (FActScore, the standard benchmark). The detector itself was also tested on Qwen3-4B's writing about 496 other subjects (0.834 vs 0.668), but SHARS was not run on them.
 - The SHARS test has 60 people. The probe's lead over the model's own token surprise inside SHARS is not statistically established.
 - Our judge is stricter than SHARS's GPT-5 FActScore setup, so absolute precision is lower than in their paper. All arms share the same judge.
 
