@@ -25,7 +25,7 @@ for ev in det.stream("Tell me a bio of Kiara Advani."):
 
 # After the fact: an answer Qwen3-4B wrote to this prompt
 report = det.score("Tell me a bio of Kiara Advani.", answer)
-print(report.highlight("ansi"))   # or "plain" / "html"
+print(report.highlight("ansi"))  # or "plain" / "html"
 ```
 
 Command line:

@@ -47,11 +47,11 @@ hallustream "Tell me a bio of Kiara Advani."
 ```python
 from hallustream import Detector
 
-det = Detector.from_pretrained("qwen3-4b")          # Qwen3-4B-Instruct-2507 + the bundled probe
+det = Detector.from_pretrained("qwen3-4b")  # Qwen3-4B-Instruct-2507 + the bundled probe
 for ev in det.stream("Tell me a bio of Kiara Advani."):
-    print(ev.text, end="")                          # entities arrive with a risk as each sentence ends
+    print(ev.text, end="")  # entities arrive with a risk as each sentence ends
 
-report = det.score("Tell me a bio of Kiara Advani.", answer)   # or check an answer it already wrote
+report = det.score("Tell me a bio of Kiara Advani.", answer)  # or check an answer it already wrote
 print(report.highlight("ansi"))
 ```
 - **Accuracy:** with entities found automatically, the shipped package scores 0.876 AUROC on held-out biographies and 0.827 on other topics.
