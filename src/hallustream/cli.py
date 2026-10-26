@@ -55,8 +55,12 @@ def _parser() -> argparse.ArgumentParser:
 
 
 def _load(weights: str, device: str | None) -> Detector:
+    import warnings
+
     from huggingface_hub import try_to_load_from_cache
     from transformers.utils import logging
+
+    warnings.simplefilter("ignore")  # library warnings (GLiNER, transformers) are not for readers
 
     hf_id = json.loads((_weights_dir(weights) / "model.json").read_text())["hf_id"]
     if isinstance(try_to_load_from_cache(hf_id, "model.safetensors.index.json"), str):
@@ -76,21 +80,27 @@ def _segment(text: str, lo: int, hi: int, flagged: list[Entity], color: bool) ->
 def _stream(det: Detector, messages: list[dict], max_new_tokens: int, threshold, color: bool,
             ) -> Report:  # fmt: skip
     """Print each sentence once it has been checked; return the whole answer's report."""
-    text, printed, found = "", 0, []
+    text, printed, found, n = "", 0, [], 0
     for ev in det.stream(messages=messages, max_new_tokens=max_new_tokens, threshold=threshold):
         text += ev.text
         found += ev.entities
+        n = len(ev.ids)
         if ev.checked > printed:
             print(_segment(text, printed, ev.checked, [e for e in found if e.flagged], color),
                   end="", flush=True)  # fmt: skip
             printed = ev.checked
-    print()
+    cut = f"\n(cut off at {max_new_tokens} tokens; raise --max-new-tokens for more)"
+    print(_dim(cut, color) if n >= max_new_tokens else "")
     return Report(text, found, det._threshold(threshold))
 
 
+def _dim(text: str, color: bool) -> str:
+    return f"{DIM}{text}{RESET}" if color else text
+
+
 def _legend(threshold: float, color: bool) -> str:
-    note = f"Risk is the estimated chance a detail is made up; flagged from {threshold:.0%}."
-    return f"{DIM}{note}{RESET}" if color else note
+    return _dim(f"Risk is the estimated chance a detail is made up; flagged from {threshold:.0%}.",
+                color)  # fmt: skip
 
 
 def _ask(det: Detector, a, threshold, color: bool) -> int:

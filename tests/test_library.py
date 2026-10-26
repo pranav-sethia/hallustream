@@ -109,6 +109,7 @@ def test_summary_lists_each_flagged_detail_once_riskiest_first():
     )
     assert Report("", ents[3:], 0.5).summary() == "No details flagged (1 checked)."
     assert Report("", [], 0.5).summary() == "No specific details to check."
+    assert "<mark" in Report("Paris", ents[:1], 0.5)._repr_html_()  # notebooks
     d = Report("x", ents[:1], 0.5).to_dict()
     assert d["n_flagged"] == 1 and d["entities"][0] == {"text": "Paris", "start": 0, "end": 5,
                                                          "risk": 0.81, "flagged": True}  # fmt: skip
@@ -143,11 +144,12 @@ def test_cli_ask_prints_every_checked_sentence(tiny, capsys):
     out = _run(capsys, "Tell me about Ada Lovelace.", "--max-new-tokens", "40", "--no-color",
                "--threshold", "0", detector=tiny)  # fmt: skip
     cut = out.rindex("\n\n", 0, out.index("details are likely made up"))
-    body, rest = out[:cut], out[cut:]
-    events = tiny.stream("Tell me about Ada Lovelace.", max_new_tokens=40)
+    body, rest = out[:cut].split("\n(cut off at 40 tokens")[0], out[cut:]
+    events = list(tiny.stream("Tell me about Ada Lovelace.", max_new_tokens=40))
     streamed = "".join(e.text for e in events)
     assert body.replace("[[", "").replace("]]", "") == streamed  # all text, in order
     assert "details are likely made up" in rest and "flagged from 0%" in rest
+    assert "cut off at 40 tokens" in out or len(events[-1].ids) < 40
 
 
 def test_cli_json_is_one_object(tiny, capsys):
