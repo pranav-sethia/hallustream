@@ -1,0 +1,15 @@
+{
+ "note": "Flag an entity when its risk (sigmoid of the v3 score) is at least the threshold. Chosen on the 432 dev people only; held-out rates measured once on the 600 reserved people and 496 non-person subjects (docs/LIBRARY.md).",
+ "balanced": {
+  "threshold": 0.737832,
+  "dev": "flags 10% of supported entities",
+  "held_out": {"people": {"caught": 0.721, "false_alarms": 0.169, "flag_precision": 0.871},
+               "topics": {"caught": 0.617, "false_alarms": 0.138, "flag_precision": 0.836}}
+ },
+ "high_precision": {
+  "threshold": 0.823369,
+  "dev": "flags 5% of supported entities",
+  "held_out": {"people": {"caught": 0.616, "false_alarms": 0.107, "flag_precision": 0.901},
+               "topics": {"caught": 0.486, "false_alarms": 0.078, "flag_precision": 0.877}}
+ }
+}

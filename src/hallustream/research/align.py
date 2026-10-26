@@ -14,6 +14,8 @@ from __future__ import annotations
 from collections import Counter
 from dataclasses import dataclass, field
 
+from hallustream.text import END_OF_TURN, build_text  # noqa: F401  (re-exported)
+
 LABEL_MAP: dict[str | None, int | None] = {
     "Supported": 0,
     "S": 0,
@@ -24,7 +26,6 @@ LABEL_MAP: dict[str | None, int | None] = {
     None: None,
 }
 IGNORE = -100
-END_OF_TURN = "<|im_end|>\n"
 
 
 @dataclass
@@ -41,17 +42,6 @@ class Aligned:
     answer_start: int  # index of the first answer token
     spans: list[Span]
     stats: Counter = field(default_factory=Counter)
-
-
-def build_text(tokenizer, messages: list[dict], answer: str, **chat_kwargs) -> tuple[str, int]:
-    """Prompt exactly as the model sees it when it starts answering, then the answer.
-
-    Returns the full text and the character position where the answer begins.
-    """
-    prefix = tokenizer.apply_chat_template(
-        messages, add_generation_prompt=True, tokenize=False, **chat_kwargs
-    )
-    return prefix + answer + END_OF_TURN, len(prefix)
 
 
 def _locate(answer: str, span: str, index: int | None) -> tuple[int | None, str]:

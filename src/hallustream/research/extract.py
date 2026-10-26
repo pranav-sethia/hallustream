@@ -15,8 +15,7 @@ import numpy as np
 import torch
 
 from hallustream.research.align import Aligned, align_exact
-
-LOGIT_CHUNK = 512  # positions per log-softmax chunk, to bound memory
+from hallustream.text import LOGIT_CHUNK, token_baselines  # noqa: F401  (re-exported)
 
 
 @dataclass
@@ -24,23 +23,6 @@ class AnswerFeatures:
     rows: dict  # column -> list, one entry per saved token
     features: dict[int, np.ndarray]  # layer -> (n_saved, hidden) float16
     spans: list[dict]  # one per labeled entity, with baseline scores
-
-
-def token_baselines(logits: torch.Tensor, input_ids: torch.Tensor) -> tuple[np.ndarray, ...]:
-    """Surprise (NLL of the actual next token) and predictive entropy per position.
-
-    Position t is scored with the logits at t-1, so position 0 gets NaN.
-    """
-    n = input_ids.shape[0]
-    nll = np.full(n, np.nan, dtype=np.float32)
-    ent = np.full(n, np.nan, dtype=np.float32)
-    for a in range(0, n - 1, LOGIT_CHUNK):
-        b = min(a + LOGIT_CHUNK, n - 1)
-        logp = torch.log_softmax(logits[a:b].float(), dim=-1)
-        nxt = input_ids[a + 1 : b + 1]
-        nll[a + 1 : b + 1] = (-logp.gather(-1, nxt[:, None]).squeeze(-1)).cpu().numpy()
-        ent[a + 1 : b + 1] = (-(logp.exp() * logp).sum(-1)).cpu().numpy()
-    return nll, ent
 
 
 def choose_rows(aligned: Aligned, n_neg: int, rng: np.random.Generator) -> tuple[list, list]:
