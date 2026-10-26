@@ -1,3 +1,4 @@
+import io
 import json
 import math
 import re
@@ -9,7 +10,7 @@ from safetensors.torch import save_file
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from hallustream import entities
-from hallustream.detector import Detector, Entity, highlight
+from hallustream.detector import Detector, Entity, Report, highlight
 from hallustream.probe import forward
 
 TINY = "trl-internal-testing/tiny-Qwen3ForCausalLM"
@@ -59,7 +60,7 @@ def test_thresholds_by_name_or_number(tiny):
     assert [(e.start, e.end) for e in tiny.score("q", ANSWER, threshold=0.0).flagged] == every
     assert tiny.score("q", ANSWER, threshold=1.01).flagged == []
     with pytest.raises(ValueError, match="unknown threshold"):
-        tiny.score("q", ANSWER, threshold="strict")
+        tiny.score("q", ANSWER, threshold="nope")
 
 
 def test_highlight_merges_overlaps_and_escapes_html():
@@ -68,7 +69,7 @@ def test_highlight_merges_overlaps_and_escapes_html():
             Entity("1815", 19, 23, 0.7, True)]  # fmt: skip
     assert highlight(text, ents) == "Born in [[<Paris>]] in [[1815]]."
     html = highlight(text, ents, "html")
-    assert html.count("<mark") == 2 and "&lt;Paris&gt;" in html and 'title="risk 0.90"' in html
+    assert html.count("<mark") == 2 and "&lt;Paris&gt;" in html and 'title="risk 90%"' in html
     assert "\033[" in highlight(text, ents, "ansi")
 
 
@@ -100,18 +101,106 @@ def test_finding_entities_without_gliner_explains_what_to_do(tiny):
         plain.score("q", ANSWER)
 
 
-def test_cli_prints_every_checked_sentence(tiny, capsys):
+def test_summary_lists_each_flagged_detail_once_riskiest_first():
+    ents = [Entity("Paris", 0, 5, 0.81, True), Entity("1815", 6, 10, 0.97, True),
+            Entity("Paris", 11, 16, 0.92, True), Entity("London", 17, 23, 0.2, False)]  # fmt: skip
+    assert Report("", ents, 0.5).summary() == (
+        "2 of 3 details are likely made up:\n   97%  1815\n   92%  Paris"
+    )
+    assert Report("", ents[3:], 0.5).summary() == "No details flagged (1 checked)."
+    assert Report("", [], 0.5).summary() == "No specific details to check."
+    d = Report("x", ents[:1], 0.5).to_dict()
+    assert d["n_flagged"] == 1 and d["entities"][0] == {"text": "Paris", "start": 0, "end": 5,
+                                                         "risk": 0.81, "flagged": True}  # fmt: skip
+
+
+def test_generate_is_the_stream_collected(tiny):
+    events = list(tiny.stream("Tell me about Ada Lovelace.", max_new_tokens=40))
+    report = tiny.generate("Tell me about Ada Lovelace.", max_new_tokens=40)
+    assert report.text == "".join(e.text for e in events)
+    assert report.entities == sorted((e for ev in events for e in ev.entities),
+                                     key=lambda e: e.start)  # fmt: skip
+
+
+def test_only_specific_entities_are_kept():
+    assert entities.is_specific("Paris", "location") and entities.is_specific("1815", "date")
+    assert entities.is_specific("actress", "occupation")  # roles are claims in a biography
+    assert not entities.is_specific("region", "location") and not entities.is_specific(
+        "book", "title of work"
+    )
+
+
+def _run(capsys, *args, detector, stdin=None, monkeypatch=None):
     from hallustream import cli
 
-    assert cli.main(["Tell me about Ada Lovelace.", "--max-new-tokens", "40", "--no-color",
-                     "--threshold", "0", "--json"], detector=tiny) == 0  # fmt: skip
-    out = capsys.readouterr().out
-    cut = out.rindex("\n\n", 0, out.index(" facts checked"))
+    if stdin is not None:
+        monkeypatch.setattr("sys.stdin", io.StringIO(stdin))
+    assert cli.main(list(args), detector=detector) == 0
+    return capsys.readouterr().out
+
+
+def test_cli_ask_prints_every_checked_sentence(tiny, capsys):
+    out = _run(capsys, "Tell me about Ada Lovelace.", "--max-new-tokens", "40", "--no-color",
+               "--threshold", "0", detector=tiny)  # fmt: skip
+    cut = out.rindex("\n\n", 0, out.index("details are likely made up"))
     body, rest = out[:cut], out[cut:]
     events = tiny.stream("Tell me about Ada Lovelace.", max_new_tokens=40)
     streamed = "".join(e.text for e in events)
     assert body.replace("[[", "").replace("]]", "") == streamed  # all text, in order
-    assert "facts checked" in rest and '"risk"' in rest
+    assert "details are likely made up" in rest and "flagged from 0%" in rest
+
+
+def test_cli_json_is_one_object(tiny, capsys):
+    out = _run(capsys, "ask", "Tell me about Ada Lovelace.", "--max-new-tokens", "40",
+               "--json", detector=tiny)  # fmt: skip
+    d = json.loads(out)
+    assert d["prompt"] == "Tell me about Ada Lovelace." and d["threshold"] == 0.5
+    assert d["text"] == tiny.generate("Tell me about Ada Lovelace.", max_new_tokens=40).text
+
+
+def test_cli_score_reads_the_answer(tiny, capsys, monkeypatch, tmp_path):
+    out = _run(capsys, "score", "q", "--json", detector=tiny, stdin=ANSWER + "\n",
+               monkeypatch=monkeypatch)  # fmt: skip
+    expected = tiny.score("q", ANSWER).to_dict()
+    assert json.loads(out) == {"prompt": "q", **expected}
+    (tmp_path / "a.txt").write_text(ANSWER)
+    out = _run(capsys, "score", "q", str(tmp_path / "a.txt"), "--no-color", detector=tiny)
+    assert out.startswith(tiny.score("q", ANSWER).highlight()) and "Risk is" in out
+
+
+def test_cli_batch_writes_one_line_per_item(tiny, capsys, tmp_path):
+    src = tmp_path / "in.jsonl"
+    src.write_text("Tell me about Ada Lovelace.\n\n" + json.dumps({"prompt": "q", "answer": ANSWER,
+                                                                     "id": 7}) + "\n")  # fmt: skip
+    _run(capsys, "batch", str(src), "-o", str(tmp_path / "out.jsonl"), "--max-new-tokens", "20",
+         detector=tiny)  # fmt: skip
+    first, second = map(json.loads, (tmp_path / "out.jsonl").read_text().splitlines())
+    assert first["text"] == tiny.generate("Tell me about Ada Lovelace.", max_new_tokens=20).text
+    assert second["id"] == 7 and second["entities"] == tiny.score("q", ANSWER).to_dict()["entities"]
+
+
+def test_cli_chat_keeps_the_conversation(tiny, capsys, monkeypatch):
+    seen = []
+    stream = tiny.stream
+
+    def spy(*args, messages, **kw):
+        seen.append([m["role"] for m in messages])
+        return stream(*args, messages=messages, **kw)
+
+    monkeypatch.setattr(tiny, "stream", spy)
+    questions = "Who was Ada Lovelace?\n\nWhen was she born?\n"
+    out = _run(capsys, "chat", "--max-new-tokens", "10", "--no-color", detector=tiny,
+               stdin=questions, monkeypatch=monkeypatch)  # fmt: skip
+    assert seen == [["user"], ["user", "assistant", "user"]]
+    assert out.count("Risk is") == 1
+
+
+def test_cli_rejects_an_unknown_threshold_before_loading(tiny, capsys):
+    from hallustream import cli
+
+    with pytest.raises(SystemExit):
+        cli.main(["Hi.", "--threshold", "nope"], detector=tiny)
+    assert "unknown threshold" in capsys.readouterr().err
 
 
 def test_shars_estimator_scores_each_proposition(tiny):
@@ -160,3 +249,5 @@ def test_the_package_ships_its_probe_weights():
     assert [n for n in names if n.startswith("probe_seed")] == [f"probe_seed{k}.safetensors"
                                                                 for k in range(5)]  # fmt: skip
     assert {"v3.json", "model.json", "thresholds.json"} <= set(names)
+    presets = json.loads((d / "thresholds.json").read_text())
+    assert presets["balanced"]["threshold"] < presets["strict"]["threshold"]

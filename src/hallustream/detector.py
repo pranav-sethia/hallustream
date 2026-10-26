@@ -1,8 +1,9 @@
 """Flag the facts a model is probably making up, after it writes or while it writes.
 
     det = Detector.from_pretrained("qwen3-4b")
-    report = det.score("Tell me about Lake Tahoe.", answer)   # text the model wrote
-    print(report.highlight("ansi"))
+    report = det.generate("Tell me about Lake Tahoe.")        # write an answer and check it
+    report = det.score("Tell me about Lake Tahoe.", answer)   # or check one it already wrote
+    print(report.highlight("ansi"), report.summary(), sep="\n\n")
     for event in det.stream("Tell me about Lake Tahoe."):    # flags as each sentence ends
         ...
 
@@ -16,7 +17,7 @@ import html
 import json
 import math
 from collections.abc import Callable, Iterator
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from functools import partial
 from importlib.resources import files
 from pathlib import Path
@@ -56,6 +57,37 @@ class Report:
         """The text with flagged entities marked: "plain" [[...]], "ansi" colors, or "html"."""
         return highlight(self.text, self.flagged, style)
 
+    def summary(self) -> str:
+        """The flagged details, riskiest first, each listed once."""
+        checked = {e.text for e in self.entities}
+        risky: dict[str, float] = {}
+        for e in self.flagged:
+            risky[e.text] = max(risky.get(e.text, 0.0), e.risk)
+        if not checked:
+            return "No specific details to check."
+        if not risky:
+            return f"No details flagged ({len(checked)} checked)."
+        lines = [f"{len(risky)} of {len(checked)} details are likely made up:"]
+        lines += [f"  {r:4.0%}  {t}" for t, r in sorted(risky.items(), key=lambda x: -x[1])]
+        return "\n".join(lines)
+
+    def to_dict(self) -> dict:
+        return {
+            "text": self.text,
+            "threshold": self.threshold,
+            "n_flagged": len(self.flagged),
+            "entities": [{**asdict(e), "risk": round(e.risk, 4)} for e in self.entities],
+        }
+
+    def __str__(self) -> str:
+        return self.highlight()
+
+    def _repr_html_(self) -> str:  # notebooks show the highlighted text and the summary
+        return (
+            f"<div style='white-space:pre-wrap;line-height:1.6'>{self.highlight('html')}"
+            f"</div><pre>{html.escape(self.summary())}</pre>"
+        )
+
 
 @dataclass
 class Event:
@@ -81,7 +113,10 @@ def highlight(text: str, flagged: list[Entity], style: str = "plain") -> str:
         out.append(esc(text[pos:lo]))
         inner = esc(text[lo:hi])
         if style == "html":
-            out.append(f'<mark class="hs-risk" title="risk {risk:.2f}">{inner}</mark>')
+            out.append(
+                f'<mark class="hs-risk" style="background:#ffcdd2;color:#000" '
+                f'title="risk {risk:.0%}">{inner}</mark>'
+            )
         elif style == "ansi":
             out.append(f"\033[1;97;41m{inner}\033[0m")
         else:
@@ -190,6 +225,17 @@ class Detector:
         if spans is None:
             spans = self._find(text, sentences(text))
         return Report(text, self._entities(text, fw, spans, th), th)
+
+    def generate(self, prompt: str | None = None, *, messages: list[dict] | None = None,
+                 max_new_tokens: int = 512, threshold: str | float | None = None,
+                 temperature: float = 0.0) -> Report:  # fmt: skip
+        """Write an answer and check it: stream() collected into one Report."""
+        text, found = "", []
+        for ev in self.stream(prompt, messages=messages, max_new_tokens=max_new_tokens,
+                              threshold=threshold, temperature=temperature):  # fmt: skip
+            text += ev.text
+            found += ev.entities
+        return Report(text, sorted(found, key=lambda e: e.start), self._threshold(threshold))
 
     @torch.no_grad()
     def stream(self, prompt: str | None = None, *, messages: list[dict] | None = None,

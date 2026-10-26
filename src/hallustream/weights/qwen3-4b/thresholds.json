@@ -6,7 +6,7 @@
   "held_out": {"people": {"caught": 0.721, "false_alarms": 0.169, "flag_precision": 0.871},
                "topics": {"caught": 0.617, "false_alarms": 0.138, "flag_precision": 0.836}}
  },
- "high_precision": {
+ "strict": {
   "threshold": 0.823369,
   "dev": "flags 5% of supported entities",
   "held_out": {"people": {"caught": 0.616, "false_alarms": 0.107, "flag_precision": 0.901},
