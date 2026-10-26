@@ -1,6 +1,13 @@
 # HalluStream
 
-**A near-free hallucination detector for open LLMs.** A small linear probe reads a model's hidden states while it writes and flags the names, dates, places and titles it is probably making up. It generates no extra text and needs no web search.
+[![CI](https://github.com/pranav-sethia/hallustream/actions/workflows/ci.yml/badge.svg)](https://github.com/pranav-sethia/hallustream/actions/workflows/ci.yml)
+[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/pranav-sethia/hallustream/blob/main/notebooks/quickstart.ipynb)
+
+**A near-free hallucination detector for open LLMs.** A small linear probe reads a model's hidden states while it writes and flags the names, dates, places and titles it is probably making up. It generates no extra text, needs no web search, and adds about 5% to generation time.
+
+![Qwen3-4B writing a biography; likely made-up facts are highlighted as each sentence is checked](docs/img/stream.gif)
+
+*A real, unedited run (Qwen3-4B, greedy decoding). Most flags land on invented facts: her birth date, her mother, a brother and a film she never acted in. It also misses the invented father "Rajesh Advani" and debut film "Dil Dhadakne Do", and flags "Mumbai", which is true.*
 
 ## Results
 **Inside SHARS (ICML 2026), the probe beats SHARS's own detector.** [SHARS](https://arxiv.org/abs/2606.03628) writes sentence by sentence: it splits each sentence into facts, asks a detector which facts are made up, and keeps, rewrites or redoes the sentence. Its detector, HalluSE, asks the model a question about every fact and samples several answers. We replaced HalluSE with the probe and changed nothing else. Results on 60 held-out FActScore people, with Qwen3-4B, pre-registered:
@@ -14,6 +21,8 @@
 | Total time per biography | 8 s | 232 s | **60 s** |
 
 False claims: −1.87 per person, 95% interval [−2.75, −0.95].
+
+![False claims per biography vs detection time per fact](docs/img/shars_tradeoff.png)
 
 **The detector on its own** (AUROC: how often a made-up fact scores higher than a true one; 0.5 is chance):
 
@@ -30,11 +39,33 @@ Example from the test (Mike Trivisonno):
 
 All numbers, with intervals and caveats, are in [docs/RESULTS.md](docs/RESULTS.md).
 
+## Use it
+```bash
+pip install "hallustream[entities] @ git+https://github.com/pranav-sethia/hallustream"
+hallustream "Tell me a bio of Kiara Advani."
+```
+```python
+from hallustream import Detector
+
+det = Detector.from_pretrained("qwen3-4b")          # Qwen3-4B-Instruct-2507 + the bundled probe
+for ev in det.stream("Tell me a bio of Kiara Advani."):
+    print(ev.text, end="")                          # entities arrive with a risk as each sentence ends
+
+report = det.score("Tell me a bio of Kiara Advani.", answer)   # or check an answer it already wrote
+print(report.highlight("ansi"))
+```
+- **Accuracy:** with entities found automatically, the shipped package scores 0.876 AUROC on held-out biographies and 0.827 on other topics.
+- **Speed:** it adds 5% per generated token.
+- **Same numbers as the research:** it reproduces the evaluated detector's scores to within 0.0001.
+
+Thresholds, measurements and limits are in [docs/LIBRARY.md](docs/LIBRARY.md). You can also try it on a free GPU in [Colab](https://colab.research.google.com/github/pranav-sethia/hallustream/blob/main/notebooks/quickstart.ipynb).
+
 ## How it works
 1. **Probe.** A logistic classifier on one middle layer of the model (layer 21 of Qwen3-4B, chosen by a sweep over every layer). It scores each entity's tokens. It was trained with the recipe and labeled data of Obeso et al. (2025): about 20,000 long answers on topics from the Apollo 11 landing to corporate law, written by five other models, with every entity marked supported or not by web search.
 2. **Adapted to the model's own writing (v3).** Qwen3-4B wrote biographies of 432 separate people, an automatic fact checker labeled them, and a regularized linear term on the same hidden state was added to the probe. It was then checked once on 600 people never used before.
 3. **Fact checker.** Gemini 3.1 Flash-Lite reads the subject's Wikipedia page and labels every claim. It agrees with FActScore's human labels on 89% of 11,049 facts (balanced accuracy).
-4. **SHARS integration.** SHARS's code is vendored unchanged in [`third_party/shars`](third_party/shars) (MIT). The probe plugs in as an uncertainty estimator ([`modal_jobs/shars.py`](modal_jobs/shars.py)): one forward pass per sentence instead of a question and several sampled answers per fact.
+4. **SHARS integration.** SHARS's code is vendored unchanged in [`third_party/shars`](third_party/shars) (MIT). The probe plugs in as an uncertainty estimator ([`hallustream/integrations/shars.py`](src/hallustream/integrations/shars.py)): one forward pass per sentence instead of a question and several sampled answers per fact.
+5. **Live streaming.** Generation keeps its KV cache, and the probe reads the hidden state of each new token as it is produced. When a sentence ends, GLiNER finds its entities and the probe scores them, without a second pass.
 
 ## How it was evaluated
 - Every test's settings, metrics and pass bars were committed in [EVAL_PROTOCOL.md](EVAL_PROTOCOL.md) before its outputs existed. Amendments are dated there with their reasons.
@@ -50,13 +81,14 @@ All numbers, with intervals and caveats, are in [docs/RESULTS.md](docs/RESULTS.m
 - Our judge is stricter than SHARS's GPT-5 FActScore setup, so absolute precision is lower than in their paper. All arms share the same judge.
 
 ## Repository
+- `src/hallustream/`: the library (`detector.py`, `probe.py`, `entities.py`, `cli.py`, `integrations/shars.py`, bundled `weights/`)
 - `src/hallustream/research/`: data, probe training, evaluation, the fact checker (`factcheck/`), SHARS analysis
-- `src/hallustream/fix/`: scoring text with the probe (`score.py`) and entity spans
 - `modal_jobs/`: GPU and batch jobs on Modal (feature extraction, training, biographies, judge batches, SHARS runs)
 - `configs/`: frozen choices, detector weights and fixed people lists
-- `tests/`: unit tests; CI runs ruff, pyright and pytest
+- `notebooks/`: the Colab quickstart
+- `tests/`: unit tests; CI runs ruff, pyright and pytest on Python 3.10 and 3.12
 
-Data sources and licenses: [docs/DATA.md](docs/DATA.md). A Python library and a demo are next.
+Data sources and licenses: [docs/DATA.md](docs/DATA.md).
 
 ## Builds on
 - Obeso et al., [Real-Time Detection of Hallucinated Entities in Long-Form Generation](https://arxiv.org/abs/2509.03531) (2025): the probe method and training data
