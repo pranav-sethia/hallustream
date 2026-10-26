@@ -298,3 +298,13 @@ The probe beats confidence, but a 4B model cannot vouch for facts that a frontie
 - **Caveat:** SHARS often replaces a removed false claim with a generic true one. The specific-claim rows show that v3 removes specific false claims without losing specific true ones.
 
 Step 1 on 40 separate dev people (greedy vs SHARS + v3, plus rewriting on vs off) is in the protocol.
+
+### Checks on these claims
+- **An independent fact checker from another model family agrees.** Claude labeled 150 claims blind. The claims were sampled as 25 Supported and 25 Not Supported per arm for greedy, HalluSE and v3, and Claude read each person's full English Wikipedia article without seeing the arm or Gemini's label ([`research/cross_judge.py`](../src/hallustream/research/cross_judge.py)).
+  - It agreed with Gemini on 91.3% of claims (κ 0.83).
+  - Agreement was the same for the two SHARS arms: 90% for HalluSE and 90% for v3.
+  - The disagreements had the same pattern in both arms: 5 of 25 claims that Gemini called Supported, Claude called Not Supported, and none went the other way.
+  - The disagreements are vague praise ("is recognized for her dedication"), which Gemini accepts too easily, and equally for both detectors. The judge does not favor the probe's answers.
+- **The probe's advantage does not come from learning the judge.** v3's final layer was fitted on this judge's labels. v1 never saw them: it was trained on Obeso et al.'s Claude-plus-web-search labels. On the 987 dev facts, v1 still beats HalluSE: AUROC 0.692 vs 0.636 for HalluSE's best settings and 0.507 for its default.
+- **Repeated sentences do not inflate counts.** The judge merges repeated claims, so the unique count equals the total in every arm.
+- **Sample size.** SHARS's paper reports a single run on 182 people with no intervals. Here the false-claim and specific-false-claim differences hold at 95% across 60 held-out people. The precision difference does not yet.
