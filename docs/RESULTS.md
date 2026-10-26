@@ -191,6 +191,38 @@ v3's gain over v2 on untouched people (+0.036) matches its cross-validated gain 
 
 Absolute AUROCs are lower on these people than on FActScore's gate people (v1 0.776 vs 0.828; max entropy 0.690 vs 0.759). The dev and reserved people come from random Wikipedia pages and are mostly obscure, and every detector, including the baseline, drops by about the same amount.
 
+## Ideas tried and stopped
+Each of these was pre-registered in [EVAL_PROTOCOL.md](../EVAL_PROTOCOL.md) with a stop rule, run on dev people only, and stopped by that rule.
+
+**Detect→fix with Wikipedia evidence** (100 dev people, Qwen3-4B):
+- Plan: when the probe flags a sentence, rewrite it with passages from the person's Wikipedia page.
+- Two reference points:
+  - plain writing: 0.178 precision (1.8 supported vs 4.6 unsupported claims per biography; 80% answered)
+  - retrieving the page once, before writing: **0.960** (21.7 vs 0.8)
+- Fixing flagged sentences cannot beat retrieving once.
+- With the page in context, only 1.8% of entities are Not Supported, below the pre-registered 5% bar for adding a probe guard on top. That arm was not run.
+- The retrieval source is the judge's source, so the retrieve-once number is inflated. It still settles that a probe adds little when the right document is at hand. The probe matters when there is no document: the model's own knowledge.
+
+**The probe as a reward for training** (60 dev people × 8 sampled biographies):
+
+| Check (bar) | Result |
+|---|---|
+| Samples differ enough to learn from (≥ 50% of people) | 0.589 — passed |
+| Probe orders sample pairs correctly (≥ 70%, and ≥ 5 points over confidence) | **0.665** vs 0.591 for the best confidence signal — **failed the 70% bar** |
+| Best-of-8 by probe beats a random sample | precision 0.188 vs 0.135, supported claims 2.08 vs 1.68 — passed |
+
+The ranking check failed, so by the protocol's rule the training direction (fine-tuning toward probe-preferred answers) was dropped. Picking the best of several samples with the probe does help.
+
+**Reading other models' text** (about 300 FActScore people, biographies written by Gemini 3.1 Flash-Lite and Gemini 3.5 Flash, 18% of entities Not Supported):
+
+| Reader: Qwen3-4B | Flash-Lite (7,433 entities) | Flash (10,583 entities) |
+|---|---|---|
+| Probe (v1) | 0.688 | 0.684 |
+| Max token surprise | 0.595 | 0.599 |
+| Max entropy | 0.612 | 0.614 |
+
+The probe beats confidence, but a 4B model cannot vouch for facts that a frontier model knows and it does not. Checking frontier models' text with a small reader was dropped.
+
 ## SHARS with the probe as its detector (test, 60 people)
 **Question:** [SHARS](https://arxiv.org/abs/2606.03628) (ICML 2026) writes a biography sentence by sentence. Each sentence is split into facts, a detector scores every fact, and the sentence is then kept, rewritten from its trusted facts, or redone. SHARS's own detector, HalluSE, asks a question about each fact and samples answers. Does v3 work better as the detector, at a fraction of the cost?
 
