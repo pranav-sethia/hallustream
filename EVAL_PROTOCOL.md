@@ -172,6 +172,26 @@ This file was committed **before** any probe was trained. Its purpose is to fix 
     - every arm vs greedy
   - **No changes after outputs are seen:** no reruns and no setting changes. An arm with errors on more than 3 of 60 people is reported with the errors, not rerun.
 
+## Other topics (decided before any subject is sampled)
+- **Question:** does the detector catch made-up facts in Qwen3-4B's own writing about subjects other than people? The probe was trained on many topics, but v3 was adapted and every own-answer test so far used biographies.
+- **Subjects:**
+  - Source: random enwiki-20230401 pages (60,000 titles, seed 0) whose Wikidata item is not a human and not a Wikimedia page.
+  - Categories: five, by the labels of the item's "instance of" classes (`factcheck/topics.py`, first match): living things, events, organizations, creative works, places. Anything else is left out.
+  - Sample: 25 per category × sitelink bucket (1–3, 4–10, 11–30, 31+), 500 subjects (seed 0), listed in `configs/topic_subjects.json`.
+  - Left out: any subject whose title (without a parenthetical) appears in any question of the probe's training, validation or test data. If a cell has fewer than 25 candidates, more titles are sampled (seed 1, 2, …) until it fills.
+- **Writing:** Qwen3-4B-Instruct-2507, `Tell me about {name}.`, greedy, at most 512 new tokens (as for biographies).
+- **Judge:**
+  - Model and evidence: the validated judge (`gemini-3.1-flash-lite`, `t1_minimal`, BM25 top 24 passages of the subject's page).
+  - Prompt: `topic_judge.txt`, which is `bio_judge.txt` with "biography" and "person" replaced by "text" and "subject", and a subject-general list of aspects (dates, location, founders or creators, members, size, main works or events, awards). The diff is in git.
+- **Judge check:** 100 entities per judge label are re-judged by `gemini-3.5-flash` with the whole article (`topic_audit.txt`). Supported vs Not Supported agreement must be at least 0.85, the bar used for biographies. Otherwise the judge is revisited using agreement only, before any detector score is read.
+- **Detectors, all frozen:** v3; v1 (mean of the 5 seeds); max entropy (Qwen3-4B's frozen baseline); max surprise.
+- **Primary:** entity AUROC of v3 minus max entropy, Supported vs Not Supported, with a 2,000-resample bootstrap over subjects. The claim "the detector works beyond biographies" holds if the interval is above 0.
+- **Secondary:**
+  - v1 − max entropy.
+  - v3 − v1, i.e. does the biography adaptation carry over? If this interval is below 0, the library uses v1 for text that is not a biography.
+  - AUROC by category (descriptive).
+  - Comparison with the reserved people's 0.854 (descriptive; different subjects).
+
 ## Gates (decided in advance)
 | Gate | Pass condition | If it fails |
 |---|---|---|

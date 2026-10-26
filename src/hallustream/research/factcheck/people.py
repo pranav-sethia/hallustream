@@ -100,11 +100,28 @@ def bucket(sitelinks: int) -> int:
     raise ValueError(sitelinks)
 
 
-def wikidata_humans(titles: list[str], batch: int = 150) -> dict[str, int]:
-    """English Wikipedia titles that are humans (P31 = Q5) -> sitelink count."""
+def sparql(query: str) -> list[dict]:
+    """Rows of a Wikidata SPARQL query, retried on network errors."""
     import time
     import urllib.parse
     import urllib.request
+
+    req = urllib.request.Request(
+        WIKIDATA_SPARQL + "?" + urllib.parse.urlencode({"query": query, "format": "json"}),
+        headers={"User-Agent": USER_AGENT},
+    )
+    for attempt in range(5):
+        try:
+            with urllib.request.urlopen(req, timeout=60) as r:
+                return json.load(r)["results"]["bindings"]
+        except OSError:
+            time.sleep(10 * (attempt + 1))
+    raise RuntimeError("Wikidata query kept failing")
+
+
+def wikidata_humans(titles: list[str], batch: int = 150) -> dict[str, int]:
+    """English Wikipedia titles that are humans (P31 = Q5) -> sitelink count."""
+    import time
 
     out: dict[str, int] = {}
     for i in range(0, len(titles), batch):
@@ -115,22 +132,7 @@ def wikidata_humans(titles: list[str], batch: int = 150) -> dict[str, int]:
                    schema:about ?item.
           ?item wdt:P31 wd:Q5; wikibase:sitelinks ?n.
         }}"""
-        req = urllib.request.Request(
-            WIKIDATA_SPARQL + "?" + urllib.parse.urlencode({"query": query, "format": "json"}),
-            headers={
-                "User-Agent": "hallustream-research/0.1 (github.com/pranav-sethia/hallustream)"
-            },
-        )
-        for attempt in range(5):
-            try:
-                with urllib.request.urlopen(req, timeout=60) as r:
-                    rows = json.load(r)["results"]["bindings"]
-                break
-            except OSError:
-                time.sleep(10 * (attempt + 1))
-        else:
-            raise RuntimeError("Wikidata query kept failing")
-        for row in rows:
+        for row in sparql(query):
             out[row["title"]["value"]] = int(row["n"]["value"])
         time.sleep(1)
     return out

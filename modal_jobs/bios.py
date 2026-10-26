@@ -43,12 +43,24 @@ FEATURE_LAYERS = [15, 18, 21, 24, 27, 30]  # candidate layers for the own-answer
 
 def _people(group: str) -> list[str]:
     """gate: FActScore's 500 people. dev / reserved: the two halves of configs/dev_people.json,
-    copied to the Volume as dev/people.json."""
+    copied to the Volume as dev/people.json. topics: configs/topic_subjects.json, copied as
+    topics/people.json (subjects other than people)."""
     from hallustream.research.factcheck.people import eval_people
 
     if group == "gate":
         return eval_people(ROOT / "factscore" / "data")
+    if group == "topics":
+        return [
+            p["name"] for p in json.loads((ROOT / "topics" / "people.json").read_text())["subjects"]
+        ]
     return [p["name"] for p in json.loads((ROOT / "dev" / "people.json").read_text())[group]]
+
+
+def _prompt(group: str) -> str:
+    from hallustream.research.factcheck.people import BIO_PROMPT
+    from hallustream.research.factcheck.topics import TOPIC_PROMPT
+
+    return TOPIC_PROMPT if group == "topics" else BIO_PROMPT
 
 
 def _bio_dir(group: str, model: str) -> Path:
@@ -98,9 +110,8 @@ def generate(model: str, shard: int, group: str = "gate") -> dict:
     import torch
     from transformers import AutoModelForCausalLM, AutoTokenizer
 
-    from hallustream.research.factcheck.people import BIO_PROMPT
-
     cfg = MODELS[model]
+    prompt = _prompt(group)
     out = _bio_dir(group, model) / f"shard{shard}.jsonl"
     out.parent.mkdir(parents=True, exist_ok=True)
     done = {json.loads(x)["name"] for x in out.read_text().splitlines()} if out.exists() else set()
@@ -113,7 +124,7 @@ def generate(model: str, shard: int, group: str = "gate") -> dict:
         batch = names[i : i + cfg["batch"]]
         prompts = [
             tok.apply_chat_template(
-                [{"role": "user", "content": BIO_PROMPT.format(name=n)}],
+                [{"role": "user", "content": prompt.format(name=n)}],
                 tokenize=False, add_generation_prompt=True, **CHAT,
             )
             for n in batch
@@ -152,15 +163,17 @@ def prepare(db_path: str, what: str, setting: str = "", run: str = "") -> dict:
     pilot:  every judge setting (or just `setting`) on the tuning people -> judge/<run or pilot>
     checks: one setting on the reported people (both checks)        -> judge/checks
     gate:   one setting on each model's biographies                 -> judge/gate_<model>
-    dev, reserved: one setting on Qwen3-4B's biographies of that group -> judge/<what>_qwen3
-    audit:  100 dev entities per judge label, re-judged with the whole page -> judge/audit
+    dev, reserved, topics: one setting on Qwen3-4B's texts of that group -> judge/<what>_qwen3
+    audit, audit_topics: 100 dev (or topics) entities per judge label, re-judged with the whole
+            page -> judge/audit (or judge/audit_topics)
     """
     from hallustream.research.factcheck import judge, people, wiki
 
     w = wiki.WikiDB(Path(db_path))
     root = ROOT / "factscore" / "data"
     runs: dict[str, list[dict]] = {}
-    if what in ("gate", "dev", "reserved"):
+    if what in ("gate", "dev", "reserved", "topics"):
+        kind = "topic_judge" if what == "topics" else "bio_judge"
         for model in MODELS if what == "gate" else ["qwen3"]:
             bios = _bios(model, what)
             assert len({r["name"] for r in bios}) == len(bios), "duplicate people"
@@ -170,15 +183,16 @@ def prepare(db_path: str, what: str, setting: str = "", run: str = "") -> dict:
                     ev = wiki.evidence(w.passages(r["name"]), r["bio"])
                 except KeyError:  # no Wikipedia page (1 of 500 people)
                     continue
-                reqs.append(judge.bio_request(r["name"], r["name"], ev, r["bio"], setting))
+                reqs.append(judge.bio_request(r["name"], r["name"], ev, r["bio"], setting, kind))
             runs[f"{what}_{model}"] = reqs
-    elif what == "audit":
+    elif what in ("audit", "audit_topics"):
         import random
 
         from hallustream.research.factcheck.validate import read_results
 
-        results, _ = read_results(ROOT / "judge" / "dev_qwen3" / "results.jsonl")
-        bios = {r["name"]: r for r in _bios("qwen3", "dev")}
+        group = "topics" if what == "audit_topics" else "dev"
+        results, _ = read_results(ROOT / "judge" / f"{group}_qwen3" / "results.jsonl")
+        bios = {r["name"]: r for r in _bios("qwen3", group)}
         found = []
         for name, text in sorted(results.items()):
             try:
@@ -198,11 +212,14 @@ def prepare(db_path: str, what: str, setting: str = "", run: str = "") -> dict:
             anns.sort(key=lambda a: a["index"])
             bio = bios[name]["bio"]
             pairs = [(a["span"], judge.sentence_of(bio, a["index"])) for a in anns]
-            reqs.append(judge.audit_request(name, name, w.passages(name), bio, pairs, setting))
+            kind = "topic_audit" if group == "topics" else "entity_audit"
+            reqs.append(
+                judge.audit_request(name, name, w.passages(name), bio, pairs, setting, kind)
+            )
             kept += [{"name": name, **a} for a in anns]
-        runs["audit"] = reqs
-        (ROOT / "judge" / "audit").mkdir(parents=True, exist_ok=True)
-        (ROOT / "judge" / "audit" / "items.json").write_text(json.dumps(kept))
+        runs[what] = reqs
+        (ROOT / "judge" / what).mkdir(parents=True, exist_ok=True)
+        (ROOT / "judge" / what / "items.json").write_text(json.dumps(kept))
     else:
         tune, report = people.split_labeled([b.name for b in people.human_labeled(root, "ChatGPT")])
         subset = tune if what == "pilot" else report
@@ -251,10 +268,10 @@ def score(model: str, commit: str, group: str = "gate", features: bool = False) 
     from hallustream.research.align import align_exact
     from hallustream.research.extract import token_baselines
     from hallustream.research.factcheck import judge
-    from hallustream.research.factcheck.people import BIO_PROMPT
     from hallustream.research.factcheck.validate import read_results
 
     cfg = MODELS[model]
+    prompt = _prompt(group)
     results, result_stats = read_results(ROOT / "judge" / f"{group}_{model}" / "results.jsonl")
     tok = AutoTokenizer.from_pretrained(cfg["hf"])
     lm = AutoModelForCausalLM.from_pretrained(cfg["hf"], dtype=torch.bfloat16).to("cuda").eval()
@@ -281,7 +298,7 @@ def score(model: str, commit: str, group: str = "gate", features: bool = False) 
         truncated = r["new_tokens"] >= MAX_NEW_TOKENS
         if truncated:  # drop entities that touch the cut-off end
             anns = [a for a in anns if a["index"] + len(a["span"]) < len(r["bio"]) - 2]
-        msgs = [{"role": "user", "content": BIO_PROMPT.format(name=r["name"])}]
+        msgs = [{"role": "user", "content": prompt.format(name=r["name"])}]
         main = align_exact(tok, msgs, r["bio"], judge.for_alignment(anns, False), **CHAT)
         unsure = [
             an | {"label": "Insufficient Information"}

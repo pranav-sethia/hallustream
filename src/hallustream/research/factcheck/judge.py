@@ -87,10 +87,9 @@ def _request(key: str, prompt: str, schema: dict, setting: str) -> dict:
     return {"key": key, "request": req}
 
 
-def bio_request(key, name, passages, biography, setting: str) -> dict:
-    prompt = _prompt("bio_judge").format(
-        name=name, passages=_passages(passages), biography=biography
-    )
+def bio_request(key, name, passages, biography, setting: str, prompt: str = "bio_judge") -> dict:
+    """prompt: "bio_judge" for biographies, "topic_judge" for texts about any other subject."""
+    prompt = _prompt(prompt).format(name=name, passages=_passages(passages), biography=biography)
     return _request(key, prompt, BIO_SCHEMA, setting)
 
 
@@ -100,10 +99,13 @@ def claim_request(key, name, passages, claims, setting: str) -> dict:
     return _request(key, prompt, CLAIM_SCHEMA, setting)
 
 
-def audit_request(key, name, passages, biography, items, setting: str) -> dict:
-    """Re-judge chosen entities; items are (span, sentence) pairs."""
+def audit_request(
+    key, name, passages, biography, items, setting: str, prompt: str = "entity_audit"
+) -> dict:
+    """Re-judge chosen entities; items are (span, sentence) pairs. prompt: "entity_audit" for
+    biographies, "topic_audit" for other subjects."""
     listed = "\n".join(f'{i + 1}. "{span}" in: {sent}' for i, (span, sent) in enumerate(items))
-    prompt = _prompt("entity_audit").format(
+    prompt = _prompt(prompt).format(
         name=name, passages=_passages(passages), biography=biography, entities=listed
     )
     return _request(key, prompt, AUDIT_SCHEMA, setting)

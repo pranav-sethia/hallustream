@@ -1,0 +1,70 @@
+You are a careful fact-checker. A language model was asked to write about {name}. Check its text against the Wikipedia passages about {name} given below.
+
+Do two things.
+
+1. ENTITIES. Go through the text in order and extract every specific entity:
+- people (names, affiliations)
+- organizations
+- locations
+- dates and events
+- specific quantities or statistics
+- titles of works, awards, citations and references
+
+For each entity, give the minimal text span, copied exactly from the text: just the entity itself (e.g. "1867", not "born in 1867"). Keep its accents, apostrophes, quote marks, dashes and capitalization, and never include markdown symbols (*, _, #, backticks) or list bullets. List entities in the order they appear; if the same entity appears several times, list each appearance separately. Do not list one entity inside another (for "University of Paris", list only "University of Paris", not also "Paris").
+
+Write a short note (at most 15 words) on what the passages say, then label the entity as it is used in its sentence:
+- "Supported": the passages confirm it.
+- "Not Supported": the passages contradict it; or the passages cover this aspect of the subject (such as dates, location, founders or creators, members, size, main works or events, awards) and give something different or leave it out where Wikipedia would plainly list it; or it is a person, work or organization you are confident does not exist.
+- "Insufficient": the passages are silent on it, and it is a minor detail that Wikipedia would not necessarily mention.
+You may use your own knowledge to mark an entity "Not Supported", but never to mark it "Supported".
+
+2. CLAIMS. Go through the text sentence by sentence and break each sentence into all the independent atomic facts it contains (usually 2 to 5 per sentence). Each claim is a short, self-contained sentence stating exactly one fact about {name}, with pronouns replaced by the name. Split as finely as possible: "He made his acting debut in the film Sunrise (1992)" gives "He made his acting debut in a film.", "His debut film was Sunrise.", "Sunrise is a film.", "Sunrise was released in 1992." Include every statement, including vague or general ones. Write a short note (at most 15 words), then label each claim:
+- "Supported": the passages support it.
+- "Not Supported": the passages contradict it or do not mention it, or it is not about {name} (for example, it describes a different subject with the same name).
+
+Rules:
+- Ignore small technicalities; we want facts the model got wrong or made up.
+- If the text only says it does not know the subject or cannot find information, return empty lists. If it hedges ("may have", "possibly") but still names specifics, judge those specifics as usual.
+- The text may stop in the middle of a sentence. Do not extract an entity that is cut off, and do not write claims from the unfinished final sentence.
+
+Example (a different subject and passage, to show the format and how finely to split):
+
+<example_passages>
+[1] Augusta Ada King, Countess of Lovelace (née Byron; 10 December 1815 – 27 November 1852) was an English mathematician and writer, chiefly known for her work on Charles Babbage's proposed mechanical general-purpose computer, the Analytical Engine.
+</example_passages>
+<example_biography>
+**Ada Lovelace** (1815–1852) was an English mathematician who worked with Charles Babbage on the Analytical Engine. She was born in Paris and wrote 12 books.
+</example_biography>
+<example_answer>
+{{"entities": [
+ {{"span": "Ada Lovelace", "note": "Name matches the passage.", "label": "Supported"}},
+ {{"span": "1815", "note": "Born 10 December 1815.", "label": "Supported"}},
+ {{"span": "1852", "note": "Died 27 November 1852.", "label": "Supported"}},
+ {{"span": "English", "note": "Described as English.", "label": "Supported"}},
+ {{"span": "Charles Babbage", "note": "Worked on Babbage's machine.", "label": "Supported"}},
+ {{"span": "Analytical Engine", "note": "Named in the passage.", "label": "Supported"}},
+ {{"span": "Paris", "note": "Birthplace not given; she was born in London.", "label": "Not Supported"}},
+ {{"span": "12", "note": "No books listed; 12 books is not a known fact.", "label": "Not Supported"}}],
+ "claims": [
+ {{"text": "Ada Lovelace was born in 1815.", "note": "Passage gives 1815.", "label": "Supported"}},
+ {{"text": "Ada Lovelace died in 1852.", "note": "Passage gives 1852.", "label": "Supported"}},
+ {{"text": "Ada Lovelace was English.", "note": "Stated.", "label": "Supported"}},
+ {{"text": "Ada Lovelace was a mathematician.", "note": "Stated.", "label": "Supported"}},
+ {{"text": "Ada Lovelace worked with Charles Babbage.", "note": "Worked on his machine.", "label": "Supported"}},
+ {{"text": "Ada Lovelace worked on the Analytical Engine.", "note": "Stated.", "label": "Supported"}},
+ {{"text": "Ada Lovelace was born in Paris.", "note": "Not mentioned.", "label": "Not Supported"}},
+ {{"text": "Ada Lovelace wrote books.", "note": "Not mentioned.", "label": "Not Supported"}},
+ {{"text": "Ada Lovelace wrote 12 books.", "note": "Not mentioned.", "label": "Not Supported"}}]}}
+</example_answer>
+
+Now check this text.
+
+<wikipedia_passages>
+{passages}
+</wikipedia_passages>
+
+<text>
+{biography}
+</text>
+
+Return only JSON: {{"entities": [{{"span", "note", "label"}}], "claims": [{{"text", "note", "label"}}]}}
