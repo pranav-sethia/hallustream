@@ -11,6 +11,21 @@ import torch
 END_OF_TURN = "<|im_end|>\n"
 LOGIT_CHUNK = 512  # positions per log-softmax chunk, to bound memory
 _SKIP_LINE = re.compile(r"^\s*(#+\s|[\s#*\-_>`|:]*$)")  # headers and markdown-only lines
+# Sentences in which the model says it does not know (they state no facts to check)
+REFUSAL = (
+    "no widely known", "not widely known", "no verified", "no public information",
+    "no publicly available", "not aware of", "i don't have", "i do not have", "i couldn't find",
+    "i could not find", "private individual", "lesser-known figure", "lesser-known professional",
+    "if you have more context", "if you have a specific context", "if you can provide",
+    "please provide more", "happy to help",
+)  # fmt: skip
+PRONOUNS = {"he", "she", "they", "it", "him", "her", "his", "hers", "their", "them", "its", "i",
+            "we", "you", "me", "us"}  # fmt: skip
+
+
+def is_refusal(sentence: str) -> bool:
+    low = sentence.lower().replace("’", "'")
+    return any(p in low for p in REFUSAL)
 
 
 def build_text(tokenizer, messages: list[dict], answer: str, **chat_kwargs) -> tuple[str, int]:

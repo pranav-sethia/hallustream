@@ -143,3 +143,10 @@ def test_shars_estimator_scores_each_proposition(tiny):
     same_chat = Detector(tiny.model, tiny.tokenizer, tiny.probe, 0.5, {"enable_thinking": False})
     ref = same_chat.score(messages=msgs, text=text, spans=[(lo, lo + 4)]).entities[0].risk
     assert math.isclose(prop.uncertainty, ref, rel_tol=1e-5)
+
+
+def test_refusals_and_pronouns_are_not_scored(tiny):
+    text = ("As of now, there is no widely known public figure named Ada Lovelace. "
+            "She was born in 1815.")  # fmt: skip
+    found = {e.text for e in tiny.score("Tell me about Ada Lovelace.", text).entities}
+    assert found == {"was", "born", "in", "1815"}  # the refusal is skipped, and "She" too

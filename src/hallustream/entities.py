@@ -30,14 +30,15 @@ def _gliner(device: str = "cpu"):
     return GLiNER.from_pretrained(GLINER_MODEL).to(device)
 
 
-def find(text: str, sents: list[tuple[int, int]], threshold: float = 0.4) -> list[tuple]:
+def find(text: str, sents: list[tuple[int, int]], threshold: float = 0.4,
+         device: str = "cpu") -> list[tuple]:  # fmt: skip
     """(start, end) character spans of entities, found sentence by sentence with GLiNER."""
     if not available():
         raise ImportError(
             "finding entities needs GLiNER: pip install 'hallustream[entities]' (Python 3.11+),"
             " or pass spans=[(start, end), ...] yourself"
         )
-    model = _gliner()
+    model = _gliner(device)
     out = []
     for lo, hi in sents:
         for e in model.predict_entities(text[lo:hi], GLINER_LABELS, threshold=threshold):

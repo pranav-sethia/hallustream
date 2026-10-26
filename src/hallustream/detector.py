@@ -17,6 +17,7 @@ import json
 import math
 from collections.abc import Callable, Iterator
 from dataclasses import dataclass, field
+from functools import partial
 from importlib.resources import files
 from pathlib import Path
 
@@ -25,7 +26,7 @@ import torch
 
 from hallustream import entities as _entities
 from hallustream.probe import Forward, Probe, char_to_tokens, forward
-from hallustream.text import sentences
+from hallustream.text import PRONOUNS, is_refusal, sentences
 
 BUNDLED = ("qwen3-4b",)
 SENTENCE_END = ".!?"
@@ -114,7 +115,9 @@ class Detector:
         self.chat = chat_template_kwargs or {}
         self.thresholds = thresholds or {}
         self.threshold = self._threshold(threshold)
-        self.find_entities = entity_finder or _entities.find
+        # GLiNER runs on the model's GPU when there is one (its MPS support is uneven)
+        gliner_device = "cuda" if str(getattr(model, "device", "cpu")).startswith("cuda") else "cpu"
+        self.find_entities = entity_finder or partial(_entities.find, device=gliner_device)
 
     @classmethod
     def from_pretrained(cls, weights: str | Path = "qwen3-4b", model=None, tokenizer=None,
@@ -156,6 +159,13 @@ class Detector:
             messages = [{"role": "user", "content": prompt}]
         return messages
 
+    def _find(self, text: str, sents: list[tuple[int, int]]) -> list[tuple[int, int]]:
+        """Entities to score: none in sentences where the model says it does not know, and
+        never a bare pronoun."""
+        sents = [(lo, hi) for lo, hi in sents if not is_refusal(text[lo:hi])]
+        spans = self.find_entities(text, sents) if sents else []
+        return [(lo, hi) for lo, hi in spans if text[lo:hi].strip().lower() not in PRONOUNS]
+
     def _entities(self, text: str, fw: Forward, spans, threshold: float) -> list[Entity]:
         keep, tok_spans = [], []
         for lo, hi in sorted(set(spans)):
@@ -176,7 +186,7 @@ class Detector:
         fw = forward(self.model, self.tokenizer, self.probe, self._messages(prompt, messages),
                      text, **self.chat)  # fmt: skip
         if spans is None:
-            spans = self.find_entities(text, sentences(text))
+            spans = self._find(text, sentences(text))
         return Report(text, self._entities(text, fw, spans, th), th)
 
     @torch.no_grad()
@@ -240,6 +250,6 @@ class Detector:
         n = len(gen)
         fw = Forward(gen, list(zip(dec[:-1], dec[1:], strict=True)), 0, np.stack(probs),
                      np.stack(hidden), np.full(n, np.nan), np.full(n, np.nan))  # fmt: skip
-        spans = [s for s in self.find_entities(text, todo) if s not in seen]
+        spans = [s for s in self._find(text, todo) if s not in seen]
         seen.update(spans)
         return self._entities(text, fw, spans, th)
