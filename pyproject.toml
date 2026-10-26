@@ -1,22 +1,29 @@
 [project]
 name = "hallustream"
-version = "0.1.0a0"
-description = "Live hallucination highlighting for open LLMs: a probe on hidden states flags unsupported entities as the model writes."
+version = "0.1.0"
+description = "Flag the facts an open LLM is probably making up, from its hidden states, as it writes."
 readme = "README.md"
 license = "Apache-2.0"
 authors = [{ name = "Pranav Sethia", email = "pranav.sethia5@gmail.com" }]
 requires-python = ">=3.10"
 keywords = ["llm", "hallucination", "probe", "interpretability", "qwen3", "streaming"]
 dependencies = [
-    "torch>=2.8",
-    "transformers>=5.20,<6",
+    "torch>=2.4",
+    "transformers>=4.51",
     "safetensors>=0.4",
-    "huggingface_hub>=1.0",
     "numpy>=1.26",
+    "pysbd>=0.3.4",
 ]
 
+[project.scripts]
+hallustream = "hallustream.cli:main"
+
 [project.optional-dependencies]
+entities = ["gliner>=0.2.24; python_version >= '3.11'"]
 research = [
+    "torch>=2.8",
+    "transformers>=5.20,<6",
+    "huggingface_hub>=1.0",
     "datasets>=3.0",
     "scikit-learn>=1.5",
     "pandas>=2.2",
@@ -31,8 +38,6 @@ research = [
     "protobuf>=7.36.2",
 ]
 demo = ["gradio[mcp]>=5.30", "spaces>=0.40"]
-serve = ["fastapi>=0.115", "uvicorn>=0.30"]
-agents = ["langchain-core>=1.0"]
 
 [dependency-groups]
 dev = [

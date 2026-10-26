@@ -63,6 +63,7 @@ class Event:
     text: str
     entities: list[Entity] = field(default_factory=list)
     done: bool = False
+    checked: int = 0  # the text up to this character has been checked
     ids: list[int] = field(default_factory=list)  # on the last event: every generated token
 
 
@@ -222,9 +223,9 @@ class Detector:
             found = []
             if ended:
                 found = self._finished(text, gen, hidden, probs, scored, seen, th, False)
-            yield Event(delta, found)
+            yield Event(delta, found, checked=max((hi for _, hi in scored), default=0))
         last = self._finished(text, gen, hidden, probs, scored, seen, th, True)
-        yield Event("", last, True, gen)
+        yield Event("", last, True, len(text), gen)
 
     def _finished(self, text, gen, hidden, probs, scored, seen, th, final) -> list[Entity]:
         """Entities of sentences that are complete and not scored yet (each span once, even if

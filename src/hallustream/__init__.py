@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from hallustream.detector import Detector, Entity, Event, Report
 
-__version__ = "0.1.0a0"
+__version__ = "0.1.0"
 __all__ = ["Detector", "Entity", "Event", "Report", "__version__"]
 
 

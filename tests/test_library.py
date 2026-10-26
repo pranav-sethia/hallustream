@@ -98,3 +98,48 @@ def test_finding_entities_without_gliner_explains_what_to_do(tiny):
     plain = Detector(tiny.model, tiny.tokenizer, tiny.probe, 0.5)
     with pytest.raises(ImportError, match="hallustream\\[entities\\]"):
         plain.score("q", ANSWER)
+
+
+def test_cli_prints_every_checked_sentence(tiny, capsys):
+    from hallustream import cli
+
+    assert cli.main(["Tell me about Ada Lovelace.", "--max-new-tokens", "40", "--no-color",
+                     "--threshold", "0", "--json"], detector=tiny) == 0  # fmt: skip
+    out = capsys.readouterr().out
+    cut = out.rindex("\n\n", 0, out.index(" facts checked"))
+    body, rest = out[:cut], out[cut:]
+    events = tiny.stream("Tell me about Ada Lovelace.", max_new_tokens=40)
+    streamed = "".join(e.text for e in events)
+    assert body.replace("[[", "").replace("]]", "") == streamed  # all text, in order
+    assert "facts checked" in rest and '"risk"' in rest
+
+
+def test_shars_estimator_scores_each_proposition(tiny):
+    import types
+
+    from hallustream.integrations import shars
+
+    class Prop:
+        def __init__(self, entity):
+            self.entity, self.fact_claim, self.uncertainty = entity, f"about {entity}", None
+
+    class Base:  # stands in for SHARS's UncertaintyEstimator
+        def __init__(self, **kwargs):
+            self.model = types.SimpleNamespace(model=tiny.model, tokenizer=tiny.tokenizer)
+
+        def get_sent_props(self, sentence, query_entity):
+            return [Prop("1815"), Prop("Paris")]  # "Paris" is not in the sentence
+
+    module = types.SimpleNamespace(UncertaintyEstimator=Base, ESTIMATORS={})
+    cls = shars.register(module, probe=tiny.probe)
+    est = module.ESTIMATORS["probe"]()
+    assert cls is module.ESTIMATORS["probe"]
+    sentence = " She was born in 1815."
+    (prop,) = est.get_sent_uncertainty("q", "Ada Lovelace.", sentence, "Ada Lovelace")
+    assert prop.entity == "1815" and est.n_props == 2 and est.n_unlocated == 1
+    msgs = [{"role": "user", "content": "Tell me a bio of Ada Lovelace."}]
+    text = "Ada Lovelace." + sentence
+    lo = text.index("1815")
+    same_chat = Detector(tiny.model, tiny.tokenizer, tiny.probe, 0.5, {"enable_thinking": False})
+    ref = same_chat.score(messages=msgs, text=text, spans=[(lo, lo + 4)]).entities[0].risk
+    assert math.isclose(prop.uncertainty, ref, rel_tol=1e-5)

@@ -83,71 +83,15 @@ def _shars():
 
 
 def _probe_estimators():
-    """Our detectors as SHARS uncertainty estimators (same decomposition, different scores)."""
-    import numpy as np
-
-    from hallustream.fix import score
-    from hallustream.research.factcheck.people import BIO_PROMPT
+    """Our detectors as SHARS uncertainty estimators (same decomposition, different scores),
+    from the library, with the probe files of the runs reported in docs/RESULTS.md."""
+    from hallustream.integrations.shars import estimator_class
+    from hallustream.probe import Probe
 
     _, uncertainty, _, _ = _shars()
-
-    class ProbeEstimator(uncertainty.UncertaintyEstimator):
-        """Uncertainty of a proposition = probe probability that its entity is hallucinated.
-
-        context "native": the probe reads the text as it was trained (user turn
-        `Tell me a bio of X.`, no system prompt); "shars": SHARS's own messages.
-        signal "v3", "v1", or "surprise" (max token surprise, the free logprob baseline).
-        """
-
-        def __init__(self, signal="v3", context="native", **kwargs):
-            super().__init__(**kwargs)
-            self.signal, self.context = signal, context
-            self.n_props = self.n_unlocated = 0  # propositions whose entity is not in the text
-            probes = [ROOT / "probes" / "qwen3_L21" / f"seed{k}.safetensors" for k in range(5)]
-            self.det = score.Detector(probes, ROOT / "configs" / "detector_v3.json")
-
-        def sentence_scores(self, user_query, text_sofar, sentence, query_entity, props):
-            if self.context == "native":
-                msgs = [{"role": "user", "content": BIO_PROMPT.format(name=query_entity)}]
-            else:
-                msgs = [
-                    {"role": "system", "content": SYST},
-                    {"role": "user", "content": user_query},
-                ]
-            text = text_sofar + sentence
-            fw = score.forward(self.model.model, self.model.tokenizer, self.det, msgs, text,
-                               enable_thinking=False)  # fmt: skip
-            out = []
-            for prop in props:
-                lo = sentence.find(prop.entity)
-                span = score.char_to_tokens(fw, len(text_sofar) + lo,
-                                            len(text_sofar) + lo + len(prop.entity))  # fmt: skip
-                if lo < 0 or span is None:
-                    out.append(None)
-                    continue
-                v1, v3 = self.det.span_scores(fw, [span])
-                a, b = span
-                out.append({"v1": float(v1[0]), "v3": float(v3[0]),
-                            "surprise": float(np.nanmax(fw.nll[a : b + 1])),
-                            "entropy": float(np.nanmax(fw.entropy[a : b + 1]))})  # fmt: skip
-            return out
-
-        def get_sent_uncertainty(self, user_query, text_sofar, sentence, query_entity):
-            props = self.get_sent_props(sentence, query_entity)
-            scores = self.sentence_scores(user_query, text_sofar, sentence, query_entity, props)
-            kept = []
-            self.n_props += len(props)
-            for prop, s in zip(props, scores, strict=True):
-                if s is None:
-                    self.n_unlocated += 1
-                    continue
-                x = s[self.signal]
-                prop.uncertainty = x if self.signal == "surprise" else float(1 / (1 + np.exp(-x)))
-                prop.qas = {}
-                kept.append(prop)
-            return kept
-
-    return ProbeEstimator
+    probes = [ROOT / "probes" / "qwen3_L21" / f"seed{k}.safetensors" for k in range(5)]
+    probe = Probe(probes, ROOT / "configs" / "detector_v3.json")
+    return estimator_class(uncertainty, probe=probe, system_prompt=SYST)
 
 
 def _halluse_answers(est, query, text_sofar, prop, n_answers):
