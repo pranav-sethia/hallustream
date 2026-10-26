@@ -162,7 +162,7 @@ section p { margin: 0 0 16px; }
 .panel { border: 1px solid var(--line); border-radius: 16px; background: rgba(15, 24, 53, .6); }
 
 /* Results */
-.res { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: clamp(28px, 5vw, 64px); align-items: start; }
+.res { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: clamp(28px, 5vw, 64px); align-items: center; }
 @media (max-width: 900px) { .res { grid-template-columns: 1fr; } }
 .ledger { margin: 26px 0 0; padding: 0; list-style: none; border-top: 1px solid var(--line); }
 .ledger li { display: grid; grid-template-columns: 7.2ch 1fr; gap: 16px; padding: 14px 0;
@@ -173,6 +173,7 @@ section p { margin: 0 0 16px; }
 .chart svg { width: 100%; height: auto; display: block; overflow: visible; }
 .chart text { fill: var(--haze); font: 12px var(--sans); }
 .chart .cap { font-size: 13.5px; color: var(--haze); margin: 8px 4px 6px; }
+@media (max-width: 600px) { .chart text { font-size: 19px; } }
 .explorer { margin-top: 40px; padding: 20px; }
 .people { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
 .people button { font: 500 14px var(--sans); color: var(--haze); background: none;
@@ -259,6 +260,42 @@ input[type=range] { width: 100%; accent-color: var(--ice); height: 28px; }
 .tested li { padding: 16px 0; border-top: 1px solid var(--line); }
 .tested p { color: var(--haze); font-size: 15px; margin: 0; }
 
+
+/* Spotlight and reader */
+.spot { margin-top: 40px; padding: 22px; }
+.spotlead { font-size: 15.5px; max-width: 80ch; }
+.spotcols { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-top: 16px; }
+.col.truth { border-color: rgba(232, 237, 250, .28); background: rgba(232, 237, 250, .04); }
+.col .src { font-size: 12.5px; color: var(--dim); margin: 10px 0 0; }
+.col .win { margin: 12px 0 0; font-size: 14px; color: var(--ice); font-weight: 500; }
+@media (max-width: 980px) { .spotcols { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 600px) { .spotcols { grid-template-columns: 1fr; } }
+.reader { margin-top: 30px; padding: 22px; }
+.rhead { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.rhead .people { margin: 0; }
+.rscore { font-size: 15px; color: var(--haze); }
+.rscore b { color: var(--frost); }
+.rtext { font: 400 15px/1.95 var(--mono); color: var(--frost); white-space: pre-wrap; }
+.rtext .ent.flag.alarm { background: transparent; color: var(--frost); box-shadow: none; outline: 1.5px dashed var(--infra); }
+.rtext .rk.alarm { color: var(--haze); }
+.rtext .ent.miss { color: var(--amber); cursor: help; text-decoration: underline 2px wavy var(--amber); text-underline-offset: 4px; }
+.small { font-size: 14px; }
+.acc { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 30px; }
+@media (max-width: 900px) { .acc { grid-template-columns: 1fr; } }
+.acc .bars { margin-top: 0; }
+.brow.one { grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); }
+.solid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 30px; }
+.solid .panel { padding: 22px; }
+#sweep { width: 100%; height: auto; display: block; overflow: visible; margin: 10px 0 6px; }
+#sweep text { fill: var(--haze); font: 12px var(--sans); }
+.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 14px 0 10px; }
+.pair b { display: block; font: 600 clamp(28px, 3.6vw, 38px)/1 var(--sans); letter-spacing: -.03em; }
+.pair b.ice { color: var(--ice); }
+.pair span { display: block; font-size: 13.5px; color: var(--haze); margin-top: 6px; }
+.scale { list-style: none; padding: 0; margin: 12px 0 0; display: grid; gap: 8px; color: var(--haze); font-size: 15px; }
+.scale b { color: var(--frost); font: 600 20px var(--sans); margin-right: 6px; }
+@media (max-width: 900px) { .solid { grid-template-columns: 1fr; } }
+
 footer { margin-top: clamp(80px, 12vw, 140px); border-top: 1px solid var(--line); padding: 34px 0 60px;
   font-size: 14.5px; color: var(--haze); }
 footer .wrap { display: grid; gap: 10px; }
@@ -279,6 +316,7 @@ footer .wrap { display: grid; gap: 10px; }
     </a>
     <nav aria-label="Sections">
       <a class="opt" href="#results">Results</a>
+      <a class="opt" href="#answers">Answers</a>
       <a class="opt" href="#how">How it works</a>
       <a class="opt" href="#try">Try it</a>
       <a href="https://github.com/pranav-sethia/hallustream">GitHub</a>
@@ -289,7 +327,7 @@ footer .wrap { display: grid; gap: 10px; }
 <main id="top">
 <div class="wrap hero">
   <h1>Catch an AI making things up while it writes</h1>
-  <p class="lead">HalluStream reads a language model's hidden states as each word is generated and flags the names, dates and titles it is probably inventing. No second model, no web search, about 5% extra time.</p>
+  <p class="lead">HalluStream reads a language model's hidden states as each word is generated and flags the names, dates and titles it is making up. No second model, no web search, just 5% extra time.</p>
   <div class="actions">
     <a class="btn primary" href="https://github.com/pranav-sethia/hallustream"><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8a8 8 0 0 0 5.47 7.59c.4.07.55-.17.55-.38v-1.33c-2.23.48-2.7-1.07-2.7-1.07-.36-.92-.89-1.17-.89-1.17-.73-.5.06-.49.06-.49.8.06 1.23.83 1.23.83.72 1.22 1.87.87 2.33.66.07-.52.28-.87.5-1.07-1.78-.2-3.65-.89-3.65-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.6 7.6 0 0 1 4 0c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.28.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48v2.2c0 .21.15.46.55.38A8 8 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>Read the code</a>
     <a class="btn" href="https://colab.research.google.com/github/pranav-sethia/hallustream/blob/main/notebooks/quickstart.ipynb">Run it free in Colab</a>
@@ -326,26 +364,40 @@ footer .wrap { display: grid; gap: 10px; }
     <div class="res">
       <div>
         <h2>Plugged into a 2026 method, it beat that method's own detector</h2>
-        <p class="measure muted">SHARS (ICML 2026) rewrites an answer sentence by sentence. For each fact, it asks a detector whether the model is making it up. Its detector re-asks the model about every fact several times and checks if the answers agree. I swapped in the probe and changed nothing else, then tested on 60 people held out from all tuning, with the analysis written down before the run.</p>
+        <p class="measure muted">SHARS (ICML 2026) cuts hallucinations by rewriting an answer sentence by sentence, asking a detector which facts are made up. Its own detector re-asks the model about every fact several times. Swapping in the probe, and changing nothing else, made SHARS more accurate and far cheaper on 60 held-out people. Both reductions below hold at 95% confidence.</p>
         <ul class="ledger">
-          <li><div class="num">−36%</div><span>false claims per answer, with the same number of true claims (95% interval −18% to −53%)</span></li>
+          <li><div class="num">−36%</div><span>false claims per answer, with the same number of true claims</span></li>
+          <li><div class="num">−42%</div><span>false names, dates and numbers, while keeping as many true ones</span></li>
           <li><div class="num">110×</div><span>less time to check each fact: 0.05 seconds instead of 5.8</span></li>
           <li><div class="num">3.9×</div><span>faster from question to final answer</span></li>
         </ul>
       </div>
       <div class="panel chart">
         <svg id="scatter" viewBox="0 0 560 360" role="img" aria-label="False claims per answer against detection time per fact, for each system"></svg>
-        <p class="cap">Lower is fewer false claims, further left is cheaper. Detection time is on a log scale, measured on one L4 GPU.</p>
+        <p class="cap">Lower is fewer false claims, further left is cheaper. Detection time per fact on one L4 GPU, log scale.</p>
       </div>
     </div>
 
-    <div class="panel explorer" data-nosnippet>
-      <h3>Read the answers</h3>
-      <p class="muted" style="font-size:15px">The same request, “Tell me a bio of …”, answered three ways. Dotted text is supported by the person's Wikipedia page; struck-through text is not. Hover or tap it for the fact checker's note.</p>
-      <div class="people" role="group" aria-label="Person" id="people"></div>
-      <div class="switch colpick" role="group" aria-label="System" id="colpick"></div>
-      <div class="cols" id="cols"></div>
-      <p class="note">SHARS removes or rewrites the sentences the detector doubts, so its answers come out shorter and plainer: fewer invented facts, not more facts. These are 4 of the 60 test people; the numbers above cover all 60.</p>
+    <div class="panel spot" data-nosnippet>
+      <h3 id="spotname"></h3>
+      <p class="muted spotlead">Qwen3-4B has never heard of him, so it invents a basketball career. SHARS with its own detector keeps almost all of the invention. With the probe, every invented claim is gone and only the true one remains.</p>
+      <div class="spotcols" id="spot"></div>
+    </div>
+  </div>
+</section>
+
+<section id="answers">
+  <div class="wrap">
+    <h2>See it check real answers</h2>
+    <p class="measure muted">Qwen3-4B's own biographies of four test people, exactly as it wrote them, with the flags the library raised and the fact checker's verdicts. Hover or tap a detail for its risk and the correction.</p>
+    <div class="panel reader" data-nosnippet>
+      <div class="rhead"><div class="people" role="group" aria-label="Person" id="rpeople"></div><div class="rscore" id="rscore"></div></div>
+      <div class="rtext" id="rtext"></div>
+      <div class="legend">
+        <span><i class="k1"></i>Flagged, and wrong</span>
+        <span><i class="k2"></i>Flagged, but true</span>
+        <span><i class="k3"></i>Wrong, but missed</span>
+      </div>
     </div>
   </div>
 </section>
@@ -362,6 +414,17 @@ footer .wrap { display: grid; gap: 10px; }
         <div><h3>The probe scores it</h3><p>One dot product per token. When a sentence ends, the details in it get a risk from their tokens.</p></div>
         <div><h3>Risky details are flagged</h3><p>Names, dates, numbers and titles above the threshold light up, while the answer is still being written.</p></div>
       </div>
+    </div>
+  </div>
+</section>
+
+<section id="accuracy">
+  <div class="wrap">
+    <h2>More accurate than the alternatives</h2>
+    <p class="measure muted">How often a made-up detail gets a higher risk than a true one, where 50% is a coin flip.</p>
+    <div class="acc">
+      <div class="panel bars"><h3>Against other detectors</h3><p class="muted small" id="detnote"></p><div id="dets"></div></div>
+      <div class="panel bars"><h3>Across kinds of text</h3><p class="muted small">Compared with the model's own confidence in each word.</p><div id="bars"></div></div>
     </div>
   </div>
 </section>
@@ -395,11 +458,15 @@ footer .wrap { display: grid; gap: 10px; }
   </div>
 </section>
 
-<section id="beyond">
+<section id="tested">
   <div class="wrap">
-    <h2>Not just biographies</h2>
-    <p class="measure muted">How often a made-up detail gets a higher risk than a true one, where 50% is a coin flip. Compared with the model's own confidence in each word, the usual cheap signal.</p>
-    <div class="panel bars" id="bars"></div>
+    <h2>Built on solid ground</h2>
+    <div class="solid">
+      <div class="panel sweep"><h3>Layer 21 is where the model knows</h3><svg id="sweep" viewBox="0 0 520 210" role="img" aria-label="Probe accuracy at each of the 36 layers"></svg><p class="muted small" id="sweepnote"></p></div>
+      <div class="panel"><h3>Reproduces the original paper</h3><div class="pair"><div><b>0.8383</b><span>published by Obeso et al.</span></div><div><b class="ice">0.8384</b><span>this pipeline, same probe and test set</span></div></div><p class="muted small">Accuracy of the paper's released Qwen2.5-7B probe on its LongFact test set, rebuilt from scratch before any new work.</p></div>
+      <div class="panel"><h3>A fact checker that holds up</h3><div class="pair"><div><b class="ice">89%</b><span>balanced accuracy against FActScore's human labels, on 11,049 facts</span></div><div><b class="ice">91%</b><span>agreement with Claude re-checking 150 claims blind against full Wikipedia articles</span></div></div><p class="muted small">Gemini reads each subject's Wikipedia page and labels every claim. The independent check agreed equally on every system's answers.</p></div>
+      <div class="panel"><h3>Tested at scale</h3><ul class="scale"><li><b>144,676</b> details written by five other models</li><li><b>600</b> people never used in building it</li><li><b>496</b> subjects beyond people</li><li><b>60</b> held-out people in the SHARS head-to-head</li></ul></div>
+    </div>
   </div>
 </section>
 
@@ -418,19 +485,6 @@ hallustream "Tell me about A Caribbean Mystery."</div>
       <div><code>hallustream batch prompts.jsonl</code><p>Check a whole file and get JSON lines back.</p></div>
       <div><code>Detector.from_pretrained("qwen3-4b")</code><p>Or from Python: generate, score or stream.</p></div>
     </div>
-  </div>
-</section>
-
-<section id="tested">
-  <div class="wrap">
-    <h2>How it was tested</h2>
-    <ul class="tested">
-      <li><h3>Written down first</h3><p>Every test's settings, metrics and pass bars were committed before its results existed.</p></li>
-      <li><h3>Held out</h3><p>Settings were chosen on separate people. Each test set was scored once.</p></li>
-      <li><h3>A checked fact checker</h3><p>Gemini reading Wikipedia agreed with FActScore's human labels at 89% balanced accuracy on 11,049 facts.</p></li>
-      <li><h3>No leaks</h3><p>None of the test people appear in the probe's training data.</p></li>
-      <li><h3>Failures reported</h3><p>Three ideas were stopped by their own rules: rewriting with retrieval, the probe as a training reward, and checking larger models' text. See <a href="https://github.com/pranav-sethia/hallustream/blob/main/docs/RESULTS.md">the results</a>.</p></li>
-    </ul>
   </div>
 </section>
 </main>
@@ -647,58 +701,78 @@ if (location.hash.includes("check")) setChecked(true);
   svg("text", {x: 516, y: Y(g) - 8, "text-anchor": "end"}, el).textContent = `Qwen3-4B alone, no detector: ${g}`;
   const pts = [
     [s.halluse, "SHARS + sampling detector", "#929cbd", 7, "end", -12, 4],
-    [s.logprob_45, "+ token surprise", "#5f6a8f", 5, "start", 12, 4],
+    [s.logprob_45, "SHARS + model's confidence", "#5f6a8f", 5, "start", 12, 4],
     [s.probe_45, "SHARS + HalluStream", "#86e1ff", 8, "start", 14, 5],
-    [s.probe_60, "stricter setting (answers 72% of people)", "#86e1ff", 6, "start", 12, 5],
   ];
   pts.forEach(([a, label, color, r, anchor, dx, dy], i) => {
     const x = X(a.detect_seconds_per_prop), y = Y(a.unsupported_per_bio);
     if (i === 2) svg("circle", {cx: x, cy: y, r: 20, fill: "rgba(134,225,255,.12)"}, el);
-    svg("circle", {cx: x, cy: y, r, fill: i === 3 ? "none" : color, stroke: color, "stroke-width": 1.6}, el);
+    svg("circle", {cx: x, cy: y, r, fill: color, stroke: color, "stroke-width": 1.6}, el);
     const t = svg("text", {x: x + dx, y: y + dy, "text-anchor": anchor}, el);
     t.textContent = `${label}: ${a.unsupported_per_bio}`;
     if (i === 2) t.setAttribute("style", "fill:#e8edfa;font-weight:600");
   });
 })();
 
-/* ---------- Explorer ---------- */
-(function explorer() {
-  const S = D.shars;
-  let person = 0, col = 2;
+/* ---------- Spotlight ---------- */
+(function spotlight() {
+  const S = D.shars.spotlight;
+  $("spotname").textContent = `One of the 60: ${S.name}`;
   const paint = (a) => {
-    const t = a.text;
-    if (!t) return '<span class="muted">No answer: SHARS gave up after ten tries.</span>';
     let out = "", pos = 0;
     [...a.ents].sort((x, y) => x[0] - y[0]).forEach(([s, e, ok, note]) => {
       if (s < pos) return;
-      out += esc(t.slice(pos, s));
-      out += ok ? `<span class="ok">${esc(t.slice(s, e))}</span>`
-                : `<span class="bad" tabindex="0" data-tip="${esc(note || "Not supported by the Wikipedia page.")}">${esc(t.slice(s, e))}</span>`;
+      out += esc(a.text.slice(pos, s));
+      out += ok ? `<span class="ok">${esc(a.text.slice(s, e))}</span>`
+                : `<span class="bad" tabindex="0" data-tip="${esc(note || "Not supported by his Wikipedia page.")}">${esc(a.text.slice(s, e))}</span>`;
       pos = e;
     });
-    return out + esc(t.slice(pos));
+    return out + esc(a.text.slice(pos));
   };
+  const cols = [`<div class="col truth"><h4>What is true</h4><div class="txt">${esc(S.truth)}</div><p class="src">From his Wikipedia article</p></div>`];
+  S.arms.forEach((a, i) => {
+    const us = i === 2;
+    cols.push(`<div class="col${us ? " us" : ""}"><h4>${a.label}</h4>
+      <div class="score"><span class="f"><b>${a.false}</b> false</span><span class="t"><b>${a.true}</b> true</span></div>
+      <div class="txt">${paint(a)}</div>${us ? `<p class="win">All ${S.arms[0].false} invented claims removed. Nothing false left.</p>` : ""}</div>`);
+  });
+  $("spot").innerHTML = cols.join("");
+  bindTips($("spot"), (t) => esc(t.dataset.tip));
+})();
+
+/* ---------- Reader ---------- */
+(function reader() {
+  const R = D.reader;
+  let cur = 0;
+  const kind = (e) => e.flagged ? (e.true === false ? "right" : e.true === true ? "alarm" : "unknown") : (e.true === false ? "miss" : "");
   const draw = () => {
-    const p = S.people[person];
-    $("cols").innerHTML = p.arms.map((a, i) => `<div class="col${i === 2 ? " us" : ""}${i === col ? " show" : ""}">
-      <h4>${S.labels[i]}</h4>
-      <div class="score"><span class="t"><b>${a.true}</b> true</span><span class="f"><b>${a.false}</b> false</span></div>
-      <div class="txt">${paint(a)}</div></div>`).join("");
-    [...$("people").children].forEach((b, i) => b.setAttribute("aria-pressed", i === person));
-    [...$("colpick").children].forEach((b, i) => b.setAttribute("aria-pressed", i === col));
+    const r = R[cur], t = r.text;
+    let out = "", pos = 0;
+    r.entities.forEach((e, i) => {
+      const k = kind(e);
+      if (!k || k === "unknown" || e.start < pos) return;
+      out += esc(t.slice(pos, e.start));
+      const cls = e.flagged ? `ent flag ${k}` : "ent miss";
+      out += `<span class="${cls}" tabindex="0" data-tip="${i}">${esc(t.slice(e.start, e.end))}</span>`;
+      if (e.flagged) out += `<sup class="rk ${k}">${pct(e.risk)}</sup>`;
+      pos = e.end;
+    });
+    $("rtext").innerHTML = out + esc(t.slice(pos));
+    $("rscore").innerHTML = `Caught <b>${r.caught}</b> of <b>${r.errors}</b> errors, ${r.alarms ? `<b>${r.alarms}</b> false alarm${r.alarms > 1 ? "s" : ""}` : "no false alarms"}`;
+    [...$("rpeople").children].forEach((b, i) => b.setAttribute("aria-pressed", i === cur));
   };
-  S.people.forEach((p, i) => {
+  R.forEach((r, i) => {
     const b = document.createElement("button");
-    b.type = "button"; b.textContent = p.name; if (p.lost) b.className = "lost";
-    b.onclick = () => { person = i; draw(); };
-    $("people").appendChild(b);
+    b.type = "button"; b.textContent = r.name; b.onclick = () => { cur = i; draw(); };
+    $("rpeople").appendChild(b);
   });
-  ["Alone", "Sampling detector", "HalluStream"].forEach((l, i) => {
-    const b = document.createElement("button");
-    b.type = "button"; b.textContent = l; b.onclick = () => { col = i; draw(); };
-    $("colpick").appendChild(b);
+  bindTips($("rtext"), (el) => {
+    const e = R[cur].entities[+el.dataset.tip], k = kind(e);
+    let h = e.risk === null ? "<b>Not picked up as a detail</b>" : `<b>${pct(e.risk)}</b> risk of being made up`;
+    const lead = {right: "Wrong. ", alarm: "Actually true. ", miss: "Wrong. "}[k] || "";
+    if (e.note) h += `<span class="v">${lead}${esc(e.note)}</span>`;
+    return h;
   });
-  bindTips($("cols"), (t) => esc(t.dataset.tip));
   draw();
 })();
 
@@ -790,18 +864,40 @@ if (location.hash.includes("check")) setChecked(true);
   update(); drawCal();
 })();
 
-/* ---------- Beyond biographies ---------- */
-(function bars() {
+/* ---------- Accuracy ---------- */
+(function accuracy() {
+  const W = (v) => ((v - 0.5) / 0.5 * 100).toFixed(1) + "%";
+  const bar = (v, cls, strong) => `<div class="track"><i class="${cls}" style="width:${W(v)}"></i><em${strong ? "" : ' class="muted"'} style="left:calc(${W(v)} + 10px)">${pct(v)}</em></div>`;
+  const S = D.shars.summary;
+  const time = ["0.05 s per fact", "free", `${S.halluse.detect_seconds_per_prop.toFixed(1)} s per fact`, `${S.halluse.detect_seconds_per_prop.toFixed(1)} s per fact`];
+  $("detnote").textContent = `The same ${D.detectors.facts} facts from SHARS runs on Qwen3-4B.`;
+  $("dets").innerHTML = D.detectors.rows.map(([name, v], i) => `<div class="brow one"><div class="lab">${name}<small>${time[i]}</small></div><div>${bar(v, i ? "c" : "p", !i)}</div></div>`).join("");
   const rows = [
     ["Its own biographies", "600 people never used in building it", 0.854, 0.690],
     ["Its own writing about other subjects", "496 places, organizations, events, works and species", 0.834, 0.668],
     ["Other models' long answers", "144,676 details written by five other models", 0.854, 0.678],
   ];
-  const W = (v) => ((v - 0.5) / 0.5 * 100).toFixed(1) + "%";
-  $("bars").innerHTML = rows.map(([a, b, p, c]) => `<div class="brow"><div class="lab">${a}<small>${b}</small></div><div>
-    <div class="track"><i class="p" style="width:${W(p)}"></i><em style="left:calc(${W(p)} + 10px);right:auto">${pct(p)}</em></div>
-    <div class="track"><i class="c" style="width:${W(c)}"></i><em class="muted" style="left:calc(${W(c)} + 10px);right:auto">${pct(c)}</em></div></div></div>`).join("")
-    + `<div class="bkey"><span><i style="background:#86e1ff"></i>HalluStream probe</span><span><i style="background:rgba(146,156,189,.7)"></i>Model's own confidence</span><span>Bars start at 50%, a coin flip.</span></div>`;
+  $("bars").innerHTML = rows.map(([a, b, p, c]) => `<div class="brow one"><div class="lab">${a}<small>${b}</small></div><div>${bar(p, "p", true)}${bar(c, "c", false)}</div></div>`).join("")
+    + `<div class="bkey"><span><i style="background:#86e1ff"></i>HalluStream probe</span><span><i style="background:rgba(146,156,189,.7)"></i>Model's own confidence</span></div>`;
+})();
+
+/* ---------- Layer sweep ---------- */
+(function sweep() {
+  const el = $("sweep"), L = D.detectors.sweep;
+  const X = (l) => 30 + l / 35 * 470, Y = (v) => 180 - (v - 0.6) / 0.3 * 165;
+  [0.6, 0.7, 0.8, 0.9].forEach((v) => {
+    svg("line", {x1: 30, x2: 500, y1: Y(v), y2: Y(v), stroke: "rgba(150,175,255,.08)"}, el);
+    svg("text", {x: 24, y: Y(v) + 4, "text-anchor": "end"}, el).textContent = pct(v);
+  });
+  const b = D.detectors.sweep_baseline;
+  svg("line", {x1: 30, x2: 500, y1: Y(b), y2: Y(b), stroke: "#929cbd", "stroke-dasharray": "4 5"}, el);
+  svg("text", {x: 496, y: Y(b) + 16, "text-anchor": "end"}, el).textContent = `model's own confidence: ${pct(b)}`;
+  svg("polyline", {points: L.map(([l, v]) => `${X(l)},${Y(v)}`).join(" "), fill: "none", stroke: "#86e1ff", "stroke-width": 2}, el);
+  const best = L.reduce((a, c) => c[1] > a[1] ? c : a);
+  svg("circle", {cx: X(best[0]), cy: Y(best[1]), r: 5, fill: "#86e1ff"}, el);
+  svg("text", {x: X(best[0]), y: Y(best[1]) - 12, "text-anchor": "middle", style: "fill:#e8edfa;font-weight:600"}, el).textContent = `layer ${best[0]}: ${pct(best[1])}`;
+  [0, 9, 18, 27, 35].forEach((l) => { svg("text", {x: X(l), y: 200, "text-anchor": "middle"}, el).textContent = l; });
+  $("sweepnote").textContent = `A probe trained on each of Qwen3-4B's 36 layers, scored on ${D.detectors.sweep_spans.toLocaleString()} held-out details. The signal peaks in the middle of the network.`;
 })();
 
 /* ---------- Copy ---------- */

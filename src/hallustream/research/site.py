@@ -20,10 +20,12 @@ import sys
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
 
+from hallustream.entities import is_specific
 from hallustream.research.factcheck import combine, judge
 from hallustream.research.factcheck.validate import read_results
-from hallustream.text import sentences
+from hallustream.text import PRONOUNS, sentences
 
 V3 = Path(__file__).parents[3] / "configs" / "detector_v3.json"
 BALANCED, STRICT = 0.737832, 0.823369
@@ -49,10 +51,33 @@ KIARA = {
     "2017": (False, "Her 2017 film was Machine."),
     "2018": (None, "The sentence was cut off before it named the film."),
 }
-# People whose three answers have no contradictory labels for the same detail (Egon Krenz and
-# Anna May Wong had one each, from separate judge calls), in the order shown.
-EXPLORER = ["Mike Trivisonno", "Kyra Sedgwick", "Daniel Dubois (boxer)", "Taika Waititi"]
-LOST = {"Taika Waititi"}  # shown as the case where the probe arm did worse
+# The SHARS example: the model knows nothing true about him beyond his nationality.
+SPOTLIGHT = "Mike Trivisonno"
+SPOTLIGHT_TRUTH = (
+    "Mike Trivisonno (1947–2021) was an American radio broadcaster. He hosted a long-running "
+    "afternoon talk show on Cleveland's WTAM 1100, after starting in sports radio in 1987."
+)  # from his Wikipedia article, checked 2026-10-26
+# Plain answers shown with the library's flags: test people with the most errors caught and no
+# false alarms (pick_reader in the site notes), avoiding sensitive topics.
+READER = ["Jimmy Bartel", "Teresa Palmer", "Chris Cheney", "Elsa Pataky"]
+
+
+def _judged(text: str, result: str) -> list[list]:
+    """The fact checker's labeled entities in `text`: [start, end, supported, note]."""
+    raw = judge._json(result)
+    labeled = [e for e in raw.get("entities") or []
+               if isinstance(e, dict) and e.get("label") in judge.ENTITY_LABELS]  # fmt: skip
+    ents = [(e["span"], e["label"]) for e in labeled]
+    anns, _ = judge.locate(text, ents)
+    out, k = [], 0  # notes follow the judge's order; locate keeps it and skips what it can't find
+    for a in anns:
+        while k < len(ents) and ents[k] != (a["span"], a["label"]):
+            k += 1
+        note = labeled[k].get("note", "") if k < len(labeled) else ""
+        k += 1
+        if a["label"] != "Insufficient":
+            out.append([a["index"], a["index"] + len(a["span"]), a["label"] == "Supported", note])
+    return out
 
 
 def _arm(d: Path) -> dict[str, dict]:
@@ -64,24 +89,10 @@ def _arm(d: Path) -> dict[str, dict]:
         name, text = r["name"], r["bio"].strip()
         item = {"text": text, "ents": [], "true": 0, "false": 0}
         if text and name in results:
-            raw = judge._json(results[name])
             claims = judge.parse_bio(results[name])["claims"]
             item["true"] = sum(lab == "Supported" for _, lab in claims)
             item["false"] = len(claims) - item["true"]
-            ents = [(e["span"], e["label"]) for e in raw.get("entities") or []
-                    if isinstance(e, dict) and e.get("label") in judge.ENTITY_LABELS]  # fmt: skip
-            notes = [e.get("note", "") for e in raw.get("entities") or [] if isinstance(e, dict)
-                     and e.get("label") in judge.ENTITY_LABELS]  # fmt: skip
-            anns, _ = judge.locate(text, ents)
-            k = 0  # notes follow the judge's order; locate keeps it and skips what it can't find
-            for a in anns:
-                while k < len(ents) and ents[k] != (a["span"], a["label"]):
-                    k += 1
-                note = notes[k] if k < len(notes) else ""
-                k += 1
-                if a["label"] != "Insufficient":
-                    item["ents"].append([a["index"], a["index"] + len(a["span"]),
-                                         a["label"] == "Supported", note])  # fmt: skip
+            item["ents"] = _judged(text, results[name])
         out[name] = item
     return out
 
@@ -158,18 +169,81 @@ def hero(root: Path) -> list[dict]:
     return [novel, kiara]
 
 
-def explorer(root: Path) -> dict:
+def shars(root: Path) -> dict:
+    """SHARS test numbers, and the spotlight person's three answers."""
     d = root / "shars" / "test60"
-    report = json.loads((d / "report.json").read_text())["arms"]
+    report = json.loads((d / "report.json").read_text())
     keys = [("naive", "Qwen3-4B alone"), ("halluse", "SHARS + its sampling detector"),
             ("probe_45", "SHARS + HalluStream probe")]  # fmt: skip
-    arms = {k: _arm(d / k) for k, _ in keys}
-    people = [{"name": n.split(" (")[0], "lost": n in LOST,
-               "arms": [{"text": arms[k][n]["text"], "true": arms[k][n]["true"],
-                         "false": arms[k][n]["false"], "ents": arms[k][n]["ents"]}
-                        for k, _ in keys]} for n in EXPLORER]  # fmt: skip
-    summary = {k: report[k] for k in ("naive", "halluse", "probe_45", "probe_60", "logprob_45")}
-    return {"labels": [label for _, label in keys], "people": people, "summary": summary}
+    arms = {k: _arm(d / k)[SPOTLIGHT] for k, _ in keys}
+    spotlight = {"name": SPOTLIGHT, "truth": SPOTLIGHT_TRUTH,
+                 "arms": [{"label": label, **arms[k]} for k, label in keys]}  # fmt: skip
+    summary = {k: report["arms"][k] for k in ("naive", "halluse", "probe_45", "probe_60",
+                                              "logprob_45")}  # fmt: skip
+    return {"summary": summary, "paired": report["paired"], "spotlight": spotlight}
+
+
+def reader(root: Path) -> list[dict]:
+    """Qwen3-4B's plain answers for test people, with the shipped library's flags (from the
+    library check) and the fact checker's verdicts."""
+    a = pd.read_parquet(root / "site" / "auto_kinds.parquet")
+    a = a[a["set"] == "biographies"].drop_duplicates(["name", "start", "end"])
+    a = a[[is_specific(t, k) and t.strip().lower() not in PRONOUNS
+           for t, k in zip(a["ent"], a["kind"], strict=True)]]  # fmt: skip
+    d = root / "shars" / "test60" / "naive"
+    results, _ = read_results(d / "results.jsonl")
+    bios = {
+        (r := json.loads(x))["name"]: r["bio"] for x in (d / "bios.jsonl").read_text().splitlines()
+    }
+    out = []
+    for name in READER:
+        text = bios[name].rstrip()
+        own = set(re.findall(r"\w+", name.lower()))
+        is_name = lambda t, own=own: set(re.findall(r"\w+", t.lower())) <= own  # noqa: E731
+        # The subject's own name is not a claim (the checker labels it by the claim around it)
+        judged = [j for j in _judged(text, results[name]) if not is_name(text[j[0] : j[1]])]
+        over = lambda lo, hi, j: j[0] < hi and lo < j[1]  # noqa: E731
+        ents = []
+        for r in a[a["name"] == name].sort_values("start").itertuples():
+            lo, hi = int(r.start), int(r.end)  # pyright: ignore[reportArgumentType]
+            if is_name(text[lo:hi]):
+                continue
+            hits = [j for j in judged if over(lo, hi, j)]
+            wrong = [j for j in hits if not j[2]]
+            true = False if wrong else (True if hits else None)
+            note = wrong[0][3] if wrong else (hits[0][3] if hits else "")
+            risk = float(r.risk)  # pyright: ignore[reportArgumentType]
+            ents.append({"text": text[lo:hi], "start": lo, "end": hi, "risk": round(risk, 3),
+                         "flagged": risk >= BALANCED, "true": true, "note": note})  # fmt: skip
+        for j in judged:  # errors no detail was found for
+            if not j[2] and not any(over(e["start"], e["end"], j) for e in ents):
+                ents.append({"text": text[j[0]:j[1]], "start": j[0], "end": j[1], "risk": None,
+                             "flagged": False, "true": False, "note": j[3]})  # fmt: skip
+        errors = [j for j in judged if not j[2]]
+        caught = sum(
+            any(e["flagged"] and over(e["start"], e["end"], j) for e in ents) for j in errors
+        )
+        alarms = sum(e["flagged"] and e["true"] is True for e in ents)
+        out.append({"name": name, "text": text, "entities": sorted(ents, key=lambda e: e["start"]),
+                    "errors": len(errors), "caught": caught, "alarms": alarms})  # fmt: skip
+    return out
+
+
+def detectors(root: Path) -> dict:
+    """Detectors on the same 987 SHARS development facts, and the every-layer sweep."""
+    dev = json.loads((root / "shars" / "dev_choice_dedup.json").read_text())
+    au = dev["auroc"]
+    sweep = json.loads((root / "sweep_report.json").read_text())["Qwen3-4B"]
+    layers = sorted(
+        (r["layers"][0], r["val_auroc"]) for r in sweep["table"] if len(r["layers"]) == 1
+    )
+    return {"facts": dev["props"],
+            "rows": [["HalluStream probe", au["probe_native"]],
+                     ["Model's own confidence", max(au["surprise_shars"], au["surprise_native"])],
+                     ["SHARS's sampling detector, best settings", au["halluse_exp_entail_a5"]],
+                     ["SHARS's sampling detector, default settings", au["halluse_a3"]]],
+            "sweep": layers, "sweep_baseline": sweep["baselines"]["entropy_max"],
+            "sweep_spans": sweep["n_val_spans"]}  # fmt: skip
 
 
 def _risks(d: Path) -> tuple[np.ndarray, np.ndarray]:
@@ -195,7 +269,8 @@ def curves(root: Path) -> dict:
 
 
 def build(root: Path) -> str:
-    data = {"hero": hero(root), "shars": explorer(root), "thresholds": curves(root),
+    data = {"hero": hero(root), "shars": shars(root), "reader": reader(root),
+            "detectors": detectors(root), "thresholds": curves(root),
             "presets": {"balanced": BALANCED, "strict": STRICT}}  # fmt: skip
     page = (Path(__file__).parent / "site_template.html").read_text()
     return page.replace("__DATA__", json.dumps(data, separators=(",", ":")).replace("</", "<\\/"))
