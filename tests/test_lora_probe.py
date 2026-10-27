@@ -46,7 +46,7 @@ def test_training_lowers_the_loss_and_keeps_kl_small():
     data = [example(s) for s in range(8)] * 4
     hist = train(probe, data, log_every=0)
     assert hist[-1]["probe"] < hist[0]["probe"]
-    assert all(h["kl"] >= 0 for h in hist)
+    assert all(h["kl"] >= -1e-6 for h in hist)  # KL >= 0, up to float rounding (B starts at 0)
     out = score(probe, example(0))
     assert len(out["spans"]) == 3 and 0 <= out["same_top1"] <= 1
 
