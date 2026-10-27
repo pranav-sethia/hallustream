@@ -22,7 +22,7 @@
 | Detection time per fact | – | 5.7 s | **0.04 s** (~140× less) |
 | Total time per biography | 7 s | 211 s | **49 s** |
 
-False claims: −2.37 per person, 95% interval [−2.96, −1.80]. Precision: +0.083 [+0.038, +0.132]. True claims: unchanged.
+False claims are claims the fact checker could not support from the person's Wikipedia page (FActScore's convention). False claims: −2.37 per person, 95% interval [−2.96, −1.80]. Precision: +0.083 [+0.038, +0.132]. True claims: unchanged. Counting only specific details (names, places, dates, numbers), false ones drop 49% (2.74 → 1.41) and true ones are unchanged.
 
 **Compared with the paper it builds on** ([Obeso et al., 2025](https://arxiv.org/abs/2509.03531)):
 

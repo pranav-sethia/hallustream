@@ -406,7 +406,7 @@ footer .wrap { display: grid; gap: 10px; }
     <p class="measure muted">SHARS (ICML 2026) cuts hallucinations by rewriting an answer sentence by sentence, asking a detector which facts are made up. Its own detector re-asks the model about every fact several times. Swapping in the probe, and changing nothing else, made SHARS more accurate and far cheaper on all 182 of its test people.</p>
     <figure class="fig">
       <svg id="scatter" role="img" aria-label="False claims per answer against time to check one fact, for each way of running SHARS"></svg>
-      <figcaption class="cap">Each dot is one way of running Qwen3-4B on SHARS's 182 test people. Lower means fewer made-up claims; further left means a faster detector (log scale, one L4 GPU). Hover or tap a dot for its numbers.</figcaption>
+      <figcaption class="cap">Each dot is one way of running Qwen3-4B on SHARS's 182 test people. A false claim is one the fact checker could not support from the person's Wikipedia page. Lower means fewer false claims; further left means a faster detector (log scale, one L4 GPU). Hover or tap a dot for its numbers.</figcaption>
     </figure>
     <div class="cmpwrap"><table class="cmp" id="cmp"></table></div>
 
@@ -787,7 +787,7 @@ bindTips($("scatter"), (t) => t.dataset.tip);
   ];
   $("cmp").innerHTML = `<thead><tr><th scope="col"><span class="sr">Per answer</span></th><th scope="col">Qwen3-4B alone</th><th scope="col">SHARS + its sampling detector</th><th scope="col" class="us">SHARS + HalluStream probe</th></tr></thead><tbody>`
     + rows.map(([lab, v, d]) => `<tr><td>${lab}</td><td data-label="Alone">${v[0]}</td><td data-label="Sampling detector">${v[1]}</td><td class="us" data-label="HalluStream">${v[2]}${d ? `<span class="d">${d}</span>` : ""}</td></tr>`).join("")
-    + `</tbody><caption>Averages over SHARS's 182 test people; Qwen3-4B on one L4 GPU. The reductions in false claims and the higher precision hold at 95% confidence, and the true-claim counts are statistically the same. With the probe trained only the paper's way, SHARS left ${f2(S.probe_v1.unsupported_per_bio)} false claims per answer.</caption>`;
+    + `</tbody><caption>Averages over SHARS's 182 test people; Qwen3-4B on one L4 GPU. False claims are those the fact checker could not support from the person's Wikipedia page, the FActScore convention. The reductions in false claims and the higher precision hold at 95% confidence, and the true-claim counts are statistically the same. With the probe trained only the paper's way, SHARS left ${f2(S.probe_v1.unsupported_per_bio)} false claims per answer.</caption>`;
 })();
 
 /* ---------- Spotlight ---------- */
