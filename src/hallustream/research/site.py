@@ -53,11 +53,23 @@ KIARA = {
     "2018": (None, "The sentence was cut off before it named the film."),
 }
 # The SHARS example: the model knows nothing true about him beyond his nationality.
-SPOTLIGHT = "Mike Trivisonno"
+# Picked from all 182 by rule (probe answer with the most specific true claims and at most one
+# judged false, where SHARS's own detector kept specific false ones), then read in full. Others
+# ranked higher were left out: vague answers (Song Kang, Lua Blanco), a judge miss in the probe's
+# answer (Harrison Ford: "career began in the 1970s"; it was 1966), or a sensitive subject.
+SPOTLIGHT = "Bella Akhmadulina"
 SPOTLIGHT_TRUTH = (
-    "Mike Trivisonno (1947–2021) was an American radio broadcaster. He hosted a long-running "
-    "afternoon talk show on Cleveland's WTAM 1100, after starting in sports radio in 1987."
-)  # from his Wikipedia article, checked 2026-10-26
+    "Bella Akhmadulina (1937–2010) was a Soviet and Russian poet, born in Moscow. A leading voice "
+    "of the 1960s Thaw generation, she won the USSR State Prize (1989) and the State Prize of the "
+    "Russian Federation (2004)."
+)  # from her Wikipedia article, checked 2026-10-27
+SPOTLIGHT_LEAD = (
+    "Every version gets the outline right: a celebrated Russian poet. Qwen3-4B alone and SHARS "
+    "with its own detector both add wrong dates, born in 1930 and died in 2001. She lived from "
+    "1937 to 2010. With the probe, the made-up dates are gone; the one claim the fact checker "
+    "could not confirm is that she influenced later generations of poets."
+)
+SPOTLIGHT_WIN = "The made-up birth year was flagged at 83% risk and rewritten out."  # SHARS log
 # Plain answers shown with the library's flags: test people with the most errors caught and no
 # false alarms (pick_reader in the site notes), avoiding sensitive topics.
 READER = ["Jimmy Bartel", "Teresa Palmer", "Chris Cheney", "Elsa Pataky"]
@@ -177,7 +189,8 @@ def shars(root: Path) -> dict:
     keys = [("naive", "Qwen3-4B alone"), ("halluse", "SHARS + its sampling detector"),
             ("probe_45", "SHARS + HalluStream probe")]  # fmt: skip
     arms = {k: _arm(d / k)[SPOTLIGHT] for k, _ in keys}
-    spotlight = {"name": SPOTLIGHT, "truth": SPOTLIGHT_TRUTH,
+    spotlight = {"name": SPOTLIGHT, "truth": SPOTLIGHT_TRUTH, "lead": SPOTLIGHT_LEAD,
+                 "win": SPOTLIGHT_WIN,
                  "arms": [{"label": label, **arms[k]} for k, label in keys]}  # fmt: skip
     summary = {k: report["arms"][k] for k in ("naive", "halluse", "probe_45", "probe_60",
                                               "logprob_45", "probe_v1")}  # fmt: skip

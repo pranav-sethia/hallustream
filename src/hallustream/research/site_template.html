@@ -406,7 +406,7 @@ footer .wrap { display: grid; gap: 10px; }
 
     <div class="spot" data-nosnippet>
       <h3 id="spotname"></h3>
-      <p class="muted spotlead">Qwen3-4B has never heard of him, so it invents a basketball career. SHARS with its own detector keeps almost all of the invention. With the probe, every invented claim is gone and only the true one remains.</p>
+      <p class="muted spotlead" id="spotlead"></p>
       <div class="spotcols" id="spot"></div>
     </div>
   </div>
@@ -767,23 +767,24 @@ narrow.addEventListener("change", scatter);
 (function spotlight() {
   const S = D.shars.spotlight;
   $("spotname").textContent = `One of the 182: ${S.name}`;
+  $("spotlead").textContent = S.lead;
   const paint = (a) => {
     let out = "", pos = 0;
     [...a.ents].sort((x, y) => x[0] - y[0]).forEach(([s, e, ok, note]) => {
       if (s < pos) return;
       out += esc(a.text.slice(pos, s));
       out += ok ? `<span class="ok">${esc(a.text.slice(s, e))}</span>`
-                : `<span class="bad" tabindex="0" data-tip="${esc(note || "Not supported by his Wikipedia page.")}">${esc(a.text.slice(s, e))}</span>`;
+                : `<span class="bad" tabindex="0" data-tip="${esc(note || "Not supported by the Wikipedia page.")}">${esc(a.text.slice(s, e))}</span>`;
       pos = e;
     });
     return out + esc(a.text.slice(pos));
   };
-  const cols = [`<div class="col truth"><h4>What is true</h4><div class="txt">${esc(S.truth)}</div><p class="src">From his Wikipedia article</p></div>`];
+  const cols = [`<div class="col truth"><h4>What is true</h4><div class="txt">${esc(S.truth)}</div><p class="src">From the Wikipedia article</p></div>`];
   S.arms.forEach((a, i) => {
     const us = i === 2;
     cols.push(`<div class="col${us ? " us" : ""}"><h4>${a.label}</h4>
       <div class="score"><span class="f"><b>${a.false}</b> false</span><span class="t"><b>${a.true}</b> true</span></div>
-      <div class="txt">${paint(a)}</div>${us ? `<p class="win">All ${S.arms[0].false} invented claims removed. Nothing false left.</p>` : ""}</div>`);
+      <div class="txt">${paint(a)}</div>${us ? `<p class="win">${esc(S.win)}</p>` : ""}</div>`);
   });
   $("spot").innerHTML = cols.join("");
   bindTips($("spot"), (t) => esc(t.dataset.tip));

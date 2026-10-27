@@ -47,53 +47,9 @@ The gains come from choices tested on validation data: reading a middle layer (l
 | Qwen3-4B's own biographies, 600 untouched people (probe adapted to its own writing) | **0.854** | 0.690 |
 | Qwen3-4B's own writing about 496 other subjects (places, organizations, events, works, species) | **0.834** | 0.668 |
 
-Example from the test (Mike Trivisonno):
-- SHARS + HalluSE kept "He played college basketball at the University of California, Los Angeles. Mike Trivisonno played in the NBA for the Boston Celtics." (10 false claims in all).
-- SHARS + probe wrote only "Mike Trivisonno is an American."
-
-All numbers, with intervals and caveats, are in [docs/RESULTS.md](docs/RESULTS.md).
-
-## Use it
-```bash
-pip install "hallustream[entities] @ git+https://github.com/pranav-sethia/hallustream"
-```
-| Command | What it does |
-|---|---|
-| `hallustream "Tell me about Lake Tahoe."` | Answers, highlighting likely made-up details as each sentence is checked |
-| `hallustream chat` | The same, in a conversation |
-| `hallustream score "Tell me about Lake Tahoe." answer.txt` | Checks an answer the model already wrote |
-| `hallustream batch prompts.jsonl -o results.jsonl` | Checks a file of prompts or answers and writes JSON lines |
-
-After each answer comes a short list:
-```
-12 of 21 details are likely made up:
-   98%  Sushmita Dev
-   98%  May 12, 1993
-   ...
-Risk is the estimated chance a detail is made up; flagged from 74%.
-```
-```python
-from hallustream import Detector
-
-det = Detector.from_pretrained("qwen3-4b")  # Qwen3-4B-Instruct-2507 + the bundled probe
-# write and check an answer; also det.score(prompt, answer) and live det.stream(prompt)
-report = det.generate("Tell me a bio of Kiara Advani.")
-print(report.summary())
-report.flagged  # [Entity(text, start, end, risk, flagged), ...]
-```
-- **Accuracy:** with details found automatically, 0.876 AUROC on held-out biographies and 0.827 on other topics.
-- **Risk you can read:** on held-out text, details given 90–100% risk were false 92–93% of the time.
-- **Speed:** it adds 5% per generated token.
-- **Same numbers as the research:** it reproduces the evaluated detector's scores to within 0.0001.
-
-Who it is for, recipes, what gets checked, thresholds, measurements and limits are all in [docs/LIBRARY.md](docs/LIBRARY.md). You can also try it on a free GPU in [Colab](https://colab.research.google.com/github/pranav-sethia/hallustream/blob/main/notebooks/quickstart.ipynb).
-
-## How it works
-1. **Probe.** A logistic classifier on one middle layer of the model (layer 21 of Qwen3-4B, chosen by a sweep over every layer). It scores each entity's tokens. It was trained with the recipe and labeled data of Obeso et al. (2025): about 20,000 long answers on topics from the Apollo 11 landing to corporate law, written by five other models, with every entity marked supported or not by web search.
-2. **Adapted to the model's own writing (v3).** Qwen3-4B wrote biographies of 432 separate people, an automatic fact checker labeled them, and a regularized linear term on the same hidden state was added to the probe. It was then checked once on 600 people never used before.
-3. **Fact checker.** Gemini 3.1 Flash-Lite reads the subject's Wikipedia page and labels every claim. It agrees with FActScore's human labels on 89% of 11,049 facts (balanced accuracy).
-4. **SHARS integration.** SHARS's code is vendored unchanged in [`third_party/shars`](third_party/shars) (MIT). The probe plugs in as an uncertainty estimator ([`hallustream/integrations/shars.py`](src/hallustream/integrations/shars.py)): one forward pass per sentence instead of a question and several sampled answers per fact.
-5. **Live streaming.** Generation keeps its KV cache, and the probe reads the hidden state of each new token as it is produced. When a sentence ends, GLiNER finds its entities and the probe scores them, without a second pass.
+Example from the test (Bella Akhmadulina, a Russian poet who lived 1937–2010):
+- Qwen3-4B alone and SHARS + HalluSE both wrote that she "was born in 1930" and "passed away in 2001".
+- SHARS + probe flagged the made-up birth year (83% risk), rewrote the sentence without it, and kept the rest: a Russian poet born in the Soviet Union who faced censorship.
 
 ## How it was evaluated
 - Every test's settings, metrics and pass bars were committed in [EVAL_PROTOCOL.md](EVAL_PROTOCOL.md) before its outputs existed. Amendments are dated there with their reasons.
