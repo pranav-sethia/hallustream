@@ -52,24 +52,28 @@ KIARA = {
     "2017": (False, "Her 2017 film was Machine."),
     "2018": (None, "The sentence was cut off before it named the film."),
 }
-# The SHARS example: the model knows nothing true about him beyond his nationality.
-# Picked from all 182 by rule (probe answer with the most specific true claims and at most one
-# judged false, where SHARS's own detector kept specific false ones), then read in full. Others
-# ranked higher were left out: vague answers (Song Kang, Lua Blanco), a judge miss in the probe's
-# answer (Harrison Ford: "career began in the 1970s"; it was 1966), or a sensitive subject.
-SPOTLIGHT = "Bella Akhmadulina"
+# Picked from all 182 by rule (the probe's answer has at most one judged-false claim while both
+# other answers invent many), then read in full. Others were left out: vague both ways (Song
+# Kang, Lua Blanco), a judge miss in the probe's answer (Harrison Ford: "career began in the
+# 1970s"; it was 1966), a kept false date (IU), a sensitive subject, or too little to remove
+# (Bella Akhmadulina: only wrong birth and death years).
+SPOTLIGHT = "Jonathan Tucker"
 SPOTLIGHT_TRUTH = (
-    "Bella Akhmadulina (1937–2010) was a Soviet and Russian poet, born in Moscow. A leading voice "
-    "of the 1960s Thaw generation, she won the USSR State Prize (1989) and the State Prize of the "
-    "Russian Federation (2004)."
-)  # from her Wikipedia article, checked 2026-10-27
+    "Jonathan Tucker (born 1982 in Boston) is an American actor. His roles include The Virgin "
+    "Suicides (1999), The Texas Chainsaw Massacre (2003), Kingdom (2014–2017) and Westworld "
+    "(2018–2022)."
+)  # from his Wikipedia article, checked 2026-10-27
 SPOTLIGHT_LEAD = (
-    "Every version gets the outline right: a celebrated Russian poet. Qwen3-4B alone and SHARS "
-    "with its own detector both add wrong dates, born in 1930 and died in 2001. She lived from "
-    "1937 to 2010. With the probe, the made-up dates are gone; the one claim the fact checker "
-    "could not confirm is that she influenced later generations of poets."
+    "Qwen3-4B barely knows him, so it invents a career: a birth date, a hometown, and roles in "
+    "The Good Place, The West Wing, The Newsroom and Star Wars. SHARS with its own detector "
+    "still keeps two of the made-up roles. With the probe, every invented role and date is gone. "
+    "What is left is general, because the model has nothing true and specific to add."
 )
-SPOTLIGHT_WIN = "The made-up birth year was flagged at 83% risk and rewritten out."  # SHARS log
+# From the SHARS log of this run: the flagged propositions and their risks.
+SPOTLIGHT_WIN = (
+    "The probe flagged the fake birth date at 99% risk and nine made-up shows and films at "
+    "89–98%, and SHARS rewrote around each one."
+)
 # Plain answers shown with the library's flags: test people with the most errors caught and no
 # false alarms (pick_reader in the site notes), avoiding sensitive topics.
 READER = ["Jimmy Bartel", "Teresa Palmer", "Chris Cheney", "Elsa Pataky"]

@@ -47,9 +47,10 @@ The gains come from choices tested on validation data: reading a middle layer (l
 | Qwen3-4B's own biographies, 600 untouched people (probe adapted to its own writing) | **0.854** | 0.690 |
 | Qwen3-4B's own writing about 496 other subjects (places, organizations, events, works, species) | **0.834** | 0.668 |
 
-Example from the test (Bella Akhmadulina, a Russian poet who lived 1937–2010):
-- Qwen3-4B alone and SHARS + HalluSE both wrote that she "was born in 1930" and "passed away in 2001".
-- SHARS + probe flagged the made-up birth year (83% risk), rewrote the sentence without it, and kept the rest: a Russian poet born in the Soviet Union who faced censorship.
+Example from the test (Jonathan Tucker, an American actor the model barely knows):
+- Qwen3-4B alone invented his birth date and hometown and gave him roles in *The Good Place*, *The West Wing*, *The Newsroom* and *Star Wars: The Last Jedi* (8 of 9 claims false).
+- SHARS + HalluSE still kept *The Good Place* and *The Last Jedi*.
+- SHARS + probe flagged the fake birth date at 99% risk and nine made-up titles at 89–98%. Its answer has no invented roles (11 true claims, 1 false), but it is general, because the model has nothing true and specific to add.
 
 ## How it was evaluated
 - Every test's settings, metrics and pass bars were committed in [EVAL_PROTOCOL.md](EVAL_PROTOCOL.md) before its outputs existed. Amendments are dated there with their reasons.
