@@ -37,7 +37,6 @@ research = [
     "sentencepiece>=0.2.2",
     "protobuf>=7.36.2",
 ]
-demo = ["gradio[mcp]>=5.30", "spaces>=0.40"]
 
 [dependency-groups]
 dev = [
@@ -50,6 +49,7 @@ dev = [
 ]
 
 [project.urls]
+Homepage = "https://pranav-sethia.github.io/hallustream/"
 Repository = "https://github.com/pranav-sethia/hallustream"
 
 [build-system]

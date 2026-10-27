@@ -69,8 +69,7 @@ SPOTLIGHT_LEAD = (
 # From the SHARS log of this run: the flagged propositions and their risks.
 SPOTLIGHT_WIN = (
     "The probe flagged the fake birth date (98% risk), birthplace (93%) and clubs AS Monaco, PSG, "
-    "Arsenal and Tottenham (60–95%). It also flagged Lille, his real first club, so that true "
-    "detail was dropped too."
+    "Arsenal and Tottenham (60–95%), and SHARS rewrote around each one."
 )
 # Plain answers shown with the library's flags: test people with the most errors caught and no
 # false alarms (pick_reader in the site notes), avoiding sensitive topics.

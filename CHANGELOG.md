@@ -1,17 +1,18 @@
 # Changelog
 
-## Unreleased
-- Beats the paper it builds on, on that paper's own benchmark: on Qwen2.5-7B with the paper's training data and test sets, 0.894 / 0.897 AUROC vs 0.839 / 0.847 for its released linear probe (+0.05, intervals above 0), matching its LoRA fine-tuned probe without changing the model's weights (pre-registered).
-- SHARS test extended to all 182 people: 44% fewer false claims than SHARS's own detector at equal true claims, precision +0.083 (now significant), ~140x less detection time. A new arm with the probe trained only the paper's way does no better than SHARS's detector; the adapted probe removes 1.7 more false claims per person.
-- Library design: commands `ask` (default), `chat`, `score` and `batch`; `generate()`; a plain summary after each answer ("12 of 21 details are likely made up", riskiest first, risk in %); `to_dict()` and notebook display; presets renamed `balanced` / `strict`; a notice when an answer is cut off. Only specific details are checked now (generic lowercase words skipped, roles kept): 16-19% fewer flags, 96-99% of found false details kept, AUROC unchanged. Risk checked as a probability on held-out text (calibration error 0.033 / 0.044). New README GIF from a clean-install run.
-- Library (v0.1.0): `Detector.from_pretrained("qwen3-4b")` with `score()`, `highlight()`, live `stream()`, the `hallustream` command and a SHARS plug-in; probe weights bundled; refusals and pronouns are not scored. Checked on Qwen3-4B: matches the research scores to within 0.0001, 0.876 / 0.827 AUROC with automatic entity finding on held-out biographies / topics, +5.0% time per generated token. README GIF, results chart and Colab quickstart.
-- Detector checked beyond biographies: 0.834 vs 0.668 for the model's confidence on 496 non-person subjects (pre-registered).
-- SHARS (ICML 2026) with the probe as its detector: on 60 held-out FActScore people, 36% fewer false claims than SHARS's own detector at equal true claims, ~110x less detection time (pre-registered). Earlier steps: dev detector comparison, an end-to-end check on 40 dev people, and a 2-person smoke test of every arm.
-- Ideas tried and stopped by their pre-registered rules: detect-and-rewrite with retrieval, the probe as a training reward, a small model checking frontier models' text.
-- Detector v3 (probe adapted to Qwen3-4B's own biographies): 0.854 AUROC on 600 untouched people vs 0.690 for the model's confidence. Detector v2 (probe + confidence) and the own-answer gate (0.828) before it.
-- Fact checker validated against FActScore's human labels (0.890 balanced accuracy on 11,049 facts).
-- Trained and evaluated the probes: Qwen3.5-4B layers 17+30 reach 0.867 test AUROC on 144,676 entities (+0.236 over the best confidence baseline; +0.012 over Qwen3-4B). Choices were frozen on validation before test.
-- Every-layer sweep for both models with tuned regularization: the signal rises smoothly to a peak at about 55-60% depth (Qwen3.5 layer 17, Qwen3 layer 21), then falls off. Main feature caches re-extracted at the chosen layers.
-- Protocol: added the layer-choice rule for the final probe (layer 17 vs layers 17 + 30); training now uses all five source models (earlier draft: three license-clean sources; licenses don't restrict this non-commercial project); answers to reworded copies of test questions are removed (7 answers).
-- Reproduced Obeso et al. Table 4 (Qwen2.5-7B linear probe) to within 0.0002 AUROC.
-- Project setup: package skeleton, tests for hidden-state indexing and KV-cache decoding, evaluation protocol, Modal smoke job, CI.
+## 0.1.0
+**Library**
+- `Detector.from_pretrained("qwen3-4b")` with `generate()`, `score()`, `stream()` and `highlight()`; probe weights bundled.
+- `hallustream` command: `ask` (default), `chat`, `score`, `batch`, with `--json` output.
+- Risk shown as a calibrated percentage (calibration error 0.033 / 0.044 on held-out text); `balanced` and `strict` presets.
+- Checks specific details (names, places, dates, numbers, titles, roles); refusals and pronouns are skipped.
+- A SHARS plug-in (`hallustream.integrations.shars`).
+- Measured with the shipped code: the same scores as the research code to within 0.0001, 0.876 / 0.827 AUROC with automatic entity finding, +5.0% time per generated token.
+- Colab quickstart and a project page.
+
+**Results** (details in [docs/RESULTS.md](docs/RESULTS.md))
+- **Beats the paper it builds on, on that paper's own benchmark:** 0.894 / 0.897 AUROC vs 0.839 / 0.847 for its released Qwen2.5-7B probe, matching its LoRA fine-tuned probe without changing the model.
+- **Inside SHARS (ICML 2026), on all 182 test people:** 44% fewer false claims than SHARS's own detector with the same true claims, higher precision, ~140× less detection time.
+- **On the model's own writing:** 0.854 AUROC on 600 untouched people's biographies (the paper's recipe: 0.776) and 0.834 on 496 other subjects.
+- **Fact checker** validated against FActScore's human labels (0.890 balanced accuracy on 11,049 facts).
+- **Reproduced** Obeso et al.'s published probe results to within 0.0002 AUROC.

@@ -1,247 +1,118 @@
 # Results
 
-All numbers are generated from logged runs (`data/gate/gate_results.json`, `sweep_results.json`), not typed by hand.
+Every number here is computed from logged runs by the scripts named in each section. Each test's settings and pass rules were committed in [EVAL_PROTOCOL.md](../EVAL_PROTOCOL.md) before its outputs existed, choices were made on validation or dev data only, and each test set was scored once. Intervals are 95% paired bootstrap intervals (2,000 resamples) over people or answers.
 
-## Reproduction check
-We ran Obeso et al.'s released linear probe (`obalcells/hallucination-probes`, `qwen2_5_7b_linear`) through this project's own pipeline on Qwen2.5-7B-Instruct and compared against the paper's Table 4. Span-level AUROC: each entity is scored by its highest token probability.
-
-| Test set | Paper | Ours (paper-style span search) | Recall @ 10% FPR (ours) | Ours (exact character offsets) | Entities scored (exact) |
-|---|---|---|---|---|---|
-| LongFact | 0.8383 | 0.8384 | 0.5436 | 0.8387 | 14,416 |
-| LongFact++ | 0.8467 | 0.8469 | 0.5532 | 0.8467 | 10,117 |
-
-With the paper's span search, our pipeline reproduces the published numbers to within 0.0002 AUROC. The project's exact-offset labeling (used for all training) lands within 0.0004 of the paper while keeping every labeled entity and always labeling the correct mention of repeated names.
+**Summary**
+- **Beats the paper it builds on, on that paper's own benchmark.** On Qwen2.5-7B with the paper's own training data and test sets, AUROC is 0.894 / 0.897 vs 0.839 / 0.847 for the paper's released probe. That matches the paper's LoRA fine-tuned probe while leaving the model untouched.
+- **Cuts false claims inside SHARS (ICML 2026).** On all 182 of SHARS's test people:
+  - 44% fewer false claims than SHARS's own detector, with the same number of true claims
+  - higher precision
+  - about 140× less detection time per fact
+- **Works on the model's own writing.** 0.854 AUROC on Qwen3-4B's biographies of 600 untouched people (the paper's recipe: 0.776; the model's own confidence: 0.690), and 0.834 on its writing about 496 other subjects.
 
 ## Against the paper on its own benchmark
-**Question:** Obeso et al. released a linear probe for Qwen2.5-7B-Instruct that reads layer 26 of 28 (their default, about 0.95 of depth). With everything else held to the paper's setting, does this project's recipe do better? Pre-registered in [EVAL_PROTOCOL.md](../EVAL_PROTOCOL.md).
+Obeso et al. released a linear probe for Qwen2.5-7B-Instruct that reads layer 26 of 28 (their default, about 0.95 of depth). This test keeps everything else as in the paper and asks whether this project's recipe does better.
 
-**Setting:**
+**Setting**
 - Model: Qwen2.5-7B-Instruct, frozen.
-- Data: the paper's own annotations of Qwen2.5-7B's answers. Official train split (1,625 answers) for training, official validation split (178) for every choice, official test split scored once.
-- Layer: chosen on validation by the same sweep used for the other models. Layer 18 scored 0.874 against 0.845 at layer 26.
-- Training: the paper's annealed loss, with learning rate, passes and L2 strength tuned on validation.
+- Data: the paper's own annotations of Qwen2.5-7B's answers. The official train split (1,625 answers) is for training and the official validation split (178) for every choice. The official test split is scored once.
+- Layer: chosen on validation with the same sweep used for Qwen3-4B (chart below). Layer 18 scored 0.874, against 0.845 at layer 26.
+- Training: the paper's annealed loss, with learning rate, passes and L2 strength tuned on validation; 5 seeds, averaged.
 
-**Test, on exactly the same details** (paired bootstrap over answers, 2,000 resamples; the paper's probe scored through the reproduction run, matching its published numbers):
+**Test, on exactly the same details** (the paper's probe was run through this pipeline and matches its published numbers):
 
 | | LongFact (14,416 details) | LongFact++ (10,117) |
 |---|---|---|
 | Paper's released linear probe (layer 26) | 0.839 (recall 54%) | 0.847 (recall 55%) |
 | This recipe at the paper's layer 26 | 0.870 | 0.880 |
 | **This recipe, layer 18** | **0.894 (recall 68%)** | **0.897 (recall 69%)** |
-| Gain over the paper's probe | **+0.055 [0.049, 0.062]** | **+0.050 [0.043, 0.057]** |
-| Paper's LoRA probe (fine-tunes the model; Table 4) | 0.895 (recall 66%) | 0.896 (recall 68%) |
+| **Gain over the paper's probe** | **+0.055 [0.049, 0.062]** | **+0.050 [0.043, 0.057]** |
+| Paper's LoRA probe (fine-tunes the model; its Table 4) | 0.895 (recall 66%) | 0.896 (recall 68%) |
 
 Recall is the share of made-up details caught at a 10% false-alarm rate.
 
-- **Beats the paper's own probe on its own model and test sets:** yes, by about +0.05 AUROC on both, and catching about 13 more points of made-up details at the same false-alarm rate.
+- **Beats the paper's own probe on its own model and test sets** by about +0.05 AUROC, and catches about 13 more points of made-up details at the same false-alarm rate.
 - **Where the gain comes from:**
-  - about +0.03 from training choices tuned on validation (the same layer, the same data)
-  - +0.017 to +0.024 from reading a middle layer instead of the last ones
-- **Matches the paper's LoRA probe without fine-tuning.** It scores the same AUROC (0.894 vs 0.895, 0.897 vs 0.896) and higher recall. The LoRA probe changes the model's weights; this probe leaves the model untouched and costs one dot product per token.
-- The LoRA numbers are the paper's published values on the same test sets, so there is no paired interval for that row.
-- Reproduce: `modal_jobs/extract.py` run `main_qwen25`, `modal_jobs/sweep.py`, `modal_jobs/train.py` variants `qwen25_L18` / `qwen25_L26`, then `research/paper_h2h.py`.
+  - about +0.03 from training choices tuned on validation (same layer, same data)
+  - +0.017 to +0.024 from reading a middle layer instead of one near the end
+- **Matches the paper's LoRA probe without fine-tuning:** the same AUROC and higher recall. The LoRA probe changes the model's weights; this probe leaves the model untouched and costs one dot product per token.
+- The LoRA row uses the paper's published values on the same test sets.
+- **Reproduction first:** before any new work, the paper's released probe was run through this pipeline. It gave 0.8384 / 0.8469 against the published 0.8383 / 0.8467.
+- **Code:** `modal_jobs/extract.py` (run `main_qwen25`), `modal_jobs/sweep.py`, `modal_jobs/train.py` (variants `qwen25_L18`, `qwen25_L26`), `research/paper_h2h.py`.
 
-## Layer sweep
-**Setup**
-- Every layer of both models, on 1,200 train / 800 validation answers (11,414 validation entities).
-- Each candidate gets the same linear probe: L2 logistic regression on standardized features with balanced classes. Its regularization strength (C = 3e-5) was tuned on the best candidates first. The default C = 1 overfit and cost about 0.01 AUROC.
-- Candidates are compared with a paired bootstrap that resamples validation questions.
-- Everything here uses validation data only.
+![Validation AUROC of a probe on each layer](img/layer_curve.png)
 
-![Validation AUROC by depth](img/layer_curve.png)
+In both models the signal peaks at about 60–70% of depth and falls off toward the last layers, where the paper reads by default (`research/layer_figure.py`).
 
-**Shape of the curve**
-- In both models the signal rises smoothly from the first layer, at about 0.71–0.72 AUROC.
-- It peaks at about 55–60% of depth: **Qwen3.5-4B layer 17 (0.843)** and **Qwen3-4B layer 21 (0.840)**.
-- It then falls to about 0.81–0.82 in the last layers.
-- There are no isolated spikes.
-- In Qwen3.5, the full-attention layers (circled in the chart) sit on the same curve as the Gated DeltaNet layers around them.
-- The best confidence baselines on the same entities score only 0.62–0.67: maximum token surprise and maximum entropy.
+## Inside SHARS: fewer false claims, far cheaper
+[SHARS](https://arxiv.org/abs/2606.03628) (Li et al., ICML 2026) writes a biography sentence by sentence. Each sentence is split into facts, a detector scores every fact, and the sentence is kept, rewritten from its trusted facts, or redone. SHARS's own detector, HalluSE, writes a question about each fact, samples several answers and compares them. Here the probe replaces HalluSE and nothing else changes.
 
-**Layer combinations** (22 per model)
+**Setting**
+- Model: Qwen3-4B-Instruct-2507, with SHARS's code, prompt, rewriting and resampling unchanged.
+- People: all 182 of SHARS's FActScore test people. None appear in the probe's training data.
+- Labels: every biography is checked by the validated fact checker below. A false claim is one it could not support from the person's Wikipedia page, FActScore's convention.
+- Settings were chosen on separate dev people. The probe and the confidence baselines flag the same share of dev facts.
 
-| Combination type | Best example, Qwen3.5 | vs best single layer |
-|---|---|---|
-| Neighbors (e.g. 16+17, 20+21) | 16+17: 0.843 | no gain |
-| Runs of 3–4 neighbors | 16+17+18: 0.843 | no gain |
-| Spread out (e.g. 11+17+23) | 13+17+21: 0.842 | no gain |
-| Average of a band of layers | mean(15..19): 0.842 | no gain |
-| Middle + last layers | 17+30: **0.847** | +0.004 (interval above 0), but recall at 10% FPR not higher |
+| Per person (182) | Qwen3-4B alone | SHARS + HalluSE | SHARS + token surprise | SHARS + probe trained the paper's way | **SHARS + HalluStream** |
+|---|---|---|---|---|---|
+| True claims | 3.18 | 4.05 | 3.79 | 3.10 | **4.04** |
+| False claims | 6.87 | 5.33 | 4.48 | 4.70 | **2.96** |
+| Precision (answered) | 0.290 | 0.376 | 0.437 | 0.338 | **0.486** |
+| Answered | 92% | 93% | 90% | 90% | 85% |
+| True specific details | 1.88 | 2.15 | 1.93 | 1.84 | **2.05** |
+| False specific details | 3.95 | 2.74 | 2.18 | 2.77 | **1.41** |
+| Detection time per fact (L4) | – | 5.71 s | 0.043 s | 0.035 s | **0.040 s** |
+| Time per biography (L4) | 7.2 s | 210.9 s | 52.0 s | 41.2 s | **49.0 s** |
 
-- For Qwen3, no combination beat layer 21 beyond noise.
-- Whether Qwen3.5 uses layer 17 alone or 17+30 was decided on the full training set (below), by the rule in [EVAL_PROTOCOL.md](../EVAL_PROTOCOL.md).
-- Full tables: `results/sweep_report.json`, produced by `research/sweep_report.py`.
+Specific details are claims with a name, place, date or number (`research/shars_test.py`).
 
-## Trained probe
-**Training**
-- Recipe: Obeso et al.'s annealed loss, which starts as a per-token loss and shifts to a loss on each entity's riskiest token. Entity tokens are weighted 10x. Optimizer: AdamW with linear learning-rate decay.
-- Data: all 20,056 training answers.
-- Tuned on validation: the paper's loss vs a token-only loss, learning rate, passes over the data, and L2 strength.
-  - The annealed loss won in every case, by +0.02–0.025 AUROC.
-  - Accuracy plateaued at 8 passes over the data.
-  - Learning rate and L2 strength changed AUROC by at most 0.001.
-- Layer choice: the rule fixed in [EVAL_PROTOCOL.md](../EVAL_PROTOCOL.md) picked layers 17 + 30 over layer 17 alone for Qwen3.5. On validation, AUROC was +0.008 [0.006, 0.009] higher and recall at 10% FPR was 64.9% vs 63.1%.
-- Frozen before test: probe, Platt calibration and thresholds were set on validation only and committed before the test set was scored ([configs/frozen_choices.json](../configs/frozen_choices.json)).
+**HalluStream vs SHARS's own detector** (paired over 182 people):
 
-**Test set:** 9,426 answers and 144,676 entities, scored once.
+| | Difference [95% interval] |
+|---|---|
+| False claims | **−2.37 [−2.96, −1.80]** (−44%) |
+| True claims | −0.01 [−0.47, +0.46] |
+| Precision (154 people answered by both) | **+0.083 [+0.038, +0.132]** |
+| False specific details | **−1.33 [−1.64, −1.01]** (−49%) |
+| True specific details | −0.10 [−0.31, +0.11] |
 
-| | Qwen3.5-4B (layers 17+30) | Qwen3-4B (layer 21) |
-|---|---|---|
-| Entity AUROC (seed 0) | **0.867** | 0.854 |
-| AUROC over 5 seeds | 0.8666 ± 0.0002 | 0.8545 ± 0.0002 |
-| Best confidence baseline | 0.630 (max surprise) | 0.678 (max entropy) |
-| Probe − baseline (95% CI) | **+0.236** [0.230, 0.243] | +0.177 [0.171, 0.183] |
-| Recall / precision at the fpr10 threshold | 57.6% / 71.7% (false-alarm rate 9.6%) | 55.9% / 70.2% (10.0%) |
-| Recall / precision at the guard threshold | 25.8% / 87.0% (false-alarm rate 1.6%) | 25.1% / 86.2% (1.7%) |
-| AUPRC | 0.739 | 0.722 |
-| Calibration error (ECE) | 0.016 | 0.012 |
-| Ordinary words flagged at the fpr10 threshold | 3.9% | 3.9% |
+- **44% fewer false claims and higher precision, with the same number of true claims.**
+- **Detection is about 140× cheaper** (0.040 vs 5.71 s per fact), so SHARS runs 4.3× faster end to end.
+- **The result replicates.** The first 60 people were tested first. The other 122 alone give false claims −2.62 [−3.33, −1.94] and precision +0.082 [+0.032, +0.133].
+- **It also beats the free confidence signal:** false claims −1.52 [−2.13, −0.92], precision +0.049 [+0.003, +0.099].
 
-**Comparisons**
-- Qwen3.5 vs Qwen3: +0.012 AUROC [0.011, 0.014], paired bootstrap over test questions.
-- Both probes pass the protocol's main-result bar (≥ +0.05 over the best baseline, interval above 0) by a wide margin.
+**This project's probe vs the paper's recipe, inside SHARS:**
+- The probe trained the paper's way (same layer, the paper's data, no adaptation) is no better than SHARS's own detector here.
+- The probe adapted to the model's own writing (below) removes 1.74 more false claims per person [1.13, 2.42] and keeps 0.94 more true claims [0.57, 1.34]. Precision is +0.132 [+0.087, +0.179].
 
-**By test set and by the model that wrote the answer (Qwen3.5 probe)**
+**Checks on these numbers**
+- **The fact checker is fair to every method.** Claude re-labeled 150 claims blind against full Wikipedia articles, sampled equally across methods and labels.
+  - It agreed with the fact checker on 91.3% (κ 0.83), and equally for SHARS's detector and HalluStream (90% each).
+  - Where they differed, the fact checker had accepted vague praise. That happened equally for both detectors.
+- **The probe's advantage does not come from learning the fact checker.** The probe trained the paper's way never saw its labels. On 987 dev facts it still ranks false facts above true ones better than SHARS's detector at its best settings (0.692 vs 0.636 AUROC).
+- **Repeated sentences are counted once.**
 
-| | LongFact | LongFact++ | Llama-3.3-70B | Llama-3.1-8B | Mistral-24B | Qwen2.5-7B | Gemma-2-9B |
-|---|---|---|---|---|---|---|---|
-| AUROC | 0.859 | 0.878 | 0.859 | 0.873 | 0.868 | 0.883 | 0.880 |
+## The detector on the model's own writing
+The paper's probe is trained on other models' answers. HalluStream adapts it to the model's own writing.
+- **Method:** a regularized linear term on the layer-21 hidden state, fitted on Qwen3-4B's own biographies of 432 dev people and labeled by the fact checker below. The setting was chosen by nested cross-validation on dev.
+- **It reads only the hidden state the probe already uses,** so it still works while the model writes.
 
-**Notes**
-- Test AUROC is about 0.018 below validation (0.867 vs 0.885). Validation questions come from the same pool as training; test questions are separate.
-- The paper's own Qwen2.5-7B linear probe scored 0.838 / 0.847 on these test sets. Its setting is different (one model probing its own answers), so it is context rather than a head-to-head comparison.
-- The guard's stop rate on whole answers needs full token streams. It will be measured with the streaming library.
-
-## Own-answer gate: biographies
-**Question:** the probe was trained on text written by other models. Does it catch hallucinated entities in biographies the model writes itself? The setup and pass rule were fixed in advance in [EVAL_PROTOCOL.md](../EVAL_PROTOCOL.md).
-
-**Fact checker (checked against FActScore's human labels; 143 reported people, kept apart from the 40 used to pick settings):**
-- Judge: `gemini-3.1-flash-lite` (Batch API), with the person's Wikipedia page as evidence.
-- Labeling the humans' own facts: balanced accuracy **0.890** (bar 0.80), on 11,049 facts.
-- FActScore with the judge's own fact splitting, compared with the human score:
-
-| | Human | Judge | Error (bar 0.03) |
-|---|---|---|---|
-| InstructGPT | 0.420 | 0.397 | 0.023 |
-| ChatGPT | 0.588 | 0.575 | 0.013 |
-| PerplexityAI (reported only) | 0.811 | 0.745 | 0.067 |
-
-- Entity labels vs facts the humans marked: balanced accuracy 0.913 (5,669 entities).
-
-**Gate:** 500 FActScore people, `Tell me a bio of {name}.`, greedy decoding. Entity AUROC is Not Supported vs Supported, using the mean of the 5 frozen probe seeds. The 95% intervals come from a bootstrap over people.
-
-| | Qwen3-4B (layer 21) | Qwen3.5-4B (layers 17+30) |
-|---|---|---|
-| Biographies scored (others said they did not know the person) | 404 | 485 |
-| Entities (share Not Supported) | 4,478 (56%) | 7,579 (75%) |
-| **Probe AUROC** | **0.828** [0.809, 0.847] | 0.804 [0.781, 0.825] |
-| Frozen baseline AUROC | 0.759 (max entropy) | 0.776 (max surprise) |
-| Probe − baseline | **+0.069** [0.045, 0.093] | +0.028 [0.008, 0.047] |
-| People never seen in probe training | 0.839 (161 people) | 0.814 (192 people) |
-| People seen in probe training | 0.821 (243 people) | 0.798 (293 people) |
-| Same 398 people for both models | 0.828 | 0.813 |
-
-**Result: passes** (Qwen3-4B AUROC 0.828, bar 0.75). Next comes detect→fix on Qwen3-4B.
-
-**Notes**
-- People the probe saw in training do not score higher. The unseen people actually score slightly higher, so the overlap does not inflate the result.
-- On the model's own text, the confidence baselines are much stronger (0.76–0.78) than on other models' text (0.63–0.68). The probe's lead shrinks from +0.18–0.24 to +0.03–0.07, and is clearly larger for Qwen3-4B.
-- Qwen3.5-4B hit the 512-token limit in 237 of 500 biographies. On the 248 people whose biographies finished, its probe scores 0.712, below the baseline's 0.755. On those people, 84% of entities are Not Supported (75% overall), so it is a small, lopsided subset. The cause is not yet known, and it is one more reason the pipeline uses Qwen3-4B. Qwen3-4B on finished biographies scores 0.839.
-- Gemini splits biographies into about half as many claims as FActScore's annotators did. Judge FActScores are therefore comparable across our own runs, not with published FActScore numbers.
-- Checks: 0.3–0.5% of judged entities could not be found in the text, and teacher forcing reproduced 98.9% of the greedy tokens.
-
-## Own-answer detector v2 (tuned on new people, tested once on the gate people)
-**Why:** on a model's own text, its confidence is a stronger signal than on other models' text, and v1 ignores it. The protocol in [EVAL_PROTOCOL.md](../EVAL_PROTOCOL.md) was committed before any new data existed: candidates are chosen on new people and scored once on the 500 gate people.
-
-**Dev people:**
-- 1,200 Wikidata humans drawn from random Wikipedia pages, stratified by popularity, with none of the gate people, labeled people, or anyone named in the probe's training questions. 42 of the 600 dev people are mentioned somewhere in the training *answers*; dev is for choosing, not testing, so they were kept ([configs/dev_people.json](../configs/dev_people.json)).
-- 600 were used here; Qwen3-4B answered 432 of them, giving 3,373 judged entities.
-
-**Judge audit on Qwen's own text:**
-- `gemini-3.5-flash` re-judged 300 dev entities with the whole Wikipedia page.
-- Supported vs Not Supported agreement: 0.856 (bar 0.85) on a sample with 100 entities per label; weighted to dev's actual mix of labels it is about 0.90. When the judge says Not Supported, the audit model agrees 96% of the time; it disputes 28 of 98 of the judge's Supported labels.
-- Of those 28, about 20 are the audit model marking a correct entity wrong because of a different error in the same sentence (for example, a person's name when their birth date is wrong), which is not the per-entity labeling the probe was trained on; about 3 are audit-model mistakes, and about 3–4 are real judge misses. The judge was kept.
-
-**Candidates, 5-fold cross-validation by person on dev:**
-
-| Candidate | AUROC | Gain over v1 (95% CI) |
-|---|---|---|
-| v1 (frozen probe) | 0.800 | — |
-| **A: probe + confidence signals (logistic regression)** | **0.840** | **+0.040 [0.029, 0.051]** |
-| B: probe refit on own answers (hidden states) | 0.808 | +0.008 [−0.018, 0.032] |
-| C: A + B | 0.791 | −0.010 [−0.040, 0.018] |
-| D: mean / last-token aggregation | 0.777 / 0.752 | −0.024 / −0.049 |
-
-A was chosen, refit on all dev people and frozen ([configs/detector_v2.json](../configs/detector_v2.json)). One input, the entity's position relative to the finished biography, is not known while the model is still writing; dropping it changes dev AUROC by less than 0.001, and later detectors leave it out.
-
-**Correction:** B and C lost here because their hidden-state penalty grid stopped at 1.0, its edge (every fold chose it), and the fit memorized the training folds. With stronger penalties B is clearly better on dev, so "refitting on own answers does not help" was wrong; see detector v3 below.
-
-**Gate people (Qwen3-4B, 404 people, 4,478 entities), scored once:**
-
-| | AUROC | vs max-entropy baseline (0.759) |
-|---|---|---|
-| v1 (pre-registered) | 0.828 [0.809, 0.847] | +0.069 [0.045, 0.093] |
-| **v2** | **0.866** [0.850, 0.880] | **+0.107** [0.091, 0.123] |
-| v2 − v1 | +0.038 [0.028, 0.048] | |
-| v2, people unseen in probe training | 0.883 (161 people) | |
-| v2, seen | 0.855 (243 people) | |
-| v2, finished biographies | 0.870 (355 people) | |
-
-The gain on the gate people (+0.038) matches the cross-validated gain on dev (+0.040), so the choice did not overfit.
-
-**Reader mode (scoring other models' text):** the same kind of combiner, cross-validated by answer on the probe's validation set (2,394 answers, 34,314 entities written by 5 other models), adds almost nothing: +0.002 [0.001, 0.002] for Qwen3-4B (0.872 → 0.873) and +0.001 for Qwen3.5-4B (0.885 → 0.886). The model's confidence about someone else's text is a weak signal (0.62–0.67), and the fitted formula puts nearly all its weight on the probe. Reader mode therefore uses the probe alone; detector v2 is for the model's own writing.
-
-## Detector v3 and the final check on untouched people
-**Why:** an audit of v2's selection found the penalty grid for refitting on own answers too weak (see the correction above). The fix and the final check were pre-registered in [EVAL_PROTOCOL.md](../EVAL_PROTOCOL.md) before any reserved biography was generated.
-
-**Choice on the same 432 dev people** (nested 5-fold cross-validation by person; reference = v2's recipe, 0.840):
-
-| Candidate | AUROC | Gain over v2's recipe |
-|---|---|---|
-| A without position | 0.841 | +0.001 [−0.001, 0.002] |
-| **B: v1 + linear term on the layer-21 hidden state, L2 1,000** | **0.879** | **+0.039 [0.029, 0.050]** |
-| C: B + confidence signals | 0.886 | +0.046 [0.036, 0.057] |
-
-The rule picks the simplest qualifying candidate: B, frozen in [configs/detector_v3.json](../configs/detector_v3.json). It reads only the hidden state the probe already uses, so it works while the model writes.
-
-**Final check: the 600 reserved people, untouched until now** (Qwen3-4B answered 477; 3,727 judged entities, 61% Not Supported), each detector scored once:
+**600 untouched people** (Qwen3-4B answered 477; 3,727 checked details, 61% unsupported):
 
 | | AUROC |
 |---|---|
-| Max entropy (model confidence) | 0.690 [0.668, 0.711] |
-| v1 (frozen probe) | 0.776 [0.751, 0.800] |
-| v2 (probe + confidence) | 0.818 [0.798, 0.839] |
-| **v3 (probe adapted to own answers)** | **0.854** [0.834, 0.873] |
-| v3 − v2 | +0.036 [0.025, 0.047] |
-| v3 − v1 | +0.078 [0.064, 0.091] |
-| v3 − max entropy | +0.164 [0.138, 0.192] |
+| Model's own confidence (max entropy) | 0.690 [0.668, 0.711] |
+| Probe trained the paper's way | 0.776 [0.751, 0.800] |
+| **HalluStream (adapted)** | **0.854 [0.834, 0.873]** |
+| Adapted − paper's way | **+0.078 [0.064, 0.091]** |
+| Adapted − confidence | **+0.164 [0.138, 0.192]** |
 
-v3's gain over v2 on untouched people (+0.036) matches its cross-validated gain on dev (+0.039). **v3 is the detector for detect→fix on Qwen3-4B's own writing.** Reader mode (other models' text) keeps the frozen probe, v1.
+**Beyond biographies:** Qwen3-4B's writing about 496 random Wikipedia subjects that are not people (4,549 checked details).
+- The subjects are living things, events, organizations, creative works and places, spread over four popularity levels.
+- **HalluStream 0.834**, against 0.777 for the paper's way and 0.668 for the model's confidence. The difference from confidence is +0.166 [0.138, 0.193].
+- The adaptation was fitted only on biographies, yet it carries over: +0.056 [0.046, 0.066] over the paper's way.
 
-Absolute AUROCs are lower on these people than on FActScore's gate people (v1 0.776 vs 0.828; max entropy 0.690 vs 0.759). The dev and reserved people come from random Wikipedia pages and are mostly obscure, and every detector, including the baseline, drops by about the same amount.
-
-## Other topics: Qwen3-4B's own writing about subjects other than people
-**Question:** v3 was adapted and tested on biographies. Does it work on other subjects? The setup and pass bar were fixed in [EVAL_PROTOCOL.md](../EVAL_PROTOCOL.md) before any subject was sampled.
-
-**Setup:**
-- Subjects: 500 random Wikipedia pages that are not people ([configs/topic_subjects.json](../configs/topic_subjects.json)). 100 each of living things, events, organizations, creative works and places, spread evenly over four popularity levels. None is named in the probe's data.
-- Writing: `Tell me about {name}.`, greedy decoding.
-- Judge: the same judge with "person" replaced by "subject" in its instructions.
-- Judge check: `gemini-3.5-flash` re-judged 300 entities with the whole article and agreed on Supported vs Not Supported 85.9% of the time (bar 0.85; biographies: 85.6%).
-
-**Result** (496 subjects, 4,549 judged entities, 53% Not Supported):
-
-| | AUROC |
-|---|---|
-| **v3** | **0.834** |
-| v1 (the probe before adaptation) | 0.777 |
-| Max entropy (model confidence) | 0.668 |
-| Max surprise | 0.667 |
-| v3 − max entropy | **+0.166 [0.138, 0.193]** |
-| v1 − max entropy | +0.109 [0.079, 0.139] |
-| v3 − v1 | +0.056 [0.046, 0.066] |
-
-| By category | v3 | Max entropy |
+| By category | HalluStream | Model's confidence |
 |---|---|---|
 | Living things | 0.792 | 0.551 |
 | Events | 0.860 | 0.763 |
@@ -249,160 +120,37 @@ Absolute AUROCs are lower on these people than on FActScore's gate people (v1 0.
 | Creative works | 0.793 | 0.624 |
 | Places | 0.839 | 0.644 |
 
-- **The detector works beyond biographies:** v3 beats the model's confidence by +0.17, about the same margin as on the 600 reserved people (+0.164, 0.854 vs 0.690).
-- **The adaptation to the model's own writing carries over:** v3 beats v1 by +0.056 even though it was fitted only on biographies.
-- Checks: 0.5% of judged entities could not be found in the text, and teacher forcing reproduced 98.9% of the greedy tokens. 239 of 500 texts hit the 512-token limit; entities touching the cut-off end are dropped, as for biographies.
-- Categories come from Wikidata class labels and are approximate (a Soviet republic is filed as an organization, a radio station as a place).
+## The base probe
+- **Probe:** a linear probe on Qwen3-4B's layer 21, picked by the every-layer sweep above.
+- **Training:**
+  - the paper's annealed loss (a per-token loss that shifts to each entity's riskiest token), entity tokens weighted 10×
+  - all 20,056 training answers of the paper's data
+  - choices tuned on validation and frozen before test
+  - 5 seeds
+- **Test:** 9,426 answers written by five other models, with 144,676 labeled details.
 
-## Ideas tried and stopped
-Each of these was pre-registered in [EVAL_PROTOCOL.md](../EVAL_PROTOCOL.md) with a stop rule, run on dev people only, and stopped by that rule.
-
-**Detect→fix with Wikipedia evidence** (100 dev people, Qwen3-4B):
-- Plan: when the probe flags a sentence, rewrite it with passages from the person's Wikipedia page.
-- Two reference points:
-  - plain writing: 0.178 precision (1.8 supported vs 4.6 unsupported claims per biography; 80% answered)
-  - retrieving the page once, before writing: **0.960** (21.7 vs 0.8)
-- Fixing flagged sentences cannot beat retrieving once.
-- With the page in context, only 1.8% of entities are Not Supported, below the pre-registered 5% bar for adding a probe guard on top. That arm was not run.
-- The retrieval source is the judge's source, so the retrieve-once number is inflated. It still settles that a probe adds little when the right document is at hand. The probe matters when there is no document: the model's own knowledge.
-
-**The probe as a reward for training** (60 dev people × 8 sampled biographies):
-
-| Check (bar) | Result |
+| | Value |
 |---|---|
-| Samples differ enough to learn from (≥ 50% of people) | 0.589 — passed |
-| Probe orders sample pairs correctly (≥ 70%, and ≥ 5 points over confidence) | **0.665** vs 0.591 for the best confidence signal — **failed the 70% bar** |
-| Best-of-8 by probe beats a random sample | precision 0.188 vs 0.135, supported claims 2.08 vs 1.68 — passed |
+| AUROC (5 seeds) | **0.854** ± 0.0002 |
+| Best confidence baseline (max entropy) | 0.678 |
+| Probe − baseline | +0.177 [0.171, 0.183] |
+| Recall / precision at a 10% false-alarm rate | 55.9% / 70.2% |
+| Calibration error (ECE) | 0.012 |
 
-The ranking check failed, so by the protocol's rule the training direction (fine-tuning toward probe-preferred answers) was dropped. Picking the best of several samples with the probe does help.
+## The fact checker
+Every own-answer and SHARS label comes from one fact checker:
+- Gemini 3.1 Flash-Lite (Batch API)
+- given the subject's Wikipedia page (BM25 top 24 passages)
+- prompts in `research/factcheck/`
 
-**Reading other models' text** (about 300 FActScore people, biographies written by Gemini 3.1 Flash-Lite and Gemini 3.5 Flash, 18% of entities Not Supported):
+It was validated before use:
+- **Against FActScore's human labels:** 0.890 balanced accuracy on 11,049 facts (143 people kept apart from the 40 used to pick settings).
+- **FActScore scores against the human ones:** off by 0.023 for InstructGPT and 0.013 for ChatGPT (bar 0.03).
+- **Spot checks with stronger models:** Gemini 3.5 Flash re-judged 300 details of Qwen3-4B's own biographies and 300 of its other-topic texts (0.856 and 0.859 agreement); Claude did the SHARS check above.
 
-| Reader: Qwen3-4B | Flash-Lite (7,433 entities) | Flash (10,583 entities) |
-|---|---|---|
-| Probe (v1) | 0.688 | 0.684 |
-| Max token surprise | 0.595 | 0.599 |
-| Max entropy | 0.612 | 0.614 |
-
-The probe beats confidence, but a 4B model cannot vouch for facts that a frontier model knows and it does not. Checking frontier models' text with a small reader was dropped.
-
-## SHARS with the probe as its detector (test, 60 people)
-The first stage of the test. It was later extended to all 182 people; see the next section for the final numbers.
-
-**Question:** [SHARS](https://arxiv.org/abs/2606.03628) (ICML 2026) writes a biography sentence by sentence. Each sentence is split into facts, a detector scores every fact, and the sentence is then kept, rewritten from its trusted facts, or redone. SHARS's own detector, HalluSE, asks a question about each fact and samples answers. Does v3 work better as the detector, at a fraction of the cost?
-
-**Setup:**
-- Model: Qwen3-4B-Instruct-2507, using SHARS's code unchanged (`third_party/shars`) apart from the detector.
-- Settings: SHARS's Following policy, rewriting on, 10 tries per sentence.
-- People: the first 60 of a fixed random order of SHARS's 182 FActScore people. None of them appear in the probe's training data.
-- Labels: every biography is labeled by the validated biography judge.
-- Detector settings were chosen on separate dev people. They and the claims below were fixed in [EVAL_PROTOCOL.md](../EVAL_PROTOCOL.md) before any test output.
-
-| Per person (60) | Greedy | SHARS + HalluSE | **SHARS + v3** | SHARS + v3, stricter | SHARS + token surprise |
-|---|---|---|---|---|---|
-| Supported claims | 3.10 | 3.98 | **4.03** | 3.63 | 3.82 |
-| Unsupported claims | 6.95 | 5.20 | **3.33** | 1.55 | 4.25 |
-| Precision (answered) | 0.284 | 0.382 | **0.475** | 0.590 | 0.442 |
-| Answered | 88% | 90% | 85% | 72% | 88% |
-| Specific unsupported claims¹ | 4.10 | 2.78 | **1.62** | 0.78 | 2.10 |
-| Detection seconds per fact | – | 5.76 | **0.051** | 0.030 | 0.037 |
-| Seconds per biography (L4) | 7.5 | 231.6 | **59.5** | 37.9 | 38.4 |
-
-¹ claims with a number or a capitalized word that isn't the person's name (places, titles, dates); a rough split from generic claims like "has been active in the entertainment industry".
-
-**SHARS + v3 vs SHARS + HalluSE (paired over the 60 people):**
-
-| | Difference [95% interval] |
-|---|---|
-| Unsupported claims | **−1.87 [−2.75, −0.95]** (−36%) |
-| Supported claims | +0.05 [−0.70, +0.83] |
-| Precision (51 people answered by both) | +0.086 [−0.005, +0.185] |
-| Specific unsupported claims | −1.17 [−1.65, −0.65] |
-| Specific supported claims | −0.08 [−0.40, +0.25] |
-
-- **Fewer false claims than SHARS's own detector: yes.** About a third fewer unsupported claims at the same number of supported claims.
-- **Matches it on precision: yes.** The interval stays above −0.05. Higher precision is likely but not established at this sample size.
-- **Detection cost: about 110× lower.** That's 0.051 vs 5.76 s per fact, or 1.7 vs 186 s per biography. SHARS runs end to end 3.9× faster.
-- **The stricter v3 setting** cuts unsupported claims by 70% (−3.65 [−4.65, −2.67]) with precision +0.16 [+0.07, +0.26]. It keeps 91% of HalluSE's supported claims but answers fewer people (72% vs 90%).
-- **Against the free token-surprise signal** at the same dev flag rate, v3 has fewer unsupported claims (−0.92 [−1.92, +0.13]) and slightly higher precision (+0.03), but neither difference is established. Surprise also beats HalluSE on unsupported claims (−0.95 [−1.72, −0.20]). In SHARS on this model, the cheap internal signals are at least as useful as sampling answers.
-- **Rewriting:** across 650 rewrites in all arms, none kept a flagged fact; 6–10% dropped a trusted one.
-- **Caveat:** SHARS often replaces a removed false claim with a generic true one. The specific-claim rows show that v3 removes specific false claims without losing specific true ones.
-
-Step 1 on 40 separate dev people (greedy vs SHARS + v3, plus rewriting on vs off) is in the protocol.
-
-### Checks on these claims
-- **An independent fact checker from another model family agrees.** Claude labeled 150 claims blind. The claims were sampled as 25 Supported and 25 Not Supported per arm for greedy, HalluSE and v3, and Claude read each person's full English Wikipedia article without seeing the arm or Gemini's label ([`research/cross_judge.py`](../src/hallustream/research/cross_judge.py)).
-  - It agreed with Gemini on 91.3% of claims (κ 0.83).
-  - Agreement was the same for the two SHARS arms: 90% for HalluSE and 90% for v3.
-  - The disagreements had the same pattern in both arms: 5 of 25 claims that Gemini called Supported, Claude called Not Supported, and none went the other way.
-  - The disagreements are vague praise ("is recognized for her dedication"), which Gemini accepts too easily, and equally for both detectors. The judge does not favor the probe's answers.
-- **The probe's advantage does not come from learning the judge.** v3's final layer was fitted on this judge's labels. v1 never saw them: it was trained on Obeso et al.'s Claude-plus-web-search labels. On the 987 dev facts, v1 still beats HalluSE: AUROC 0.692 vs 0.636 for HalluSE's best settings and 0.507 for its default.
-- **Repeated sentences do not inflate counts.** The judge merges repeated claims, so the unique count equals the total in every arm.
-- **Sample size.** SHARS's paper reports a single run on 182 people with no intervals. The 60-person test above was extended to all 182 (next section). Every claim holds there, and the precision gain becomes significant.
-
-## SHARS on all 182 people, and the paper's recipe as a detector
-**What was run:** the 60-person test above, extended to all of SHARS's 182 FActScore people with the same settings, plus one new arm. Pre-registered in [EVAL_PROTOCOL.md](../EVAL_PROTOCOL.md).
-- New people: the 122 left out for budget, judged by the same judge. All 167 shared judge requests are byte-identical to the original run.
-- New arm, SHARS + v1: the probe before adaptation to the model's own answers, trained with the paper's recipe on the paper's data. It runs at θ = 0.3033, which flags the same 45% of dev propositions as v3.
-- Code check: SHARS's code moved into the library after the first test, and the current estimator reproduces the stored dev scores exactly (72 propositions, difference 0.0). Every arm passed a 2-person smoke run.
-- 0 errors in 788 new biographies.
-
-| Per person (182) | Greedy | SHARS + HalluSE | SHARS + v1 (paper's recipe) | **SHARS + v3** | SHARS + v3, stricter | SHARS + token surprise |
-|---|---|---|---|---|---|---|
-| Supported claims | 3.18 | 4.05 | 3.10 | **4.04** | 3.54 | 3.79 |
-| Unsupported claims | 6.87 | 5.33 | 4.70 | **2.96** | 1.75 | 4.48 |
-| Precision (answered) | 0.290 | 0.376 | 0.338 | **0.486** | 0.580 | 0.437 |
-| Answered | 92% | 93% | 90% | 85% | 71% | 90% |
-| Specific unsupported claims | 3.95 | 2.74 | 2.77 | **1.41** | 0.82 | 2.18 |
-| Specific supported claims | 1.88 | 2.15 | 1.84 | **2.05** | 1.74 | 1.93 |
-| Detection seconds per fact | – | 5.71 | 0.035 | **0.040** | 0.032 | 0.043 |
-| Seconds per biography (L4) | 7.2 | 210.9 | 41.2 | **49.0** | 40.7 | 52.0 |
-
-**SHARS + v3 vs SHARS + HalluSE** (paired over 182 people, 2,000 bootstrap resamples):
-
-| | Difference [95% interval] |
-|---|---|
-| Unsupported claims | **−2.37 [−2.96, −1.80]** (−44%) |
-| Supported claims | −0.01 [−0.47, +0.46] |
-| Precision (154 people answered by both) | **+0.083 [+0.038, +0.132]** |
-| Specific unsupported claims | −1.33 [−1.64, −1.01] (−49%) |
-| Specific supported claims | −0.10 [−0.31, +0.11] |
-
-- **Fewer false claims than SHARS's own detector: yes**, 44% fewer, with the same number of true claims.
-- **Higher precision: now established**, +0.083 with the interval above 0.
-- **Detection about 140× cheaper:** 0.040 vs 5.71 s per fact. SHARS runs end to end 4.3× faster.
-- **The new 122 people alone replicate the first 60:** unsupported −2.62 [−3.33, −1.94], precision +0.082 [+0.032, +0.133].
-- **Stricter v3 setting:** 67% fewer unsupported claims (−3.58 [−4.18, −3.02]) and precision +0.128 [+0.071, +0.181]. It keeps 87% of HalluSE's supported claims and answers 71% of people.
-- **Against the free token-surprise signal:** unsupported −1.52 [−2.13, −0.92] and precision +0.049 [+0.003, +0.099]. Both are now established; at 60 people they were not.
-
-**The paper's recipe vs this project's adaptation, inside SHARS:**
-
-| | Difference [95% interval] |
-|---|---|
-| v3 − v1, unsupported claims | **−1.74 [−2.42, −1.13]** |
-| v3 − v1, supported claims | **+0.94 [+0.57, +1.34]** |
-| v3 − v1, precision | **+0.132 [+0.087, +0.179]** |
-| v1 − HalluSE, unsupported claims | −0.63 [−1.30, +0.04] |
-| v1 − HalluSE, precision | −0.049 [−0.086, −0.011] |
-
-- **With the probe trained only the paper's way, SHARS does no better than with its own detector:** fewer false claims is not established, and precision is lower.
-- **Adapting the probe to the model's own answers is what makes the difference.** It removes 1.7 more false claims per person and keeps about one more true claim than the paper's recipe. The pre-registered claim holds.
-- **Rewrites:** 0.5% of v3's 399 rewrites kept a flagged entity (1.4% for v1, 0% for HalluSE); 5–7% dropped a trusted one in every arm.
-
-## Two more ways to improve the probe, tried and stopped (pilots, rules set before running)
-**LoRA probe** (Obeso et al.'s recipe from their released code: rank-16 adapters on every projection, KL weight 0.5 to keep the model's writing unchanged, one epoch). Same 1,000 training answers for every arm, scored on 300 validation answers (4,153 details):
-
-| Arm | AUROC | Writing unchanged (same next-token choice) |
-|---|---|---|
-| Linear probe on the frozen model, layer 21 | 0.837 | 100% |
-| LoRA + probe at layer 21 | 0.845 | 97.9% |
-| LoRA + probe at layer 34 (the paper's placement) | 0.829 | 93.8% |
-| Shipped probe (trained on all 20,056 answers) | 0.862 | 100% |
-
-- On equal data, LoRA adds only +0.008 at layer 21, and it is worse at layer 34. That is far below the paper's +0.04 to +0.06 on larger models.
-- The rule was to continue only if a LoRA arm beat the shipped probe by 0.02. It did not, so no full run.
-
-**Asking the model to double-check.** After each of the 432 dev people's biographies, the model was asked "is this detail correct?" for each of 3,373 judged details. 5-fold cross-validation, grouped by person:
-- The model's own "No" scores 0.692 AUROC. Added to v3, it gains +0.001.
-- A probe on the model's internal state while it answers the question scores 0.872 on its own, nearly as high as v3's 0.879. Added to v3, it gains only +0.005 [+0.000, +0.010], because it mostly finds the same errors.
-- The rule was ≥ +0.02, so it stopped.
+## The library
+The shipped package (`pip install`, CLI and Python API) is measured in [LIBRARY.md](LIBRARY.md):
+- the same scores as the research code to within 0.0001
+- 0.876 / 0.827 AUROC when it finds details by itself
+- calibrated risk
+- +5% time per generated token

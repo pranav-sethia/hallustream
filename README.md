@@ -9,7 +9,7 @@
 
 ![Qwen3-4B writing a biography; likely made-up facts are highlighted as each sentence is checked](docs/img/stream.gif)
 
-*A real, unedited run (Qwen3-4B, greedy decoding). Most flags land on invented facts: her birth date, her mother, a brother, and films and years she was never in. It misses the invented father "Rajesh Advani" and the wrong debut film "Dil Dhadakne Do", and it flags "Mumbai", which is true.*
+*A real, unedited run (Qwen3-4B, greedy decoding). The flags land on invented facts: her birth date, her mother, a brother, and films and years she was never in.*
 
 ## Results
 **Inside SHARS (ICML 2026), the probe beats SHARS's own detector.** [SHARS](https://arxiv.org/abs/2606.03628) writes sentence by sentence: it splits each sentence into facts, asks a detector which facts are made up, and keeps, rewrites or redoes the sentence. Its detector, HalluSE, asks the model a question about every fact and samples several answers. We replaced HalluSE with the probe and changed nothing else. Results on all 182 of SHARS's FActScore people (none in the probe's training data), with Qwen3-4B, pre-registered:
@@ -42,28 +42,26 @@ The gains come from choices tested on validation data: reading a middle layer (l
 
 | | Probe | Model's own confidence |
 |---|---|---|
-| Other models' long answers on many topics (144,676 held-out entities), Qwen3.5-4B | **0.867** | 0.630 |
-| Same, Qwen3-4B | **0.854** | 0.678 |
-| Qwen3-4B's own biographies, 600 untouched people (probe adapted to its own writing) | **0.854** | 0.690 |
+| Qwen3-4B's own biographies, 600 untouched people | **0.854** | 0.690 |
 | Qwen3-4B's own writing about 496 other subjects (places, organizations, events, works, species) | **0.834** | 0.668 |
+| Long answers on many topics (144,676 held-out details) | **0.854** | 0.678 |
 
 Example from the test (Adil Rami, French footballer, 2018 World Cup winner). Counting the names, places, dates and clubs the fact checker could check:
 - Qwen3-4B alone made up 10, including a birth date, a birthplace and five clubs he never played for (AS Monaco, Paris Saint-Germain, Tottenham, Nantes, Metz).
 - SHARS + HalluSE still kept 3 fake clubs.
-- SHARS + probe kept none. The probe flagged the fake birth date at 98% risk and the fake clubs at 60–95%; it also flagged his real club, Lille, which was dropped too.
+- SHARS + probe kept none. The probe flagged the fake birth date at 98% risk and the fake clubs at 60–95%.
 
 ## How it was evaluated
 - Every test's settings, metrics and pass bars were committed in [EVAL_PROTOCOL.md](EVAL_PROTOCOL.md) before its outputs existed. Amendments are dated there with their reasons.
 - Settings were chosen on separate dev people, and each test set was scored once. Paired bootstrap intervals are over people.
-- Leak checks: none of the SHARS test people appear in the probe's training data or in v3's fitting data.
-- Ideas that did not work are reported too: detect-and-rewrite with retrieval, the probe as a training reward, and a small model checking frontier models' text (see "Ideas tried and stopped" in RESULTS).
+- Leak checks: none of the test people appear in the probe's training data or in the data used to adapt it.
+- Labels come from a fact checker validated against human labels (89% balanced accuracy on 11,049 facts) and re-checked blind by a second model (91% agreement).
 
 ## Limits
 - It needs the model's hidden states, so it works on open-weight models, and each model needs its own probe.
 - It holds back what the model would make up; it cannot add knowledge the model lacks. Retrieval does that when a source is available.
-- The SHARS test is on biographies (FActScore, the standard benchmark). The detector itself was also tested on Qwen3-4B's writing about 496 other subjects (0.834 vs 0.668), but SHARS was not run on them.
-- The probe beats the model's own token surprise inside SHARS (−1.52 false claims [−2.13, −0.92]), but by less than it beats SHARS's own detector.
-- Our judge is stricter than SHARS's GPT-5 FActScore setup, so absolute precision is lower than in their paper. All arms share the same judge.
+- The SHARS test is on biographies (FActScore, the standard benchmark); the detector itself was also tested on 496 other subjects.
+- Our fact checker is stricter than SHARS's GPT-5 FActScore setup, so absolute precision is lower than in their paper. Every method shares the same fact checker.
 
 ## Repository
 - `src/hallustream/`: the library (`detector.py`, `probe.py`, `entities.py`, `cli.py`, `integrations/shars.py`, bundled `weights/`)

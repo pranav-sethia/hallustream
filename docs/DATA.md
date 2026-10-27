@@ -26,15 +26,17 @@ These are the only large public datasets with **entity-level** hallucination lab
 ## Models
 | Use | Model | License |
 |---|---|---|
-| Main | `Qwen/Qwen3.5-4B` (hybrid: 24 Gated DeltaNet + 8 full-attention layers) | Apache-2.0 |
-| Comparison (same size, standard attention) | `Qwen/Qwen3-4B-Instruct-2507` | Apache-2.0 |
-| Reproduction check | `Qwen/Qwen2.5-7B-Instruct` + `obalcells/hallucination-probes` (`qwen2_5_7b_linear`) | Apache-2.0 |
+| Main (the shipped detector) | `Qwen/Qwen3-4B-Instruct-2507` | Apache-2.0 |
+| Head-to-head with the paper, and its reproduction | `Qwen/Qwen2.5-7B-Instruct` + `obalcells/hallucination-probes` (`qwen2_5_7b_linear`) | Apache-2.0 |
+| Entity finding in the library | `urchade/gliner_medium-v2.1` | Apache-2.0 |
 | Tests | `trl-internal-testing/tiny-Qwen3ForCausalLM` | — |
 
-## Own-answer data (planned)
-- Qwen3 answers questions about Wikipedia topics.
-- Claude Haiku 5.5 labels each entity against the topic's Wikipedia page text.
-- We publish labels and scores, not page text. Wikipedia text is CC BY-SA.
+## Own-answer data
+- **People:** FActScore's people (Min et al., 2023), including SHARS's 182 test people, plus random Wikipedia people stratified by popularity (`configs/dev_people.json`).
+- **Other subjects:** 500 random Wikipedia pages that are not people (`configs/topic_subjects.json`).
+- **Writing:** Qwen3-4B-Instruct-2507, greedy decoding (SHARS runs use SHARS's own decoding).
+- **Labels:** Gemini 3.1 Flash-Lite (Batch API) checks every detail against the subject's Wikipedia page (FActScore's enwiki-20230401 dump, BM25 top 24 passages).
+- **Publishing:** we publish labels and scores, not page text. Wikipedia text is CC BY-SA.
 
 ## Pinned revisions
 - `obalcells/longfact-annotations` @ `949fd2f71b3efd403350e38539340d9d9ceefc9d`

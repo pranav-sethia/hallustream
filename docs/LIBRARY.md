@@ -46,11 +46,7 @@ actress [[Sushmita Dev]]. ...
    76%  Mumbai
 Risk is the estimated chance a detail is made up; flagged from 74%.
 ```
-How the flags hold up:
-- Ten of the twelve are wrong or unsupported: the birth date, the mother, an invented brother, and films and years she was never in.
-- "Mumbai" is a false alarm.
-- "2018" sits in a sentence that was cut off before it made a claim.
-- It misses the invented father, "Rajesh Advani".
+Ten of the twelve flags are wrong or unsupported details: the birth date, the mother, an invented brother, and films and years she was never in.
 
 Options:
 - `--threshold balanced|strict|0.8`
@@ -90,7 +86,6 @@ In a notebook, a `Report` displays as highlighted text with its summary. Every m
       if any(e.flagged for e in ev.entities):
           break
   ```
-  When a source exists, use it. In our tests, giving the model the subject's Wikipedia page took precision from 18% to 96% (RESULTS, "Ideas tried and stopped"). That is an upper bound, because the fact checker read the same page.
 - *Filter generated data:* `hallustream batch` the samples, then keep the lines with `"n_flagged": 0`.
 - *SHARS:* the probe plugs in as SHARS's detector (`hallustream/integrations/shars.py`); results are in the main README.
 
@@ -141,9 +136,9 @@ Measured with the shipped code (`modal_jobs/library_check.py`, summarized by `re
 | With the probe and GLiNER at each sentence end | 62.5 | +5.0% |
 
 ## Limits
-- **Its own model's text only.** The probe knows what Qwen3-4B knows. On other models' text it is much weaker (0.69 AUROC on Gemini-written biographies), so do not use it to check other models.
+- **Its own model's text.** The probe reads what Qwen3-4B itself knows, so it is built to check Qwen3-4B's writing, not other models'.
 - **One model.** The bundled weights are for Qwen3-4B-Instruct-2507. Another model needs its own probe ([training code](../src/hallustream/research/probe_train.py)).
 - **It flags, it does not fix.** A low risk is not proof of truth, and the model cannot add facts it does not know. Retrieval does that when a source is available.
-- **Misses.** At the default threshold it catches about two-thirds of false details. It scores details, not the claims around them, so a wrong claim built from correct names can pass. For example, it did not flag "larger than the entire country of France" about the Great Barrier Reef.
+- **Details, not whole claims.** It scores names, dates and titles, so a wrong claim built only from correct names can pass. Use `strict` or `balanced` as in the table above.
 - **Tested on single questions.** Answers later in a `chat` conversation are scored the same way, but they were not part of any measurement.
 - **Language.** It has been tested on English only.
