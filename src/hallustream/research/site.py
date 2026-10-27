@@ -52,27 +52,25 @@ KIARA = {
     "2017": (False, "Her 2017 film was Machine."),
     "2018": (None, "The sentence was cut off before it named the film."),
 }
-# Picked from all 182 by rule (the probe's answer has at most one judged-false claim while both
-# other answers invent many), then read in full. Others were left out: vague both ways (Song
-# Kang, Lua Blanco), a judge miss in the probe's answer (Harrison Ford: "career began in the
-# 1970s"; it was 1966), a kept false date (IU), a sensitive subject, or too little to remove
-# (Bella Akhmadulina: only wrong birth and death years).
-SPOTLIGHT = "Jonathan Tucker"
+# Picked from all 182 by what the reader sees: the names, places, dates and titles the fact checker
+# matched in each answer. Rule: the probe's answer has none made up and at least 4 verified, while
+# both other answers keep made-up ones; then read in full and checked on Wikipedia. Earlier picks
+# were dropped because their claim counts included vague praise that is not marked in the text.
+SPOTLIGHT = "Adil Rami"
 SPOTLIGHT_TRUTH = (
-    "Jonathan Tucker (born 1982 in Boston) is an American actor. His roles include The Virgin "
-    "Suicides (1999), The Texas Chainsaw Massacre (2003), Kingdom (2014–2017) and Westworld "
-    "(2018–2022)."
+    "Adil Rami (born 27 December 1985 in Bastia) is a French former centre-back. He played for "
+    "Lille, Valencia, AC Milan, Sevilla and Marseille, and won the 2018 World Cup with France."
 )  # from his Wikipedia article, checked 2026-10-27
 SPOTLIGHT_LEAD = (
-    "Qwen3-4B barely knows him, so it invents a career: a birth date, a hometown, and roles in "
-    "The Good Place, The West Wing, The Newsroom and Star Wars. SHARS with its own detector "
-    "still keeps two of the made-up roles. With the probe, every invented role and date is gone. "
-    "What is left is general, because the model has nothing true and specific to add."
+    "Qwen3-4B half-knows him: it gets a French defender right, then invents a birth date, a "
+    "birthplace and five clubs he never played for. SHARS with its own detector still keeps three "
+    "of the fake clubs. With the probe, nothing made up is left."
 )
 # From the SHARS log of this run: the flagged propositions and their risks.
 SPOTLIGHT_WIN = (
-    "The probe flagged the fake birth date at 99% risk and nine made-up shows and films at "
-    "89–98%, and SHARS rewrote around each one."
+    "The probe flagged the fake birth date (98% risk), birthplace (93%) and clubs AS Monaco, PSG, "
+    "Arsenal and Tottenham (60–95%). It also flagged Lille, his real first club, so that true "
+    "detail was dropped too."
 )
 # Plain answers shown with the library's flags: test people with the most errors caught and no
 # false alarms (pick_reader in the site notes), avoiding sensitive topics.
@@ -112,6 +110,17 @@ def _arm(d: Path) -> dict[str, dict]:
             item["ents"] = _judged(text, results[name])
         out[name] = item
     return out
+
+
+def _shown(item: dict, name: str) -> dict:
+    """Keep the marked details other than the person's own name, and count exactly those
+    (distinct details), so the numbers above each answer match what is marked in it."""
+    own = set(re.findall(r"\w+", name.lower()))
+    ents = [e for e in item["ents"]
+            if not set(re.findall(r"\w+", item["text"][e[0] : e[1]].lower())) <= own]  # fmt: skip
+    ok = {item["text"][e[0] : e[1]].lower() for e in ents if e[2]}
+    bad = {item["text"][e[0] : e[1]].lower() for e in ents if not e[2]}
+    return item | {"ents": ents, "true": len(ok), "false": len(bad)}
 
 
 def _strip_markdown(text: str) -> tuple[str, list[int], list[tuple[int, int]]]:
@@ -192,7 +201,7 @@ def shars(root: Path) -> dict:
     report = json.loads((d / "report.json").read_text())
     keys = [("naive", "Qwen3-4B alone"), ("halluse", "SHARS + its sampling detector"),
             ("probe_45", "SHARS + HalluStream probe")]  # fmt: skip
-    arms = {k: _arm(d / k)[SPOTLIGHT] for k, _ in keys}
+    arms = {k: _shown(_arm(d / k)[SPOTLIGHT], SPOTLIGHT) for k, _ in keys}
     spotlight = {"name": SPOTLIGHT, "truth": SPOTLIGHT_TRUTH, "lead": SPOTLIGHT_LEAD,
                  "win": SPOTLIGHT_WIN,
                  "arms": [{"label": label, **arms[k]} for k, label in keys]}  # fmt: skip

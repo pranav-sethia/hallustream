@@ -222,6 +222,9 @@ section p { margin: 0 0 16px; }
 }
 .spot { margin-top: 72px; }
 .spotlead { font-size: 16px; max-width: 72ch; color: var(--muted); }
+.spotkey { font-size: 13.5px; color: var(--muted); max-width: 80ch; margin: -4px 0 0; }
+.spotkey .kbad { text-decoration: line-through 2px var(--infra); color: var(--text); }
+.spotkey .kok { text-decoration: underline 1.5px dotted var(--ice); text-underline-offset: 3px; color: var(--text); }
 .spotcols { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 20px;
   border-top: 1px solid var(--line-strong); }
 .col { padding: 18px 20px 6px; border-left: 1px solid var(--line); }
@@ -410,6 +413,7 @@ footer .wrap { display: grid; gap: 10px; }
     <div class="spot" data-nosnippet>
       <h3 id="spotname"></h3>
       <p class="muted spotlead" id="spotlead"></p>
+      <p class="spotkey">Marked in each answer: the names, places, dates and titles the fact checker checked against Wikipedia. <span class="kbad">Struck through</span> is made up; <span class="kok">dotted underline</span> is verified. Hover a struck detail for the correction.</p>
       <div class="spotcols" id="spot"></div>
     </div>
   </div>
@@ -806,7 +810,7 @@ bindTips($("scatter"), (t) => t.dataset.tip);
   S.arms.forEach((a, i) => {
     const us = i === 2;
     cols.push(`<div class="col${us ? " us" : ""}"><h4>${a.label}</h4>
-      <div class="score"><span class="f"><b>${a.false}</b> false</span><span class="t"><b>${a.true}</b> true</span></div>
+      <div class="score"><span class="f"><b>${a.false}</b> made up</span><span class="t"><b>${a.true}</b> verified</span></div>
       <div class="txt">${paint(a)}</div>${us ? `<p class="win">${esc(S.win)}</p>` : ""}</div>`);
   });
   $("spot").innerHTML = cols.join("");
