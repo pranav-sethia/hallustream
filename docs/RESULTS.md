@@ -308,3 +308,21 @@ Step 1 on 40 separate dev people (greedy vs SHARS + v3, plus rewriting on vs off
 - **The probe's advantage does not come from learning the judge.** v3's final layer was fitted on this judge's labels. v1 never saw them: it was trained on Obeso et al.'s Claude-plus-web-search labels. On the 987 dev facts, v1 still beats HalluSE: AUROC 0.692 vs 0.636 for HalluSE's best settings and 0.507 for its default.
 - **Repeated sentences do not inflate counts.** The judge merges repeated claims, so the unique count equals the total in every arm.
 - **Sample size.** SHARS's paper reports a single run on 182 people with no intervals. Here the false-claim and specific-false-claim differences hold at 95% across 60 held-out people. The precision difference does not yet.
+
+## Two more ways to improve the probe, tried and stopped (pilots, rules set before running)
+**LoRA probe** (Obeso et al.'s recipe from their released code: rank-16 adapters on every projection, KL weight 0.5 to keep the model's writing unchanged, one epoch). Same 1,000 training answers for every arm, scored on 300 validation answers (4,153 details):
+
+| Arm | AUROC | Writing unchanged (same next-token choice) |
+|---|---|---|
+| Linear probe on the frozen model, layer 21 | 0.837 | 100% |
+| LoRA + probe at layer 21 | 0.845 | 97.9% |
+| LoRA + probe at layer 34 (the paper's placement) | 0.829 | 93.8% |
+| Shipped probe (trained on all 20,056 answers) | 0.862 | 100% |
+
+- On equal data, LoRA adds only +0.008 at layer 21, and it is worse at layer 34. That is far below the paper's +0.04 to +0.06 on larger models.
+- The rule was to continue only if a LoRA arm beat the shipped probe by 0.02. It did not, so no full run.
+
+**Asking the model to double-check.** After each of the 432 dev people's biographies, the model was asked "is this detail correct?" for each of 3,373 judged details. 5-fold cross-validation, grouped by person:
+- The model's own "No" scores 0.692 AUROC. Added to v3, it gains +0.001.
+- A probe on the model's internal state while it answers the question scores 0.872 on its own, nearly as high as v3's 0.879. Added to v3, it gains only +0.005 [+0.000, +0.010], because it mostly finds the same errors.
+- The rule was ≥ +0.02, so it stopped.
