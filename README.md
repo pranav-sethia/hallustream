@@ -5,6 +5,8 @@
 
 **A near-free hallucination detector for open LLMs.** A small linear probe reads a model's hidden states while it writes and flags the names, dates, places and titles it is probably making up. It generates no extra text, needs no web search, and adds about 5% to generation time.
 
+**[See it work on the project page](https://pranav-sethia.github.io/hallustream/)**: real runs replayed with live flags, the SHARS comparison, and the accuracy and threshold charts.
+
 ![Qwen3-4B writing a biography; likely made-up facts are highlighted as each sentence is checked](docs/img/stream.gif)
 
 *A real, unedited run (Qwen3-4B, greedy decoding). Most flags land on invented facts: her birth date, her mother, a brother, and films and years she was never in. It misses the invented father "Rajesh Advani" and the wrong debut film "Dil Dhadakne Do", and it flags "Mumbai", which is true.*
