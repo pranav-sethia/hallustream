@@ -4,9 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>HalluStream: catch an AI making things up while it writes</title>
-<meta name="description" content="A small probe reads Qwen3-4B's hidden states while it writes and flags the names, dates and titles it is making up. Inside SHARS (ICML 2026) it cut false claims by 36% at about 110 times less detection cost.">
+<meta name="description" content="A small probe reads Qwen3-4B's hidden states while it writes and flags the names, dates and titles it is making up. Inside SHARS (ICML 2026) it cut false claims by 44% at about 140 times less detection cost, and it beats the paper it builds on, on that paper's own benchmark.">
 <meta property="og:title" content="HalluStream: catch an AI making things up while it writes">
-<meta property="og:description" content="A hallucination detector that reads a language model's hidden states. 36% fewer false claims than SHARS's own detector, about 110x cheaper.">
+<meta property="og:description" content="A hallucination detector that reads a language model's hidden states. 44% fewer false claims than SHARS's own detector, about 140x cheaper.">
 <meta property="og:type" content="website">
 <meta property="og:image" content="https://pranav-sethia.github.io/hallustream/img/og.png">
 <meta name="twitter:card" content="summary_large_image">
@@ -397,7 +397,7 @@ footer .wrap { display: grid; gap: 10px; }
 <section id="results">
   <div class="wrap">
     <h2 class="wideh">Plugged into a 2026 method, it beat that method's own detector</h2>
-    <p class="measure muted">SHARS (ICML 2026) cuts hallucinations by rewriting an answer sentence by sentence, asking a detector which facts are made up. Its own detector re-asks the model about every fact several times. Swapping in the probe, and changing nothing else, made SHARS more accurate and far cheaper on 60 held-out people.</p>
+    <p class="measure muted">SHARS (ICML 2026) cuts hallucinations by rewriting an answer sentence by sentence, asking a detector which facts are made up. Its own detector re-asks the model about every fact several times. Swapping in the probe, and changing nothing else, made SHARS more accurate and far cheaper on all 182 of its test people.</p>
     <figure class="fig">
       <svg id="scatter" role="img" aria-label="False claims per answer against detection time per fact, for each system"></svg>
       <figcaption class="cap">Lower is fewer false claims, further left is cheaper. Detection time per fact on one L4 GPU, log scale.</figcaption>
@@ -485,9 +485,9 @@ footer .wrap { display: grid; gap: 10px; }
     <h2>Built on solid ground</h2>
     <div class="solid">
       <div class="cell sweep"><h3>Layer 21 is where the model knows</h3><svg id="sweep" viewBox="0 0 520 210" role="img" aria-label="Probe accuracy at each of the 36 layers"></svg><p class="muted small" id="sweepnote"></p></div>
-      <div class="cell"><h3>Reproduces the original paper</h3><div class="pair"><div><b>0.8383</b><span>published by Obeso et al.</span></div><div><b class="ice">0.8384</b><span>this pipeline, same probe and test set</span></div></div><p class="muted small">Accuracy of the paper's released Qwen2.5-7B probe on its LongFact test set, rebuilt from scratch before any new work.</p></div>
+      <div class="cell"><h3>Beats the paper on its own benchmark</h3><div class="pair"><div><b id="pp"></b><span>the paper's released probe, Qwen2.5-7B</span></div><div><b class="ice" id="po"></b><span>this recipe, same model, training data and test set</span></div></div><p class="muted small" id="pnote"></p></div>
       <div class="cell"><h3>A fact checker that holds up</h3><div class="pair"><div><b class="ice">89%</b><span>balanced accuracy against FActScore's human labels, on 11,049 facts</span></div><div><b class="ice">91%</b><span>agreement with Claude re-checking 150 claims blind against full Wikipedia articles</span></div></div><p class="muted small">Gemini reads each subject's Wikipedia page and labels every claim. The independent check agreed equally on every system's answers.</p></div>
-      <div class="cell"><h3>Tested at scale</h3><ul class="scale"><li><b>144,676</b> details written by five other models</li><li><b>600</b> people never used in building it</li><li><b>496</b> subjects beyond people</li><li><b>60</b> held-out people in the SHARS head-to-head</li></ul></div>
+      <div class="cell"><h3>Tested at scale</h3><ul class="scale"><li><b>144,676</b> details written by five other models</li><li><b>600</b> people never used in building it</li><li><b>496</b> subjects beyond people</li><li><b>182</b> people in the SHARS head-to-head</li></ul></div>
     </div>
   </div>
 </section>
@@ -760,13 +760,13 @@ narrow.addEventListener("change", scatter);
   ];
   $("cmp").innerHTML = `<thead><tr><th scope="col"><span class="sr">Per answer</span></th><th scope="col">Qwen3-4B alone</th><th scope="col">SHARS + its sampling detector</th><th scope="col" class="us">SHARS + HalluStream probe</th></tr></thead><tbody>`
     + rows.map(([lab, v, d]) => `<tr><td>${lab}</td><td data-label="Alone">${v[0]}</td><td data-label="Sampling detector">${v[1]}</td><td class="us" data-label="HalluStream">${v[2]}${d ? `<span class="d">${d}</span>` : ""}</td></tr>`).join("")
-    + `</tbody><caption>Averages over 60 held-out people; Qwen3-4B on one L4 GPU. Both reductions in false claims hold at 95% confidence, and the true-claim counts are statistically the same.</caption>`;
+    + `</tbody><caption>Averages over SHARS's 182 test people; Qwen3-4B on one L4 GPU. The reductions in false claims and the higher precision hold at 95% confidence, and the true-claim counts are statistically the same. With the probe trained only the paper's way, SHARS left ${f2(S.probe_v1.unsupported_per_bio)} false claims per answer.</caption>`;
 })();
 
 /* ---------- Spotlight ---------- */
 (function spotlight() {
   const S = D.shars.spotlight;
-  $("spotname").textContent = `One of the 60: ${S.name}`;
+  $("spotname").textContent = `One of the 182: ${S.name}`;
   const paint = (a) => {
     let out = "", pos = 0;
     [...a.ents].sort((x, y) => x[0] - y[0]).forEach(([s, e, ok, note]) => {
@@ -947,6 +947,14 @@ narrow.addEventListener("change", scatter);
   svg("text", {x: X(best[0]), y: Y(best[1]) - 12, "text-anchor": "middle", style: "fill:var(--ink);font-weight:600"}, el).textContent = `layer ${best[0]}: ${pct(best[1])}`;
   [0, 9, 18, 27, 35].forEach((l) => { svg("text", {x: X(l), y: 200, "text-anchor": "middle"}, el).textContent = l; });
   $("sweepnote").textContent = `A probe trained on each of Qwen3-4B's 36 layers, scored on ${D.detectors.sweep_spans.toLocaleString()} held-out details. The signal peaks in the middle of the network.`;
+})();
+
+/* ---------- Against the paper ---------- */
+(function paperCell() {
+  const P = D.paper, f3 = (x) => x.toFixed(3);
+  $("pp").textContent = f3(P.longfact.paper);
+  $("po").textContent = f3(P.longfact.ours);
+  $("pnote").textContent = `AUROC on the paper's LongFact test set (+${P.longfact_aug.gain.toFixed(3)} on LongFact++). It matches the paper's LoRA fine-tuned probe (0.895) without changing the model's weights. First, the paper's probe was rebuilt through this pipeline and reproduced to 0.0001 (0.8383 vs 0.8384).`;
 })();
 
 /* ---------- Copy ---------- */

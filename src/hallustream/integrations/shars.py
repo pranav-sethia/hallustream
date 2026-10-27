@@ -3,8 +3,8 @@
 SHARS checks each sentence it writes: it splits the sentence into (entity, claim) propositions,
 asks a detector how uncertain each one is, and keeps, rewrites or redoes the sentence. This
 estimator scores each proposition's entity with the probe from one forward pass, instead of
-writing a question and sampling answers (docs/RESULTS.md: 36% fewer unsupported claims than
-SHARS's own detector at about 1/110 of the detection time).
+writing a question and sampling answers (docs/RESULTS.md, all 182 test people: 44% fewer
+unsupported claims than SHARS's own detector at about 1/140 of the detection time).
 
 SHARS is not on PyPI. Clone github.com/TreeLLi/hallucination-rejection-sampling, put it on
 sys.path, then:

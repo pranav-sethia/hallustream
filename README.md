@@ -12,17 +12,29 @@
 *A real, unedited run (Qwen3-4B, greedy decoding). Most flags land on invented facts: her birth date, her mother, a brother, and films and years she was never in. It misses the invented father "Rajesh Advani" and the wrong debut film "Dil Dhadakne Do", and it flags "Mumbai", which is true.*
 
 ## Results
-**Inside SHARS (ICML 2026), the probe beats SHARS's own detector.** [SHARS](https://arxiv.org/abs/2606.03628) writes sentence by sentence: it splits each sentence into facts, asks a detector which facts are made up, and keeps, rewrites or redoes the sentence. Its detector, HalluSE, asks the model a question about every fact and samples several answers. We replaced HalluSE with the probe and changed nothing else. Results on 60 held-out FActScore people, with Qwen3-4B, pre-registered:
+**Inside SHARS (ICML 2026), the probe beats SHARS's own detector.** [SHARS](https://arxiv.org/abs/2606.03628) writes sentence by sentence: it splits each sentence into facts, asks a detector which facts are made up, and keeps, rewrites or redoes the sentence. Its detector, HalluSE, asks the model a question about every fact and samples several answers. We replaced HalluSE with the probe and changed nothing else. Results on all 182 of SHARS's FActScore people (none in the probe's training data), with Qwen3-4B, pre-registered:
 
 | Per biography | Plain writing | SHARS + HalluSE | **SHARS + probe** |
 |---|---|---|---|
-| True claims | 3.1 | 4.0 | **4.0** |
-| False claims | 7.0 | 5.2 | **3.3** (−36%) |
-| Precision | 28% | 38% | **47%** |
-| Detection time per fact | – | 5.8 s | **0.05 s** (~110× less) |
-| Total time per biography | 8 s | 232 s | **60 s** |
+| True claims | 3.2 | 4.1 | **4.0** |
+| False claims | 6.9 | 5.3 | **3.0** (−44%) |
+| Precision | 29% | 38% | **49%** |
+| Detection time per fact | – | 5.7 s | **0.04 s** (~140× less) |
+| Total time per biography | 7 s | 211 s | **49 s** |
 
-False claims: −1.87 per person, 95% interval [−2.75, −0.95].
+False claims: −2.37 per person, 95% interval [−2.96, −1.80]. Precision: +0.083 [+0.038, +0.132]. True claims: unchanged.
+
+**Compared with the paper it builds on** ([Obeso et al., 2025](https://arxiv.org/abs/2509.03531)):
+
+| | Paper | HalluStream |
+|---|---|---|
+| Paper's own benchmark: Qwen2.5-7B, its own training data and test sets, AUROC (LongFact / LongFact++) | linear probe 0.839 / 0.847 | **0.894 / 0.897**, +0.05 [95% intervals above +0.04] |
+| Same benchmark, the paper's best method (LoRA fine-tuning of the model) | 0.895 / 0.896 | **matched with the model's weights untouched** |
+| Made-up details caught at a 10% false-alarm rate (same benchmark) | 54% / 55% (LoRA: 66% / 68%) | **68% / 69%** |
+| On Qwen3-4B's own biographies (600 untouched people), AUROC | paper's recipe 0.776 | **0.854** (adapted to the model's own writing) |
+| Inside SHARS (182 people), false claims per biography | paper's recipe 4.70 | **2.96**, with 0.94 more true claims |
+
+The gains come from choices tested on validation data: reading a middle layer (layer 18 of 28) instead of the last ones, tuned training, and a cheap adaptation to the model's own answers. Details: [RESULTS.md](docs/RESULTS.md).
 
 ![False claims per biography vs detection time per fact](docs/img/shars_tradeoff.png)
 
@@ -93,7 +105,7 @@ Who it is for, recipes, what gets checked, thresholds, measurements and limits a
 - It needs the model's hidden states, so it works on open-weight models, and each model needs its own probe.
 - It holds back what the model would make up; it cannot add knowledge the model lacks. Retrieval does that when a source is available.
 - The SHARS test is on biographies (FActScore, the standard benchmark). The detector itself was also tested on Qwen3-4B's writing about 496 other subjects (0.834 vs 0.668), but SHARS was not run on them.
-- The SHARS test has 60 people. The probe's lead over the model's own token surprise inside SHARS is not statistically established.
+- The probe beats the model's own token surprise inside SHARS (−1.52 false claims [−2.13, −0.92]), but by less than it beats SHARS's own detector.
 - Our judge is stricter than SHARS's GPT-5 FActScore setup, so absolute precision is lower than in their paper. All arms share the same judge.
 
 ## Repository

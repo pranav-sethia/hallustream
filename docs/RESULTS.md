@@ -287,6 +287,8 @@ The ranking check failed, so by the protocol's rule the training direction (fine
 The probe beats confidence, but a 4B model cannot vouch for facts that a frontier model knows and it does not. Checking frontier models' text with a small reader was dropped.
 
 ## SHARS with the probe as its detector (test, 60 people)
+The first stage of the test. It was later extended to all 182 people; see the next section for the final numbers.
+
 **Question:** [SHARS](https://arxiv.org/abs/2606.03628) (ICML 2026) writes a biography sentence by sentence. Each sentence is split into facts, a detector scores every fact, and the sentence is then kept, rewritten from its trusted facts, or redone. SHARS's own detector, HalluSE, asks a question about each fact and samples answers. Does v3 work better as the detector, at a fraction of the cost?
 
 **Setup:**
@@ -336,7 +338,56 @@ Step 1 on 40 separate dev people (greedy vs SHARS + v3, plus rewriting on vs off
   - The disagreements are vague praise ("is recognized for her dedication"), which Gemini accepts too easily, and equally for both detectors. The judge does not favor the probe's answers.
 - **The probe's advantage does not come from learning the judge.** v3's final layer was fitted on this judge's labels. v1 never saw them: it was trained on Obeso et al.'s Claude-plus-web-search labels. On the 987 dev facts, v1 still beats HalluSE: AUROC 0.692 vs 0.636 for HalluSE's best settings and 0.507 for its default.
 - **Repeated sentences do not inflate counts.** The judge merges repeated claims, so the unique count equals the total in every arm.
-- **Sample size.** SHARS's paper reports a single run on 182 people with no intervals. Here the false-claim and specific-false-claim differences hold at 95% across 60 held-out people. The precision difference does not yet.
+- **Sample size.** SHARS's paper reports a single run on 182 people with no intervals. The 60-person test above was extended to all 182 (next section). Every claim holds there, and the precision gain becomes significant.
+
+## SHARS on all 182 people, and the paper's recipe as a detector
+**What was run:** the 60-person test above, extended to all of SHARS's 182 FActScore people with the same settings, plus one new arm. Pre-registered in [EVAL_PROTOCOL.md](../EVAL_PROTOCOL.md).
+- New people: the 122 left out for budget, judged by the same judge. All 167 shared judge requests are byte-identical to the original run.
+- New arm, SHARS + v1: the probe before adaptation to the model's own answers, trained with the paper's recipe on the paper's data. It runs at θ = 0.3033, which flags the same 45% of dev propositions as v3.
+- Code check: SHARS's code moved into the library after the first test, and the current estimator reproduces the stored dev scores exactly (72 propositions, difference 0.0). Every arm passed a 2-person smoke run.
+- 0 errors in 788 new biographies.
+
+| Per person (182) | Greedy | SHARS + HalluSE | SHARS + v1 (paper's recipe) | **SHARS + v3** | SHARS + v3, stricter | SHARS + token surprise |
+|---|---|---|---|---|---|---|
+| Supported claims | 3.18 | 4.05 | 3.10 | **4.04** | 3.54 | 3.79 |
+| Unsupported claims | 6.87 | 5.33 | 4.70 | **2.96** | 1.75 | 4.48 |
+| Precision (answered) | 0.290 | 0.376 | 0.338 | **0.486** | 0.580 | 0.437 |
+| Answered | 92% | 93% | 90% | 85% | 71% | 90% |
+| Specific unsupported claims | 3.95 | 2.74 | 2.77 | **1.41** | 0.82 | 2.18 |
+| Specific supported claims | 1.88 | 2.15 | 1.84 | **2.05** | 1.74 | 1.93 |
+| Detection seconds per fact | – | 5.71 | 0.035 | **0.040** | 0.032 | 0.043 |
+| Seconds per biography (L4) | 7.2 | 210.9 | 41.2 | **49.0** | 40.7 | 52.0 |
+
+**SHARS + v3 vs SHARS + HalluSE** (paired over 182 people, 2,000 bootstrap resamples):
+
+| | Difference [95% interval] |
+|---|---|
+| Unsupported claims | **−2.37 [−2.96, −1.80]** (−44%) |
+| Supported claims | −0.01 [−0.47, +0.46] |
+| Precision (154 people answered by both) | **+0.083 [+0.038, +0.132]** |
+| Specific unsupported claims | −1.33 [−1.64, −1.01] (−49%) |
+| Specific supported claims | −0.10 [−0.31, +0.11] |
+
+- **Fewer false claims than SHARS's own detector: yes**, 44% fewer, with the same number of true claims.
+- **Higher precision: now established**, +0.083 with the interval above 0.
+- **Detection about 140× cheaper:** 0.040 vs 5.71 s per fact. SHARS runs end to end 4.3× faster.
+- **The new 122 people alone replicate the first 60:** unsupported −2.62 [−3.33, −1.94], precision +0.082 [+0.032, +0.133].
+- **Stricter v3 setting:** 67% fewer unsupported claims (−3.58 [−4.18, −3.02]) and precision +0.128 [+0.071, +0.181]. It keeps 87% of HalluSE's supported claims and answers 71% of people.
+- **Against the free token-surprise signal:** unsupported −1.52 [−2.13, −0.92] and precision +0.049 [+0.003, +0.099]. Both are now established; at 60 people they were not.
+
+**The paper's recipe vs this project's adaptation, inside SHARS:**
+
+| | Difference [95% interval] |
+|---|---|
+| v3 − v1, unsupported claims | **−1.74 [−2.42, −1.13]** |
+| v3 − v1, supported claims | **+0.94 [+0.57, +1.34]** |
+| v3 − v1, precision | **+0.132 [+0.087, +0.179]** |
+| v1 − HalluSE, unsupported claims | −0.63 [−1.30, +0.04] |
+| v1 − HalluSE, precision | −0.049 [−0.086, −0.011] |
+
+- **With the probe trained only the paper's way, SHARS does no better than with its own detector:** fewer false claims is not established, and precision is lower.
+- **Adapting the probe to the model's own answers is what makes the difference.** It removes 1.7 more false claims per person and keeps about one more true claim than the paper's recipe. The pre-registered claim holds.
+- **Rewrites:** 0.5% of v3's 399 rewrites kept a flagged entity (1.4% for v1, 0% for HalluSE); 5–7% dropped a trusted one in every arm.
 
 ## Two more ways to improve the probe, tried and stopped (pilots, rules set before running)
 **LoRA probe** (Obeso et al.'s recipe from their released code: rank-16 adapters on every projection, KL weight 0.5 to keep the model's writing unchanged, one epoch). Same 1,000 training answers for every arm, scored on 300 validation answers (4,153 details):

@@ -1,7 +1,7 @@
 """Chart for the SHARS test: false claims per biography vs detection time per fact.
 
 Run: uv run python -m hallustream.research.shars_plot <report.json> <out.png>
-(report.json from hallustream.research.shars_test on results/shars/test60)
+(report.json from hallustream.research.shars_test on results/shars/test182)
 """
 
 from __future__ import annotations
@@ -42,7 +42,8 @@ def plot(report: dict, out: Path) -> None:
     ax.set_ylim(0, greedy + 1)
     ax.set_xlabel("Detection time per fact (seconds, log scale, one L4 GPU)")
     ax.set_ylabel("False claims per biography")
-    ax.set_title("SHARS on Qwen3-4B, 60 held-out FActScore people", fontsize=10)
+    n = arms["naive"]["bios"]
+    ax.set_title(f"SHARS on Qwen3-4B, {n} held-out FActScore people", fontsize=10)
     for side in ("top", "right"):
         ax.spines[side].set_visible(False)
     fig.tight_layout()

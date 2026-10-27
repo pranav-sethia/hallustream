@@ -6,7 +6,8 @@ Inputs (all in results/, not committed):
                        (Modal run of the shipped library at d4e187c)
   site/showcase.json   the recorded stream() run of the Kiara Advani example, with timing
   site/topics_judge.jsonl  the fact checker's labels for the topic texts
-  shars/test60/        the SHARS test (arms, judge labels)
+  shars/test182/       the SHARS test on all 182 people (arms, judge labels)
+  paper_h2h.json       the head-to-head with the paper's Qwen2.5-7B probe
   reserved/, topics/scores/  held-out detector scores (threshold curves, calibration)
 
 Run: uv run python -m hallustream.research.site results docs/index.html
@@ -171,7 +172,7 @@ def hero(root: Path) -> list[dict]:
 
 def shars(root: Path) -> dict:
     """SHARS test numbers, and the spotlight person's three answers."""
-    d = root / "shars" / "test60"
+    d = root / "shars" / "test182"
     report = json.loads((d / "report.json").read_text())
     keys = [("naive", "Qwen3-4B alone"), ("halluse", "SHARS + its sampling detector"),
             ("probe_45", "SHARS + HalluStream probe")]  # fmt: skip
@@ -179,7 +180,7 @@ def shars(root: Path) -> dict:
     spotlight = {"name": SPOTLIGHT, "truth": SPOTLIGHT_TRUTH,
                  "arms": [{"label": label, **arms[k]} for k, label in keys]}  # fmt: skip
     summary = {k: report["arms"][k] for k in ("naive", "halluse", "probe_45", "probe_60",
-                                              "logprob_45")}  # fmt: skip
+                                              "logprob_45", "probe_v1")}  # fmt: skip
     return {"summary": summary, "paired": report["paired"], "spotlight": spotlight}
 
 
@@ -268,8 +269,16 @@ def curves(root: Path) -> dict:
     return out
 
 
+def paper(root: Path) -> dict:
+    """Our probe vs the paper's released Qwen2.5-7B probe on the paper's own test sets."""
+    h = json.loads((root / "paper_h2h.json").read_text())
+    return {ds: {"paper": h[ds]["paper"]["auroc"], "ours": h[ds]["qwen25_L18"]["auroc"],
+                 "gain": h[ds]["qwen25_L18_minus_paper"]["delta"]}
+            for ds in ("longfact", "longfact_aug")}  # fmt: skip
+
+
 def build(root: Path) -> str:
-    data = {"hero": hero(root), "shars": shars(root), "reader": reader(root),
+    data = {"hero": hero(root), "shars": shars(root), "reader": reader(root), "paper": paper(root),
             "detectors": detectors(root), "thresholds": curves(root),
             "presets": {"balanced": BALANCED, "strict": STRICT}}  # fmt: skip
     page = (Path(__file__).parent / "site_template.html").read_text()
