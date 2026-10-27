@@ -193,29 +193,12 @@ section p { margin: 0 0 16px; }
 @media (max-width: 600px) { .chart text { font-size: 19px; } }
 .fig { margin: 40px 0 0; }
 .fig .cap { font-size: 13.5px; color: var(--muted); margin: 14px 0 0; }
-/* At a glance: one row per system, two columns of bars, shorter is better in both */
-.gl-row { display: grid; grid-template-columns: minmax(170px, 1fr) 1.25fr 1.25fr; gap: 6px 36px; align-items: center;
-  padding: 14px 12px; border-top: 1px solid var(--line); }
-.gl-row.gl-top { border-top: 0; padding-bottom: 10px; align-items: end; }
-.gl-h { font-size: 14px; font-weight: 600; color: var(--ink); }
-.gl-h small { display: block; font-size: 13px; font-weight: 400; color: var(--muted); }
-.gl-name { font-size: 15.5px; color: var(--text); }
-.gl-row.us { background: var(--ice-soft); border-radius: 6px; border-top-color: transparent; }
-.gl-row.us + .gl-row, .gl-row.us { border-top-color: transparent; }
-.gl-row.us .gl-name { color: var(--ink); font-weight: 600; }
-.gl-cell { display: flex; align-items: center; gap: 10px; min-width: 0; font-variant-numeric: tabular-nums; }
-.gl-cell i { display: block; height: 14px; width: calc(var(--r) * 62%); min-width: 3px; border-radius: 2px; background: var(--bar-muted); flex: none; }
-.gl-row.us .gl-cell i { background: var(--ice); }
-.gl-cell b { font-size: 15px; font-weight: 600; color: var(--ink); white-space: nowrap; }
-.gl-cell .gl-none { font-size: 14px; color: var(--muted); }
-.gl-cell em { font-style: normal; font-size: 13.5px; font-weight: 600; color: var(--ice); white-space: nowrap; }
-@media (max-width: 720px) {
-  .gl-row { grid-template-columns: 1fr; gap: 6px; padding: 14px 10px; }
-  .gl-row.gl-top { display: none; }
-  .gl-cell { flex-wrap: wrap; row-gap: 2px; }
-  .gl-cell i { width: calc(var(--r) * (100% - 160px)); }
-  .gl-cell::before { content: attr(data-h); flex: none; width: 92px; font-size: 12.5px; color: var(--muted); }
-}
+.fig svg { width: 100%; height: auto; display: block; overflow: visible; }
+.fig text { fill: var(--muted); font: 12.5px var(--sans); font-variant-numeric: tabular-nums; }
+.fig .axis { fill: var(--ink); font-weight: 600; }
+.fig .pt { cursor: help; outline: none; }
+.fig .pt:focus-visible .ring { stroke: var(--ink); stroke-width: 2; }
+@media (max-width: 700px) { .fig text { font-size: 19px; } }
 .cmp { width: 100%; border-collapse: collapse; margin-top: 40px; font-variant-numeric: tabular-nums; }
 .cmp th, .cmp td { text-align: right; padding: 14px 16px; border-bottom: 1px solid var(--line); vertical-align: baseline; }
 .cmp th:first-child, .cmp td:first-child { text-align: left; padding-left: 0; color: var(--text); }
@@ -419,8 +402,8 @@ footer .wrap { display: grid; gap: 10px; }
     <h2 class="wideh">Plugged into a 2026 method, it beat that method's own detector</h2>
     <p class="measure muted">SHARS (ICML 2026) cuts hallucinations by rewriting an answer sentence by sentence, asking a detector which facts are made up. Its own detector re-asks the model about every fact several times. Swapping in the probe, and changing nothing else, made SHARS more accurate and far cheaper on all 182 of its test people.</p>
     <figure class="fig">
-      <div id="glance" role="table" aria-label="False claims per answer and time to check one fact, for each system"></div>
-      <figcaption class="cap">Averages over SHARS's 182 test people. Time is the detector's time per fact on one L4 GPU.</figcaption>
+      <svg id="scatter" role="img" aria-label="False claims per answer against time to check one fact, for each way of running SHARS"></svg>
+      <figcaption class="cap">Each dot is one way of running Qwen3-4B on SHARS's 182 test people. Lower means fewer made-up claims; further left means a faster detector (log scale, one L4 GPU). Hover or tap a dot for its numbers.</figcaption>
     </figure>
     <div class="cmpwrap"><table class="cmp" id="cmp"></table></div>
 
@@ -726,34 +709,64 @@ bindTips(screen, (t) => {
 load(location.hash.includes("kiara") ? "kiara" : "caribbean");
 if (location.hash.includes("check")) setChecked(true);
 
-/* ---------- SHARS at a glance ---------- */
-(function glance() {
-  const s = D.shars.summary;
-  const rows = [
-    [s.naive, "Qwen3-4B alone"],
-    [s.halluse, "SHARS + its sampling detector"],
-    [s.logprob_45, "SHARS + model's own confidence"],
-    [s.probe_45, "SHARS + HalluStream", true],
-  ];
-  const maxF = Math.max(...rows.map(([a]) => a.unsupported_per_bio));
-  const maxT = s.halluse.detect_seconds_per_prop;
-  const w = (v, m) => `--r:${(v / m).toFixed(3)}`;  // bar length as a share of the longest
-  const sec = (x) => (x < 1 ? x.toFixed(2) : x.toFixed(1)) + " s";
+/* ---------- SHARS scatter ---------- */
+const narrow = matchMedia("(max-width: 700px)");
+function scatter() {
+  const s = D.shars.summary, el = $("scatter");
+  const [W, H] = narrow.matches ? [560, 440] : [1040, 340];
+  el.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  el.innerHTML = "";
+  const L = 46, R = W - 12, T = 46, B = H - 54;
+  const X = (sec) => L + (Math.log10(sec) + 2) / 3 * (R - L);   // 0.01 .. 10 s
+  const Y = (f) => B - f / 8 * (B - T);                          // 0 .. 8 false claims
+  [0.01, 0.1, 1, 10].forEach((v) => {
+    svg("line", {x1: X(v), x2: X(v), y1: T, y2: B, stroke: "var(--grid)"}, el);
+    svg("text", {x: X(v), y: B + 20, "text-anchor": v === 0.01 ? "start" : v === 10 ? "end" : "middle"}, el).textContent = v + " s";
+  });
+  [0, 2, 4, 6, 8].forEach((v) => {
+    svg("line", {x1: L, x2: R, y1: Y(v), y2: Y(v), stroke: "var(--grid)"}, el);
+    svg("text", {x: L - 10, y: Y(v) + 4, "text-anchor": "end"}, el).textContent = v;
+  });
+  // Axis titles say which way is better
+  const yt = svg("text", {x: L - 36, y: T - 22, class: "axis"}, el);
+  yt.textContent = "False claims per answer";
+  svg("tspan", {dx: 8, style: "font-weight:400;fill:var(--muted)"}, yt).textContent = "↓ lower is better";
+  const xt = svg("text", {x: R, y: H - 4, "text-anchor": "end", class: "axis"}, el);
+  svg("tspan", {style: "font-weight:400;fill:var(--muted)"}, xt).textContent = "← faster   ";
+  svg("tspan", {}, xt).textContent = "Time to check one fact";
+  svg("text", {x: L + 10, y: B - 12, style: "fill:var(--ice);font-weight:600"}, el).textContent = "↙ better: fewer false claims, faster";
+  const g = s.naive.unsupported_per_bio;
+  svg("line", {x1: L, x2: R, y1: Y(g), y2: Y(g), stroke: "var(--muted)", "stroke-dasharray": "4 5"}, el);
+  svg("text", {x: R - 4, y: Y(g) - 8, "text-anchor": "end"}, el).textContent = `Qwen3-4B alone, no detector: ${g.toFixed(2)}`;
   const fewer = Math.round((1 - s.probe_45.unsupported_per_bio / s.halluse.unsupported_per_bio) * 100);
   const faster = Math.round(s.halluse.detect_seconds_per_prop / s.probe_45.detect_seconds_per_prop / 10) * 10;
-  let html = `<div class="gl-row gl-top" role="row"><span role="columnheader"></span>
-    <span class="gl-h" role="columnheader">False claims per answer<small>shorter is better</small></span>
-    <span class="gl-h" role="columnheader">Time to check one fact<small>shorter is better</small></span></div>`;
-  rows.forEach(([a, name, us]) => {
-    const f = a.unsupported_per_bio, t = a.detect_seconds_per_prop;
-    const time = t ? `<i style="${w(t, maxT)}"></i><b>${sec(t)}</b>${us ? `<em>${faster}× faster</em>` : ""}`
-                   : `<span class="gl-none">no detector</span>`;
-    html += `<div class="gl-row${us ? " us" : ""}" role="row"><span class="gl-name" role="rowheader">${name}</span>
-      <div class="gl-cell" role="cell" data-h="False claims"><i style="${w(f, maxF)}"></i><b>${f.toFixed(2)}</b>${us ? `<em>−${fewer}% vs sampling detector</em>` : ""}</div>
-      <div class="gl-cell" role="cell" data-h="Check time">${time}</div></div>`;
+  const pts = [
+    [s.halluse, "SHARS + its own sampling detector", "var(--muted)", 7, "end", -14],
+    [s.logprob_45, "SHARS + model's own confidence", "var(--dim)", 5, "start", 12],
+    [s.probe_45, "SHARS + HalluStream (ours)", "var(--ice)", 9, "start", 18],
+  ];
+  pts.forEach(([a, label, color, r, anchor, dx], i) => {
+    const x = X(a.detect_seconds_per_prop), y = Y(a.unsupported_per_bio), us = i === 2;
+    const tip = `<b>${a.unsupported_per_bio.toFixed(2)}</b> false and <b>${a.supported_per_bio.toFixed(2)}</b> true claims per answer<span class="v">${label}. ${a.detect_seconds_per_prop.toFixed(2)} s to check each fact.</span>`;
+    const pt = svg("g", {class: "pt", tabindex: 0, "data-tip": tip}, el);
+    svg("circle", {cx: x, cy: y, r: 18, fill: "transparent"}, pt);  // easier to hover and tap
+    if (us) svg("circle", {class: "ring", cx: x, cy: y, r: r + 5, fill: "none", stroke: "var(--ice)", "stroke-width": 1.5}, pt);
+    svg("circle", {cx: x, cy: y, r, fill: color}, pt);
+    const t = svg("text", {x: x + dx, y: y + (us ? -4 : 4), "text-anchor": anchor}, el);
+    t.textContent = `${label}: ${a.unsupported_per_bio.toFixed(2)}`;
+    if (us) {
+      t.setAttribute("style", "fill:var(--ink);font-weight:600");
+      const notes = narrow.matches ? [`${fewer}% fewer false claims`, `${faster}× faster`]
+        : [`${fewer}% fewer false claims than SHARS's own detector`, `${faster}× faster to check each fact`];
+      notes.forEach((line, k) => {
+        svg("text", {x: x + dx, y: y + 16 + k * 17 * (narrow.matches ? 1.5 : 1), style: "fill:var(--ice);font-weight:600"}, el).textContent = line;
+      });
+    }
   });
-  $("glance").innerHTML = html;
-})();
+}
+scatter();
+narrow.addEventListener("change", scatter);
+bindTips($("scatter"), (t) => t.dataset.tip);
 
 /* ---------- Comparison table ---------- */
 (function compare() {
