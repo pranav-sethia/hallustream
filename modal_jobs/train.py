@@ -27,6 +27,9 @@ VARIANTS = {
     "qwen35_L17": dict(run="main2_qwen35", layers=[17]),
     "qwen35_L17_30": dict(run="main2_qwen35", layers=[17, 30]),
     "qwen3_L21": dict(run="main2_qwen3", layers=[21]),
+    # head-to-head with the paper's Qwen2.5-7B probe: the sweep's best layer and the paper's layer
+    "qwen25_L18": dict(run="main_qwen25", layers=[18]),
+    "qwen25_L26": dict(run="main_qwen25", layers=[26]),
 }
 SEEDS = [0, 1, 2, 3, 4]
 # Paper recipe plus the knobs the sweep showed matter (regularization), on validation only.
@@ -35,6 +38,11 @@ GRID = [
     for loss, lr, ep, l2 in itertools.product(
         ["annealed", "token"], [1e-3, 5e-3], [1, 3], [0.0, 1e-4, 1e-3, 1e-2]
     )
+]
+# The paper's annealed loss on 1,625 answers: more passes may be needed (EVAL_PROTOCOL.md).
+GRID_QWEN25 = [
+    dict(loss="annealed", lr=lr, epochs=ep, l2=l2)
+    for lr, ep, l2 in itertools.product([1e-3, 5e-3], [4, 8, 16, 32], [0.0, 1e-3, 1e-2])
 ]
 GPU = dict(gpu="L40S", memory=131072, volumes={CACHE_DIR: volume}, timeout=4 * 60 * 60)
 
@@ -195,7 +203,8 @@ if __name__ == "__main__":
         "hallustream-train", {"predict": "predict_split"}.get(a.action, a.action)
     )
     if a.action == "tune":
-        calls = {v: fn.spawn(v, GRID, exclude) for v in a.variants}
+        calls = {v: fn.spawn(v, GRID_QWEN25 if v.startswith("qwen25") else GRID, exclude)
+                 for v in a.variants}  # fmt: skip
     elif a.action == "fit":
         calls = {v: fn.spawn(v, a.config, SEEDS, exclude, git_commit()) for v in a.variants}
     else:

@@ -22,6 +22,7 @@ app = modal.App("hallustream-extract")
 CHUNK = 250
 N_NEG = 50
 QWEN35, QWEN3 = "Qwen/Qwen3.5-4B", "Qwen/Qwen3-4B-Instruct-2507"
+QWEN25 = "Qwen/Qwen2.5-7B-Instruct"  # the paper's released linear probe reads its layer 26
 RUNS = {
     # layer sweep: 1,200 train + 800 val answers, several layers
     "sweep_qwen35": dict(model=QWEN35, layers=[15, 18, 19, 22, 23, 26, 27, 30], subset="sweep"),
@@ -35,10 +36,12 @@ RUNS = {
     # re-extraction after the every-layer sweep picked new layers
     "main2_qwen35": dict(model=QWEN35, layers=[17, 30], subset="all"),
     "main2_qwen3": dict(model=QWEN3, layers=[21], subset="all"),
+    # head-to-head with the paper: Qwen2.5-7B's own answers only, official splits
+    "main_qwen25": dict(model=QWEN25, layers=list(range(10, 27, 2)), subset="qwen25"),
     # tiny end-to-end check
     "smoke": dict(model=QWEN35, layers=[26, 30], subset="smoke"),
 }
-N_SHARDS = {"sweep": 4, "all": 8, "smoke": 1}
+N_SHARDS = {"sweep": 4, "all": 8, "qwen25": 4, "smoke": 1}
 
 
 def select(subset: str):
@@ -48,12 +51,14 @@ def select(subset: str):
     from hallustream.research.data import SOURCES, load_records, make_splits
 
     recs = load_records()
+    sources = ["Qwen2.5-7B-Instruct"] if subset == "qwen25" else SOURCES
     split_of = {}
-    res = make_splits(recs, train_sources=SOURCES)
+    res = make_splits(recs, train_sources=sources)
     for name, ids in (("train", res.train), ("val", res.val), ("test", res.test)):
         split_of.update({i: name for i in ids})
-    chosen = [(r, split_of[r.answer_id]) for r in recs if r.answer_id in split_of]
-    if subset == "all":
+    chosen = [(r, split_of[r.answer_id]) for r in recs
+              if r.answer_id in split_of and r.source in sources]  # fmt: skip
+    if subset in ("all", "qwen25"):
         return chosen
     rng = random.Random(0)
     train = [x for x in chosen if x[1] == "train"]

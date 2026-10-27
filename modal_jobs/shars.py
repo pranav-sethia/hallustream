@@ -5,6 +5,7 @@ propositions by the model itself, every proposition gets an uncertainty, and the
 kept, rewritten from its trusted claims, or rejected. Only the uncertainty step differs:
   halluse  SHARS's detector: per proposition, write a question, sample answers, cluster with NLI
   probe    our v3 probe on the proposition's entity tokens (one forward pass per sentence)
+  probe_v1 the probe before adaptation to the model's own answers (the paper's recipe)
   logprob  the model's own token surprise on the entity tokens (free baseline)
 
 Their code is vendored in third_party/shars (see PATCHES.md) and runs on transformers 4.x.
@@ -169,6 +170,29 @@ def dev_props(names: list[str], commit: str, shard: int = 0) -> dict:
                    extra=meta)  # fmt: skip
     volume.commit()
     return meta
+
+
+@app.function(image=image, **GPU)
+def parity(rows: list[dict]) -> dict:
+    """Code check: the current estimator against the dev proposition scores stored by
+    dev_props (native context). Each row carries the text written before its sentence."""
+    from types import SimpleNamespace
+
+    _shars()
+    common = dict(model=MODEL, n_questions=1, n_answers=5, entailment_type="lax",
+                  temperature=0, top_k=20, top_p=0.8, thinking=False, device="cuda")  # fmt: skip
+    probe = _probe_estimators()(signal="v3", context="native", **common)
+    worst, n = {"v1": 0.0, "v3": 0.0, "surprise": 0.0}, 0
+    for r in rows:
+        prop = SimpleNamespace(entity=r["entity"], fact_claim=r["fact_claim"])
+        (s,) = probe.sentence_scores(QUERY.format(entity=r["name"]), r["sofar"], r["sentence"],
+                                     r["name"], [prop])  # fmt: skip
+        if s is None:
+            continue
+        n += 1
+        for k in worst:
+            worst[k] = max(worst[k], abs(s[k] - r[f"native_{k}"]))
+    return {"props": n, "rows": len(rows), "max_abs_diff": worst}
 
 
 @app.function(image=image, **GPU)
@@ -370,7 +394,7 @@ def _generator(arm, model, generator, threshold=0.0, n_answers=3, context="nativ
     if arm == "naive":
         return generator.NaiveGenerator(model, device="cuda")
     est = "DeBERTa" if arm == "halluse" else "probe"
-    signal = "v3" if arm == "probe" else "surprise"
+    signal = {"probe": "v3", "probe_v1": "v1"}.get(arm, "surprise")
     extra = ({"se_w_expected_answer": se_expected} if arm == "halluse"
              else {"signal": signal, "context": context})  # fmt: skip
     gen = generator.UncertaintyGenerator(
@@ -401,7 +425,8 @@ def _generate(gen, query, name):
 if __name__ == "__main__":
     p = argparse.ArgumentParser()
     p.add_argument(
-        "action", choices=["dev_props", "run", "merge", "prepare_prop_judge", "rescore_halluse"]
+        "action",
+        choices=["dev_props", "run", "merge", "prepare_prop_judge", "rescore_halluse", "parity"],
     )
     p.add_argument("args", nargs="*")
     p.add_argument("--people", type=int, default=0, help="first N people only")
@@ -414,7 +439,39 @@ if __name__ == "__main__":
     p.add_argument("--entail-check", action="store_true")
     p.add_argument("--no-rewrite", action="store_true")
     a = p.parse_args()
-    if a.action == "rescore_halluse":
+    if a.action == "parity":  # args: the local dev props table, number of people
+        import pandas as pd
+
+        props = pd.read_parquet(a.args[0]).drop_duplicates(["name", "sentence_idx", "entity"])
+        rows = []
+        for name in sorted(props["name"].unique())[: int(a.args[1])]:
+            g = props[props["name"] == name].sort_values("sentence_idx")
+            sents = dict(zip(g["sentence_idx"], g["sentence"], strict=False))
+            for _, r in g.iterrows():
+                k = int(r["sentence_idx"])
+                if any(i not in sents for i in range(k)):
+                    continue  # an earlier sentence had no propositions, so its text is unknown
+                sofar = ""
+                for i in range(k):  # the joining rule of dev_props
+                    glue = "" if sofar.endswith((" ", "\n")) or not sofar else " "
+                    sofar += glue + sents[i]
+                rows.append(
+                    {
+                        c: r[c]
+                        for c in [
+                            "name",
+                            "sentence",
+                            "entity",
+                            "fact_claim",
+                            "native_v1",
+                            "native_v3",
+                            "native_surprise",
+                        ]
+                    }
+                    | {"sofar": sofar}
+                )
+        print(modal.Function.from_name("hallustream-shars", "parity").remote(rows))
+    elif a.action == "rescore_halluse":
         fn = modal.Function.from_name("hallustream-shars", "rescore_halluse")
         print(fn.spawn(git_commit()).object_id)
     elif a.action == "prepare_prop_judge":

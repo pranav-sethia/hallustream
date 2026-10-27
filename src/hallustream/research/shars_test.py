@@ -115,6 +115,8 @@ def report(arms: dict[str, pd.DataFrame]) -> dict:
     pairs += [
         (a, b) for a in arms for b in arms if a.startswith("probe") and b.startswith("logprob")
     ]
+    if "probe_45" in arms and "probe_v1" in arms:  # the adapted probe vs the paper's recipe
+        pairs.append(("probe_45", "probe_v1"))
     out["paired"] = {f"{a}-{b}": {c: paired(arms[a], arms[b], c)
                                   for c in ("precision", "supported", "unsupported",
                                             "specific_supported", "specific_unsupported")}

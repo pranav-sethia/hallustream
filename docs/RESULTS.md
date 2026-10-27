@@ -12,6 +12,35 @@ We ran Obeso et al.'s released linear probe (`obalcells/hallucination-probes`, `
 
 With the paper's span search, our pipeline reproduces the published numbers to within 0.0002 AUROC. The project's exact-offset labeling (used for all training) lands within 0.0004 of the paper while keeping every labeled entity and always labeling the correct mention of repeated names.
 
+## Against the paper on its own benchmark
+**Question:** Obeso et al. released a linear probe for Qwen2.5-7B-Instruct that reads layer 26 of 28 (their default, about 0.95 of depth). With everything else held to the paper's setting, does this project's recipe do better? Pre-registered in [EVAL_PROTOCOL.md](../EVAL_PROTOCOL.md).
+
+**Setting:**
+- Model: Qwen2.5-7B-Instruct, frozen.
+- Data: the paper's own annotations of Qwen2.5-7B's answers. Official train split (1,625 answers) for training, official validation split (178) for every choice, official test split scored once.
+- Layer: chosen on validation by the same sweep used for the other models. Layer 18 scored 0.874 against 0.845 at layer 26.
+- Training: the paper's annealed loss, with learning rate, passes and L2 strength tuned on validation.
+
+**Test, on exactly the same details** (paired bootstrap over answers, 2,000 resamples; the paper's probe scored through the reproduction run, matching its published numbers):
+
+| | LongFact (14,416 details) | LongFact++ (10,117) |
+|---|---|---|
+| Paper's released linear probe (layer 26) | 0.839 (recall 54%) | 0.847 (recall 55%) |
+| This recipe at the paper's layer 26 | 0.870 | 0.880 |
+| **This recipe, layer 18** | **0.894 (recall 68%)** | **0.897 (recall 69%)** |
+| Gain over the paper's probe | **+0.055 [0.049, 0.062]** | **+0.050 [0.043, 0.057]** |
+| Paper's LoRA probe (fine-tunes the model; Table 4) | 0.895 (recall 66%) | 0.896 (recall 68%) |
+
+Recall is the share of made-up details caught at a 10% false-alarm rate.
+
+- **Beats the paper's own probe on its own model and test sets:** yes, by about +0.05 AUROC on both, and catching about 13 more points of made-up details at the same false-alarm rate.
+- **Where the gain comes from:**
+  - about +0.03 from training choices tuned on validation (the same layer, the same data)
+  - +0.017 to +0.024 from reading a middle layer instead of the last ones
+- **Matches the paper's LoRA probe without fine-tuning.** It scores the same AUROC (0.894 vs 0.895, 0.897 vs 0.896) and higher recall. The LoRA probe changes the model's weights; this probe leaves the model untouched and costs one dot product per token.
+- The LoRA numbers are the paper's published values on the same test sets, so there is no paired interval for that row.
+- Reproduce: `modal_jobs/extract.py` run `main_qwen25`, `modal_jobs/sweep.py`, `modal_jobs/train.py` variants `qwen25_L18` / `qwen25_L26`, then `research/paper_h2h.py`.
+
 ## Layer sweep
 **Setup**
 - Every layer of both models, on 1,200 train / 800 validation answers (11,414 validation entities).
