@@ -218,3 +218,24 @@ Added here **before** each is first used:
 **Double-check** (`modal_jobs/doublecheck.py`): after each dev biography, ask the model whether each judged entity is correct, and keep P(Yes/No) and the last-token hidden state.
 - **Decision on dev only:** 5-fold cross-validation grouped by person, comparing v3 alone with v3 plus the double-check signals.
 - **Go if:** the gain is ≥ 0.02 AUROC with the person-bootstrap interval above 0. Then confirm once on the 600 reserved people. Otherwise stop and report.
+
+## Against the paper on its own benchmark, and SHARS on all 182 people (2026-10-26, written before any run)
+**Head-to-head with Obeso et al.'s released Qwen2.5-7B probe** (`modal_jobs/extract.py` run `main_qwen25`, `modal_jobs/train.py` variants `qwen25_*`):
+- **Question:** the paper's released linear probe for Qwen2.5-7B-Instruct reads layer 26 of 28 (its default, about 0.95 of depth). Our layer sweeps on Qwen3-4B and Qwen3.5-4B peaked at 55–60% of depth and lost 0.02–0.03 AUROC near the last layer. With everything else held to the paper's setting, does our recipe beat the paper's own probe on the paper's own test sets?
+- **Data:** the paper's released annotations of Qwen2.5-7B-Instruct's own answers: official train split (1,625 answers) for training, official validation split (178) for every choice, official test split (986 LongFact + 913 LongFact++ answers) scored once. No train or validation question appears in test.
+- **Features:** Qwen2.5-7B-Instruct (the revision used in the reproduction), teacher-forced; layers 10, 12, …, 26; entity tokens plus 50 random ordinary tokens per answer, as in every cache here.
+- **Layer choice (validation only):** the L2 logistic-regression sweep used for the other models (C = 3e-5). The highest validation AUROC wins.
+- **Training:** the annealed loss, tuned on validation over lr {1e-3, 5e-3} × epochs {4, 8, 16, 32} × L2 {0, 1e-3, 1e-2}; 5 seeds of the best setting, scores averaged. The same procedure at layer 26 is the control: our training at the paper's layer.
+- **Test:** span AUROC (highest token probability, exact character offsets) for our probe, our layer-26 control and the paper's released probe (per-token probabilities stored by the reproduction run), on exactly the same spans; paired bootstrap over answers, 2,000 resamples.
+- **Claim "beats the paper's own probe on its own model and test sets":** the interval for ours − paper is above 0 on LongFact and on LongFact++. Otherwise the result is reported as it is.
+
+**SHARS test extended to all 182 people:**
+- **People:** positions 61–182 of `configs/shars_test_order.json` (the 122 left out of step 2 for budget). The greedy arm already covers all 182.
+- **Arms on the 122:** exactly the step 2 settings (HalluSE θ = 1.676 with 5 answers and both options; v3 θ = 0.5988 and θ = 0.4522; surprise θ = 0.5645).
+- **New arm on all 182: SHARS+v1**, the probe before adaptation to the model's own answers (trained with the paper's recipe on the paper's data), native context, θ = 0.3033, which flags the same 45.2% of the 987 dev propositions as v3 at θ = 0.5988.
+- **Code check before launch:** the SHARS code has been refactored into the library since step 2. The current estimator must reproduce the stored dev proposition scores (native v1, v3, surprise) within 1e-3, and every arm passes a 2-person smoke run.
+- **Report:** all 182 people (primary), the 122 new people alone, and the first 60 as already reported.
+- **Claims:** step 2's three claims, re-tested on 182 people with the same rules. New: "adapting the probe to the model's own answers removes more false claims in SHARS than the paper's recipe": v3 (θ = 0.5988) vs v1, unsupported claims interval below 0 and supported claims at least 90% of v1's.
+- **No reruns or setting changes after outputs are seen.** An arm with errors on more than 3% of people is reported with the errors.
+
+**Not run: a full LoRA probe.** It is the paper's own method, the pilot gained +0.008 on equal data, and it changes the model's writing (2% of next-token choices), so it cannot show an improvement over the paper.
