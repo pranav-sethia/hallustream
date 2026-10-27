@@ -187,13 +187,16 @@ section p { margin: 0 0 16px; }
 .wideh { max-width: 26ch; margin-bottom: 28px; }
 
 /* Results */
-.res { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: clamp(28px, 5vw, 72px); align-items: start; }
-@media (max-width: 900px) { .res { grid-template-columns: 1fr; } }
 .chart svg { width: 100%; height: auto; display: block; overflow: visible; }
 .chart text { fill: var(--muted); font: 12px var(--sans); font-variant-numeric: tabular-nums; }
 .chart .cap { font-size: 13.5px; color: var(--muted); margin: 10px 0 0; }
 @media (max-width: 600px) { .chart text { font-size: 19px; } }
-.cmp { width: 100%; border-collapse: collapse; margin-top: 44px; font-variant-numeric: tabular-nums; }
+.fig { margin: 40px 0 0; }
+.fig svg { width: 100%; height: auto; display: block; overflow: visible; }
+.fig text { fill: var(--muted); font: 12.5px var(--sans); font-variant-numeric: tabular-nums; }
+.fig .cap { font-size: 13.5px; color: var(--muted); margin: 14px 0 0; }
+@media (max-width: 700px) { .fig text { font-size: 19px; } }
+.cmp { width: 100%; border-collapse: collapse; margin-top: 40px; font-variant-numeric: tabular-nums; }
 .cmp th, .cmp td { text-align: right; padding: 14px 16px; border-bottom: 1px solid var(--line); vertical-align: baseline; }
 .cmp th:first-child, .cmp td:first-child { text-align: left; padding-left: 0; color: var(--text); }
 .cmp thead th { font-size: 14px; font-weight: 600; color: var(--muted); border-bottom: 1px solid var(--line-strong); vertical-align: bottom; }
@@ -394,16 +397,11 @@ footer .wrap { display: grid; gap: 10px; }
 <section id="results">
   <div class="wrap">
     <h2 class="wideh">Plugged into a 2026 method, it beat that method's own detector</h2>
-    <div class="res">
-      <div>
-        <p class="measure muted">SHARS (ICML 2026) cuts hallucinations by rewriting an answer sentence by sentence, asking a detector which facts are made up. Its own detector re-asks the model about every fact several times. Swapping in the probe, and changing nothing else, made SHARS more accurate and far cheaper on 60 held-out people.</p>
-      </div>
-      <div class="chart">
-        <svg id="scatter" viewBox="0 0 560 360" role="img" aria-label="False claims per answer against detection time per fact, for each system"></svg>
-        <p class="cap">Lower is fewer false claims, further left is cheaper. Detection time per fact on one L4 GPU, log scale.</p>
-      </div>
-    </div>
-
+    <p class="measure muted">SHARS (ICML 2026) cuts hallucinations by rewriting an answer sentence by sentence, asking a detector which facts are made up. Its own detector re-asks the model about every fact several times. Swapping in the probe, and changing nothing else, made SHARS more accurate and far cheaper on 60 held-out people.</p>
+    <figure class="fig">
+      <svg id="scatter" role="img" aria-label="False claims per answer against detection time per fact, for each system"></svg>
+      <figcaption class="cap">Lower is fewer false claims, further left is cheaper. Detection time per fact on one L4 GPU, log scale.</figcaption>
+    </figure>
     <div class="cmpwrap"><table class="cmp" id="cmp"></table></div>
 
     <div class="spot" data-nosnippet>
@@ -709,36 +707,43 @@ load(location.hash.includes("kiara") ? "kiara" : "caribbean");
 if (location.hash.includes("check")) setChecked(true);
 
 /* ---------- SHARS scatter ---------- */
-(function scatter() {
+const narrow = matchMedia("(max-width: 700px)");
+function scatter() {
   const s = D.shars.summary, el = $("scatter");
-  const X = (sec) => 70 + (Math.log10(sec) + 2) / 3 * 450;   // 0.01 .. 10 s
-  const Y = (f) => 320 - f / 8 * 290;                           // 0 .. 8 false claims
+  const [W, H] = narrow.matches ? [560, 380] : [1040, 300];
+  el.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  el.innerHTML = "";
+  const L = 46, R = W - 12, T = 28, B = H - 46;
+  const X = (sec) => L + (Math.log10(sec) + 2) / 3 * (R - L);   // 0.01 .. 10 s
+  const Y = (f) => B - f / 8 * (B - T);                          // 0 .. 8 false claims
   [0.01, 0.1, 1, 10].forEach((v) => {
-    svg("line", {x1: X(v), x2: X(v), y1: 30, y2: 320, stroke: "var(--grid)"}, el);
-    svg("text", {x: X(v), y: 342, "text-anchor": "middle"}, el).textContent = v < 1 ? v + " s" : v + " s";
+    svg("line", {x1: X(v), x2: X(v), y1: T, y2: B, stroke: "var(--grid)"}, el);
+    svg("text", {x: X(v), y: B + 20, "text-anchor": v === 0.01 ? "start" : v === 10 ? "end" : "middle"}, el).textContent = v + " s";
   });
   [0, 2, 4, 6, 8].forEach((v) => {
-    svg("line", {x1: 70, x2: 520, y1: Y(v), y2: Y(v), stroke: "var(--grid)"}, el);
-    svg("text", {x: 58, y: Y(v) + 4, "text-anchor": "end"}, el).textContent = v;
+    svg("line", {x1: L, x2: R, y1: Y(v), y2: Y(v), stroke: "var(--grid)"}, el);
+    svg("text", {x: L - 10, y: Y(v) + 4, "text-anchor": "end"}, el).textContent = v;
   });
-  svg("text", {x: 14, y: 20}, el).textContent = "False claims per answer";
-  svg("text", {x: 520, y: 360, "text-anchor": "end"}, el).textContent = "Detection time per fact";
+  svg("text", {x: L - 10, y: T - 12}, el).textContent = "False claims per answer";
+  svg("text", {x: R, y: H - 4, "text-anchor": "end"}, el).textContent = "Detection time per fact";
   const g = s.naive.unsupported_per_bio;
-  svg("line", {x1: 70, x2: 520, y1: Y(g), y2: Y(g), stroke: "var(--muted)", "stroke-dasharray": "4 5"}, el);
-  svg("text", {x: 516, y: Y(g) - 8, "text-anchor": "end"}, el).textContent = `Qwen3-4B alone, no detector: ${g}`;
+  svg("line", {x1: L, x2: R, y1: Y(g), y2: Y(g), stroke: "var(--muted)", "stroke-dasharray": "4 5"}, el);
+  svg("text", {x: R - 4, y: Y(g) - 8, "text-anchor": "end"}, el).textContent = `Qwen3-4B alone, no detector: ${g}`;
   const pts = [
-    [s.halluse, "SHARS + sampling detector", "var(--muted)", 7, "end", -12, 4],
+    [s.halluse, "SHARS + sampling detector", "var(--muted)", 7, "end", -14, 4],
     [s.logprob_45, "SHARS + model's confidence", "var(--dim)", 5, "start", 12, 4],
     [s.probe_45, "SHARS + HalluStream", "var(--ice)", 8, "start", 14, 5],
   ];
   pts.forEach(([a, label, color, r, anchor, dx, dy], i) => {
     const x = X(a.detect_seconds_per_prop), y = Y(a.unsupported_per_bio);
-    svg("circle", {cx: x, cy: y, r, fill: color, stroke: color, "stroke-width": 1.6}, el);
+    svg("circle", {cx: x, cy: y, r, fill: color}, el);
     const t = svg("text", {x: x + dx, y: y + dy, "text-anchor": anchor}, el);
     t.textContent = `${label}: ${a.unsupported_per_bio}`;
     if (i === 2) t.setAttribute("style", "fill:var(--ink);font-weight:600");
   });
-})();
+}
+scatter();
+narrow.addEventListener("change", scatter);
 
 /* ---------- Comparison table ---------- */
 (function compare() {
