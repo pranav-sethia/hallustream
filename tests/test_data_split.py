@@ -48,3 +48,12 @@ def test_question_in_train_and_val_goes_to_val():
     ]
     res = make_splits(records, train_sources=["A"])
     assert res.train == [] and res.val == ["x/A/validation/1"]
+
+
+def test_split_people_is_fixed():
+    from hallustream.research.factcheck.people import split_people
+
+    names = [f"p{i}" for i in range(500)]
+    dev, test = split_people(names)
+    assert len(dev) == 100 and len(test) == 400 and not set(dev) & set(test)
+    assert split_people(list(reversed(names))) == (dev, test)

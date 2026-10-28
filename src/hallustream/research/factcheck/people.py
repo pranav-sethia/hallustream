@@ -9,6 +9,7 @@ The two lists do not overlap.
 from __future__ import annotations
 
 import json
+import random
 import zipfile
 from dataclasses import dataclass
 from pathlib import Path
@@ -63,6 +64,13 @@ def split_labeled(names: list[str], n_tune: int = 40) -> tuple[set[str], set[str
     order = sorted(set(names))
     random.Random(0).shuffle(order)
     return set(order[:n_tune]), set(order[n_tune:])
+
+
+def split_people(names: list[str], n_dev: int = 100, seed: int = 0) -> tuple[list, list]:
+    """FActScore's 500 people split once into 100 dev and 400 test people."""
+    order = sorted(names)
+    random.Random(seed).shuffle(order)
+    return order[:n_dev], order[n_dev:]
 
 
 def eval_people(root: Path) -> list[str]:

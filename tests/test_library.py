@@ -253,3 +253,17 @@ def test_the_package_ships_its_probe_weights():
     assert {"v3.json", "model.json", "thresholds.json"} <= set(names)
     presets = json.loads((d / "thresholds.json").read_text())
     assert presets["balanced"]["threshold"] < presets["strict"]["threshold"]
+
+
+def test_sentences_skip_headers_and_split_lines():
+    from hallustream.text import sentences
+
+    bio = (
+        "**Ada Lovelace** (1815–1852) was a mathematician. She was born in London.\n\n"
+        "### Work\n- Wrote notes in 1843."
+    )
+    assert [bio[a:b] for a, b in sentences(bio)] == [
+        "**Ada Lovelace** (1815–1852) was a mathematician.",
+        "She was born in London.",
+        "- Wrote notes in 1843.",
+    ]

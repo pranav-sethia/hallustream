@@ -477,8 +477,7 @@ if __name__ == "__main__":
     elif a.action == "prepare_prop_judge":
         print(modal.Function.from_name("hallustream-shars", "prepare_prop_judge").remote())
     elif a.action == "dev_props":
-        from hallustream.fix.spans import split_people
-        from hallustream.research.factcheck.people import eval_people
+        from hallustream.research.factcheck.people import eval_people, split_people
 
         local = Path(a.args[0]) if a.args else None
         dev, _ = split_people(eval_people(local))

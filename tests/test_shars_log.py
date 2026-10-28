@@ -73,3 +73,8 @@ def test_report_counts_abstentions_and_pairs_with_greedy(tmp_path):
     d = out["paired"]["probe-naive"]
     assert d["unsupported"]["delta"] == -1.5  # a: 1 - 2, b: 0 - 2
     assert d["precision"]["people"] == 1  # only "a" answered in both
+
+
+def test_length_penalty():
+    assert shars_test.length_penalized(0.8, 20) == 0.8
+    assert shars_test.length_penalized(0.8, 5) < 0.8 * 0.4

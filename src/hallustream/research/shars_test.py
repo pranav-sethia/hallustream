@@ -10,19 +10,71 @@ Run: uv run python -m hallustream.research.shars_test <dir> naive halluse probe_
 from __future__ import annotations
 
 import json
+import math
 import re
 import sys
 from collections import Counter
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
-from hallustream.fix.experiment import paired, per_bio, summary
 from hallustream.research.factcheck import judge
 from hallustream.research.factcheck.validate import read_results
 from hallustream.research.shars_log import parse
 
 PRONOUNS = {"He", "She", "His", "Her", "They", "Their", "The", "I", "It", "This"}
+
+
+def length_penalized(precision: float, n_claims: int, gamma: int = 10) -> float:
+    """FActScore with the length penalty (Min et al. 2023): precision * exp(1 - gamma / n)."""
+    if n_claims == 0:
+        return 0.0
+    return precision * (math.exp(1 - gamma / n_claims) if n_claims < gamma else 1.0)
+
+
+def per_bio(bios_path: Path, results_path: Path) -> pd.DataFrame:
+    """Claims-based metrics per biography from the judge's answers."""
+    results, _ = read_results(results_path)
+    rows = []
+    for line in bios_path.read_text().splitlines():
+        r = json.loads(line)
+        try:
+            claims = judge.parse_bio(results[r["name"]])["claims"]
+        except (KeyError, ValueError):
+            claims = None
+        if claims is None:
+            continue
+        sup = sum(lab == "Supported" for _, lab in claims)
+        n = len(claims)
+        rows.append({
+            "name": r["name"], "responded": n > 0, "claims": n, "supported": sup,
+            "unsupported": n - sup, "precision": sup / n if n else np.nan,
+            "fs_gamma10": length_penalized(sup / n, n) if n else 0.0,
+        })  # fmt: skip
+    return pd.DataFrame(rows)
+
+
+def summary(df: pd.DataFrame) -> dict:
+    answered = df[df["responded"]]
+    return {
+        "bios": len(df), "response_rate": round(float(df["responded"].mean()), 4),
+        "precision": round(float(answered["precision"].mean()), 4),
+        "supported_per_bio": round(float(df["supported"].mean()), 2),
+        "unsupported_per_bio": round(float(df["unsupported"].mean()), 2),
+        "fs_gamma10": round(float(answered["fs_gamma10"].mean()), 4),
+    }  # fmt: skip
+
+
+def paired(a: pd.DataFrame, b: pd.DataFrame, col: str, n_boot: int = 2000, seed: int = 0):
+    """Mean difference a - b over people who answered in both, with a bootstrap interval."""
+    m = a.merge(b, on="name", suffixes=("_a", "_b"))
+    m = m[m["responded_a"] & m["responded_b"]] if col == "precision" else m
+    d = np.asarray(m[f"{col}_a"], dtype=float) - np.asarray(m[f"{col}_b"], dtype=float)
+    rng = np.random.default_rng(seed)
+    boots = [d[rng.integers(0, len(d), len(d))].mean() for _ in range(n_boot)]
+    return {"delta": round(float(d.mean()), 4), "ci": [round(float(np.percentile(boots, 2.5)), 4),
+            round(float(np.percentile(boots, 97.5)), 4)], "people": int(len(d))}  # fmt: skip
 
 
 def specific(claim: str, name: str) -> bool:
@@ -56,7 +108,7 @@ def arm_table(d: Path) -> pd.DataFrame:
     judged = per_bio(d / "bios.jsonl", d / "results.jsonl")
     df = bios.merge(judged, on="name", how="left")
     empty = df["bio"].str.strip() == ""
-    df.loc[empty, ["claims", "supported", "unsupported", "fixes", "fs_gamma10"]] = 0
+    df.loc[empty, ["claims", "supported", "unsupported", "fs_gamma10"]] = 0
     df.loc[empty, "responded"] = False
     df["responded"] = df["responded"].astype("boolean")
     missing = df["responded"].isna()

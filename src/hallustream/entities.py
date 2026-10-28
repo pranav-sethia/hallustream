@@ -1,5 +1,5 @@
-"""Find the entities to score: names, places, dates, numbers, titles. Uses GLiNER, the span
-finder chosen in the detect-and-fix pilot (EVAL_PROTOCOL.md); install with
+"""Find the entities to score: names, places, dates, numbers, titles. Uses GLiNER, chosen on dev
+biographies for finding the most false entities; install with
 `pip install "hallustream[entities]"` (Python 3.11+), or pass your own spans."""
 
 from __future__ import annotations

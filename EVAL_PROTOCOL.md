@@ -61,7 +61,7 @@ This file was committed **before** any probe was trained. Its purpose is to fix 
 
   If either check fails, the judge is upgraded (`gemini-3.5-flash-lite`, then a stronger model) and re-checked on the tuning people, then once on the reported people, before any gate result is read.
 - **Pass rule:**
-  - **AUROC ≥ 0.75 on Qwen3-4B:** proceed with detect→fix on Qwen3-4B.
+  - **AUROC ≥ 0.75 on Qwen3-4B:** proceed on Qwen3-4B.
   - **Otherwise:** retrain the probe with own-answer labels (people split into train/val/test) and re-test once.
   - **If it still fails:** the main direction becomes scoring other models' text (reader mode).
 
@@ -81,37 +81,12 @@ This file was committed **before** any probe was trained. Its purpose is to fix 
 ## Detector v3 and a final check on untouched people (decided before any reserved biography is generated)
 - **Why:** an audit found candidate B's penalty grid (hidden-state L2 up to 1.0) far too weak: every fold picked the grid's edge and the fit memorized the training folds. With stronger penalties, B is clearly better on dev, so "refitting on own answers did not help" was a grid artifact. Also, v2's `position` input uses the finished biography's length, so it is not available while the model writes.
 - **Dev choice:** the same 432 dev people, the same nested 5-fold, person-grouped procedure and the same rule (simplest candidate, gain ≥ 0.01 with the interval above 0, now measured over v2) choose between v2 and new candidates. The new candidates are A without `position`, B and C with hidden-state penalties of 30 to 10,000 (per dimension) at layers 15–30, with C's tabular penalty at 0.001 or 0.01. The grid was widened after seeing that a stronger penalty helps, so dev numbers for B and C are slightly optimistic; the final check below is what counts. The winner is frozen in `configs/detector_v3.json`.
-- **Final check:** the 600 reserved people in `configs/dev_people.json`, untouched so far: same generation, judge and scoring. v1, v2 and v3 are each scored once on them, with intervals from 2,000 bootstrap resamples over people. The gate people are not used again. The detector for detect→fix is v3 if it beats v2 there with the interval above 0; otherwise v2.
-
-## Detect→fix on biographies (decided before any fix is generated)
-- **Question:** does a probe-triggered fix (rewrite a flagged sentence with Wikipedia evidence) reduce hallucinations better than other triggers that use the same number of retrievals, and does a probe guard add value on top of retrieving once up front?
-- **Model and people:** Qwen3-4B-Instruct-2507, greedy decoding, `Tell me a bio of {name}.`, at most 512 new tokens. FActScore's 500 people are split once at random (seed 0) into 100 dev people, used for every choice, and 400 test people, scored once.
-- **Judge:** the validated judge (`gemini-3.1-flash-lite`, `t1_minimal`, person's Wikipedia page). Precision is supported claims over all claims.
-- **Retrieval:** BM25 over the person's own Wikipedia page (`enwiki-20230401`), query = name + the sentence being fixed, top 3 passages (top 5 for retrieve-once), placed in the user turn after the question. This is the same source the judge uses (as in Self-RAG's and CtrlA's bio setups), so retrieval-vs-no-retrieval gains are inflated; comparisons between retrieval arms share this and stay fair.
-- **Detector:** v3 on entity spans found while the model writes; the span method and the sentence trigger are chosen in the pilot.
-- **Pilot (dev people only), with fixed decisions:**
-  1. Entity spans: recall of GLiNER-medium, spaCy and probe-token runs against the judge's entities, especially Not Supported ones; the method with the highest Not Supported recall at ≤ 100 ms per sentence is used.
-  2. Sentence trigger: AUROC for "the sentence contains a Not Supported entity" of v3 (max over the sentence's spans), the max token probe score, the minimum token probability (FLARE-style) and the max entropy. The best probe-based and the best uncertainty-based trigger go forward.
-  3. Retrieval-augmented text: retrieve-once biographies are generated and judged. The probe guard on top of retrieve-once (arm A9) runs only if at least 5% of their entities are Not Supported and the probe's AUROC on them is at least 0.75 (scored with or without the evidence in context, whichever is higher on dev); otherwise it is reported as a negative result.
-- **Dev tuning:** thresholds for each trigger so that it averages 1 and 2 fixes per biography; plus, for the probe trigger at 1 fix per biography, (a) evidence for the flagged sentence only vs kept for the rest of the biography, and (b) accepting the rewritten sentence vs re-scoring it, retrying once and dropping it if still flagged. The choices with the higher dev precision, without losing more than 10% of supported claims, are frozen here before the test run.
-- **Test arms (400 people):** A0 greedy; A1 retrieve-once; probe trigger at 1 and 2 fixes per biography; uncertainty trigger at the same rates; random trigger at the probe's rate; oracle trigger (sentences the judge marked wrong in A0); probe trigger → drop the sentence; A9 retrieve-once + probe guard and A9 with the uncertainty trigger instead (if the pilot allows).
-- **Metrics:** precision; supported and unsupported claims per biography; response rate; FActScore with the length penalty (γ = 10); fixes and extra tokens per biography; fix success (flagged entity now Supported) and damage (supported claims lost). Paired bootstrap over people (2,000 resamples).
-- **Claims tested:** (1) at matched fixes per biography, the probe trigger has higher precision than the uncertainty and random triggers, with the interval above 0; (2) A9 has higher precision than A1 without losing more than 5% of supported claims.
-
-## Probe-reward pilot (decided before any sample is generated)
-- **Why:** a detect-and-fix pilot on the 100 dev people showed that retrieving the person's page once reaches 0.96 precision (0.18 greedy), so rewriting flagged sentences cannot beat it. On existing data, though, the probe ranks whole biographies by judge precision far better than the model's confidence (Spearman 0.60–0.73 vs at most 0.43; 0.69 vs −0.12 with automatically found entities). That suggests using the probe as a free reward for factuality fine-tuning (DPO). This pilot checks the assumptions that idea needs.
-- **Data:** 60 of the 100 dev people (seed 0). Qwen3-4B-Instruct-2507, `Tell me a bio of {name}.`, 8 samples each at temperature 0.8 with the model's default top-p 0.8 and top-k 20, at most 512 new tokens. Each sample is scored by v3 on GLiNER entities and judged by the frozen judge.
-- **Probe reward:** F/(T+1) + 0.5·log(1+F), where T is the number of entities and F = Σ(1 − p) the expected number of correct ones. Confidence baselines: the same formula with p from max surprise or max entropy mapped to [0, 1] by rank within the pilot, plus the plain mean of each signal.
-- **Go if all three hold:**
-  1. **Diversity:** for at least 50% of people (among those with at least 2 judged samples that make claims), the best and worst samples differ by at least 0.2 in judge precision.
-  2. **Ranking:** within a person, for sample pairs whose judge precision differs by at least 0.2, the probe reward orders them correctly at least 70% of the time and at least 5 points more often than the best confidence signal.
-  3. **Best-of-8:** the sample with the highest probe reward has higher judge precision than a random sample (averaged over people), with at most 10% fewer correct claims.
-- **Otherwise:** if (1) fails, test pairs built by replacing flagged sentences with a hedge; if (2) fails, the training direction is dropped.
+- **Final check:** the 600 reserved people in `configs/dev_people.json`, untouched so far: same generation, judge and scoring. v1, v2 and v3 are each scored once on them, with intervals from 2,000 bootstrap resamples over people. The gate people are not used again. The detector used from here on is v3 if it beats v2 there with the interval above 0; otherwise v2.
 
 ## SHARS with a probe detector (decided before any dev proposition is labeled)
 - **Question:** inside SHARS (Li et al., ICML 2026; code vendored in `third_party/shars`), does our probe as the hallucination detector match SHARS's own detector (HalluSE: question generation, answer sampling, NLI clustering) at a fraction of the compute? A free token-surprise detector is the control.
 - **Model and prompts:** Qwen3-4B-Instruct-2507 with SHARS's system prompt and `Tell me about {entity}.`, first attempt greedy, then SHARS's temperature schedule; rewrite on; Following ("natural") resampling; N = 10; at most 1,024 new tokens; Q = 1 question per proposition; propositions from SHARS's own decomposition in every arm.
-- **Dev (60 FActScore dev people, disjoint from SHARS's 182):** fixed greedy biographies; every proposition is scored by HalluSE with 3 and with 5 answers, by v3 with the probe's training prompt ("native") and with SHARS's messages, and by token surprise; each proposition's claim is labeled by the validated claim judge against the person's Wikipedia page.
+- **Dev (60 FActScore dev people, disjoint from SHARS's 182; FActScore's 500 unlabeled people are split once at random, seed 0, into 100 dev people and 400 others):** fixed greedy biographies; every proposition is scored by HalluSE with 3 and with 5 answers, by v3 with the probe's training prompt ("native") and with SHARS's messages, and by token surprise; each proposition's claim is labeled by the validated claim judge against the person's Wikipedia page.
   - HalluSE gets its best setting: the answer count with the higher proposition AUROC, and the threshold with the highest Youden's J among its achievable values.
   - v3 uses the context with the higher AUROC. v3 and token surprise get thresholds that flag the same share of dev propositions as tuned HalluSE (matched rejection). A second v3 threshold at its own best Youden's J is also run.
   - Detector compute is timed on the same GPU type.
@@ -207,11 +182,6 @@ Added here **before** each is first used:
 - the neutral default prompt: `Write a detailed, factual answer.`
 - the own-answer entity-extraction and judge prompts
 - the P(True) prompt
-
-## Double-check pilot (2026-10-26, written before any run)
-**Double-check** (`modal_jobs/doublecheck.py`): after each dev biography, ask the model whether each judged entity is correct, and keep P(Yes/No) and the last-token hidden state.
-- **Decision on dev only:** 5-fold cross-validation grouped by person, comparing v3 alone with v3 plus the double-check signals.
-- **Go if:** the gain is ≥ 0.02 AUROC with the person-bootstrap interval above 0. Then confirm once on the 600 reserved people. Otherwise stop and report.
 
 ## Against the paper on its own benchmark, and SHARS on all 182 people (2026-10-26, written before any run)
 **Head-to-head with Obeso et al.'s released Qwen2.5-7B probe** (`modal_jobs/extract.py` run `main_qwen25`, `modal_jobs/train.py` variants `qwen25_*`):

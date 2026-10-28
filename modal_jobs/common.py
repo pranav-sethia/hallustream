@@ -29,7 +29,7 @@ def with_code(img: modal.Image) -> modal.Image:
 image = with_code(base_image)
 
 # Qwen3.5 uses Gated DeltaNet layers; flash-linear-attention gives ~1.5x faster
-# teacher forcing and decoding on L4 (measured in model_check.py).
+# teacher forcing and decoding on L4.
 qwen35_image = with_code(base_image.uv_pip_install("flash-linear-attention"))
 
 volume = modal.Volume.from_name("hallustream-cache", create_if_missing=True)
