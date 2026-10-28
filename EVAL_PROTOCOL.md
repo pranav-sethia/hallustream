@@ -208,13 +208,7 @@ Added here **before** each is first used:
 - the own-answer entity-extraction and judge prompts
 - the P(True) prompt
 
-## LoRA probe and double-check pilots (2026-10-26, written before any run)
-**LoRA probe** (Obeso et al.'s recipe from their released code; `research/lora_probe.py`, `modal_jobs/lora.py`):
-- **Arms:** (a) a linear head on frozen layer 21; (b) LoRA + head at layer 21; (c) LoRA + head at layer 34 (the paper places it near the last layer).
-- **Data:** the same 1,000 random train answers for every arm; 300 random validation answers for scoring. Validation only: no test data.
-- **Comparison:** span AUROC on the validation spans, against the shipped frozen v1 probe's stored scores on the same spans (trained on all 20,056 train answers).
-- **Go to a full run if:** the best LoRA arm beats v1 on these spans by ≥ 0.02 and the measured throughput puts a full epoch under about $10. Otherwise stop and report.
-
+## Double-check pilot (2026-10-26, written before any run)
 **Double-check** (`modal_jobs/doublecheck.py`): after each dev biography, ask the model whether each judged entity is correct, and keep P(Yes/No) and the last-token hidden state.
 - **Decision on dev only:** 5-fold cross-validation grouped by person, comparing v3 alone with v3 plus the double-check signals.
 - **Go if:** the gain is ≥ 0.02 AUROC with the person-bootstrap interval above 0. Then confirm once on the 600 reserved people. Otherwise stop and report.
@@ -237,5 +231,3 @@ Added here **before** each is first used:
 - **Report:** all 182 people (primary), the 122 new people alone, and the first 60 as already reported.
 - **Claims:** step 2's three claims, re-tested on 182 people with the same rules. New: "adapting the probe to the model's own answers removes more false claims in SHARS than the paper's recipe": v3 (θ = 0.5988) vs v1, unsupported claims interval below 0 and supported claims at least 90% of v1's.
 - **No reruns or setting changes after outputs are seen.** An arm with errors on more than 3% of people is reported with the errors.
-
-**Not run: a full LoRA probe.** It is the paper's own method, the pilot gained +0.008 on equal data, and it changes the model's writing (2% of next-token choices), so it cannot show an improvement over the paper.
