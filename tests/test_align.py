@@ -38,7 +38,7 @@ def test_labels_the_right_mention_of_a_repeated_entity(tok):
     answer = "Paris is in France. Paris was founded in 1832."
     a = align_exact(tok, MSGS, answer, [ann(answer, "Paris", "Not Supported", nth=1)])
     (sp,) = a.spans
-    # the second "Paris" sits after "France." — check the tokens just before it
+    # the second "Paris" sits after "France.", so check the tokens just before it
     before = tok.decode(a.input_ids[a.answer_start : sp.start])
     assert "France." in before and "Paris" in decoded(tok, a, sp)
 

@@ -1,59 +1,40 @@
 # Results
 
-Every number here is computed from logged runs by the scripts named in each section. Each test's settings and pass rules were committed in [EVAL_PROTOCOL.md](../EVAL_PROTOCOL.md) before its outputs existed, choices were made on validation or dev data only, and each test set was scored once. Intervals are 95% paired bootstrap intervals (2,000 resamples) over people or answers.
+Every number here comes from logged runs and the scripts named in each section. Each test's settings and pass bars were written in [EVAL_PROTOCOL.md](../EVAL_PROTOCOL.md) before it was run. Choices were made on validation or dev data, and each test set was scored once. Intervals are 95% paired bootstrap intervals (2,000 resamples) over people or answers.
 
-**Summary**
-- **Beats the paper it builds on, on that paper's own benchmark.** On Qwen2.5-7B with the paper's own training data and test sets, AUROC is 0.894 / 0.897 vs 0.839 / 0.847 for the paper's released probe. That matches the paper's LoRA fine-tuned probe while leaving the model untouched.
-- **Cuts false claims inside SHARS (ICML 2026).** On all 182 of SHARS's test people:
-  - 44% fewer false claims than SHARS's own detector, with the same number of true claims
-  - higher precision
-  - about 140× less detection time per fact
-- **Works on the model's own writing.** 0.854 AUROC on Qwen3-4B's biographies of 600 untouched people (the paper's recipe: 0.776; the model's own confidence: 0.690), and 0.834 on its writing about 496 other subjects.
+In short: HalluStream beats the paper it builds on, on that paper's own benchmark, and matches the paper's fine-tuned version without changing the model. Plugged into SHARS (ICML 2026) on all 182 of its test people, it cuts false claims by 44% compared with SHARS's own detector, with higher precision and about 140x less detection time. On Qwen3-4B's own writing it scores 0.854 AUROC on 600 new people and 0.834 on 496 other subjects.
 
 ## Against the paper on its own benchmark
-Obeso et al. released a linear probe for Qwen2.5-7B-Instruct that reads layer 26 of 28 (their default, about 0.95 of depth). This test keeps everything else as in the paper and asks whether this project's recipe does better.
 
-**Setting**
-- Model: Qwen2.5-7B-Instruct, frozen.
-- Data: the paper's own annotations of Qwen2.5-7B's answers. The official train split (1,625 answers) is for training and the official validation split (178) for every choice. The official test split is scored once.
-- Layer: chosen on validation with the same sweep used for Qwen3-4B (chart below). Layer 18 scored 0.874, against 0.845 at layer 26.
-- Training: the paper's annealed loss, with learning rate, passes and L2 strength tuned on validation; 5 seeds, averaged.
+Obeso et al. released a linear probe for Qwen2.5-7B-Instruct that reads layer 26 of 28, their default of about 0.95 of the depth. I kept everything else from the paper's setting and asked whether my recipe does better.
 
-**Test, on exactly the same details** (the paper's probe was run through this pipeline and matches its published numbers):
+The model stays frozen. Training uses the paper's own annotations of Qwen2.5-7B's answers: 1,625 answers from the official train split, with the 178-answer validation split for every choice, and the official test split scored once at the end. I picked the layer on validation with the same sweep I used for Qwen3-4B (chart below): layer 18 scored 0.874 against 0.845 for layer 26. Training uses the paper's annealed loss, with the learning rate, number of passes and L2 strength tuned on validation, averaged over 5 seeds.
+
+Both probes are scored on exactly the same details. The paper's probe, run through this pipeline, gives the numbers the paper published.
 
 | | LongFact (14,416 details) | LongFact++ (10,117) |
 |---|---|---|
-| Paper's released linear probe (layer 26) | 0.839 (recall 54%) | 0.847 (recall 55%) |
-| This recipe at the paper's layer 26 | 0.870 | 0.880 |
-| **This recipe, layer 18** | **0.894 (recall 68%)** | **0.897 (recall 69%)** |
-| **Gain over the paper's probe** | **+0.055 [0.049, 0.062]** | **+0.050 [0.043, 0.057]** |
-| Paper's LoRA probe (fine-tunes the model; its Table 4) | 0.895 (recall 66%) | 0.896 (recall 68%) |
+| Paper's released probe (layer 26) | 0.839 (54% caught) | 0.847 (55% caught) |
+| My recipe at layer 26 | 0.870 | 0.880 |
+| My recipe at layer 18 | **0.894 (68% caught)** | **0.897 (69% caught)** |
+| Gain over the paper's probe | **+0.055 (0.049 to 0.062)** | **+0.050 (0.043 to 0.057)** |
+| Paper's LoRA probe (fine-tunes the model, their Table 4) | 0.895 (66% caught) | 0.896 (68% caught) |
 
-Recall is the share of made-up details caught at a 10% false-alarm rate.
+"Caught" is the share of made-up details flagged at a 10% false-alarm rate. That is about 13 more points than the paper's probe. Roughly +0.03 of the gain comes from the tuned training at the same layer, and +0.017 to +0.024 from reading a middle layer. The result matches the paper's LoRA probe, which changes the model's weights, while this probe leaves the model alone and costs one dot product per token. The LoRA row uses the paper's published values on the same test sets.
 
-- **Beats the paper's own probe on its own model and test sets** by about +0.05 AUROC, and catches about 13 more points of made-up details at the same false-alarm rate.
-- **Where the gain comes from:**
-  - about +0.03 from training choices tuned on validation (same layer, same data)
-  - +0.017 to +0.024 from reading a middle layer instead of one near the end
-- **Matches the paper's LoRA probe without fine-tuning:** the same AUROC and higher recall. The LoRA probe changes the model's weights; this probe leaves the model untouched and costs one dot product per token.
-- The LoRA row uses the paper's published values on the same test sets.
-- **Reproduction first:** before any new work, the paper's released probe was run through this pipeline. It gave 0.8384 / 0.8469 against the published 0.8383 / 0.8467.
-- **Code:** `modal_jobs/extract.py` (run `main_qwen25`), `modal_jobs/sweep.py`, `modal_jobs/train.py` (variants `qwen25_L18`, `qwen25_L26`), `research/paper_h2h.py`.
+Before any of this, I ran the paper's released probe through my own pipeline as a check. It gave 0.8384 / 0.8469 against the published 0.8383 / 0.8467. The code is `modal_jobs/extract.py` (run `main_qwen25`), `modal_jobs/sweep.py`, `modal_jobs/train.py` (variants `qwen25_L18` and `qwen25_L26`) and `research/paper_h2h.py`.
 
 ![Validation AUROC of a probe on each layer](img/layer_curve.png)
 
-In both models the signal peaks at about 60–70% of depth and falls off toward the last layers, where the paper reads by default (`research/layer_figure.py`).
+In both models the signal peaks at about 60–70% of the depth and falls off toward the last layers, which is where the paper reads by default (`research/layer_figure.py`).
 
-## Inside SHARS: fewer false claims, far cheaper
-[SHARS](https://arxiv.org/abs/2606.03628) (Li et al., ICML 2026) writes a biography sentence by sentence. Each sentence is split into facts, a detector scores every fact, and the sentence is kept, rewritten from its trusted facts, or redone. SHARS's own detector, HalluSE, writes a question about each fact, samples several answers and compares them. Here the probe replaces HalluSE and nothing else changes.
+## Inside SHARS
 
-**Setting**
-- Model: Qwen3-4B-Instruct-2507, with SHARS's code, prompt, rewriting and resampling unchanged.
-- People: all 182 of SHARS's FActScore test people. None appear in the probe's training data.
-- Labels: every biography is checked by the validated fact checker below. A false claim is one it could not support from the person's Wikipedia page, FActScore's convention.
-- Settings were chosen on separate dev people. The probe and the confidence baselines flag the same share of dev facts.
+[SHARS](https://arxiv.org/abs/2606.03628) (Li et al., ICML 2026) writes a biography one sentence at a time. Each sentence is split into facts, a detector scores every fact, and the sentence is kept, rewritten from its trusted facts, or redone. SHARS's own detector, HalluSE, writes a question about each fact, samples several answers and compares them. I replaced it with HalluStream and left everything else alone: Qwen3-4B-Instruct-2507, with SHARS's code, prompt, rewriting and resampling.
 
-| Per person (182) | Qwen3-4B alone | SHARS + HalluSE | SHARS + token surprise | SHARS + probe trained the paper's way | **SHARS + HalluStream** |
+The test covers all 182 of SHARS's FActScore people, none of whom are in the probe's training data. Every biography was checked by the fact checker described below. A false claim is one it couldn't support from the person's Wikipedia page, which is FActScore's convention. Settings were chosen on separate dev people, and the probe and the confidence baselines flag the same share of dev facts.
+
+| Per person (182) | Qwen3-4B alone | SHARS + HalluSE | SHARS + token surprise | SHARS + probe trained the paper's way | SHARS + HalluStream |
 |---|---|---|---|---|---|
 | True claims | 3.18 | 4.05 | 3.79 | 3.10 | **4.04** |
 | False claims | 6.87 | 5.33 | 4.48 | 4.70 | **2.96** |
@@ -66,51 +47,37 @@ In both models the signal peaks at about 60–70% of depth and falls off toward 
 
 Specific details are claims with a name, place, date or number (`research/shars_test.py`).
 
-**HalluStream vs SHARS's own detector** (paired over 182 people):
+Compared with SHARS's own detector, paired over the 182 people:
 
-| | Difference [95% interval] |
+| | Difference (95% interval) |
 |---|---|
-| False claims | **−2.37 [−2.96, −1.80]** (−44%) |
-| True claims | −0.01 [−0.47, +0.46] |
-| Precision (154 people answered by both) | **+0.083 [+0.038, +0.132]** |
-| False specific details | **−1.33 [−1.64, −1.01]** (−49%) |
-| True specific details | −0.10 [−0.31, +0.11] |
+| False claims | **−2.37 (−2.96 to −1.80)**, −44% |
+| True claims | −0.01 (−0.47 to +0.46) |
+| Precision (154 people answered by both) | **+0.083 (+0.038 to +0.132)** |
+| False specific details | **−1.33 (−1.64 to −1.01)**, −49% |
+| True specific details | −0.10 (−0.31 to +0.11) |
 
-- **44% fewer false claims and higher precision, with the same number of true claims.**
-- **Detection is about 140× cheaper** (0.040 vs 5.71 s per fact), so SHARS runs 4.3× faster end to end.
-- **The result replicates.** The first 60 people were tested first. The other 122 alone give false claims −2.62 [−3.33, −1.94] and precision +0.082 [+0.032, +0.133].
-- **It also beats the free confidence signal:** false claims −1.52 [−2.13, −0.92], precision +0.049 [+0.003, +0.099].
+So SHARS with HalluStream makes 44% fewer false claims, keeps the same number of true ones, and has higher precision. Detection is about 140x cheaper (0.040 s against 5.71 s per fact), which makes the whole SHARS run 4.3x faster. I tested the first 60 people before the rest, and the other 122 on their own show the same thing: −2.62 false claims (−3.33 to −1.94) and +0.082 precision (+0.032 to +0.133). HalluStream also beats the model's own token surprise, with −1.52 false claims (−2.13 to −0.92) and +0.049 precision (+0.003 to +0.099).
 
-**This project's probe vs the paper's recipe, inside SHARS:**
-- The probe trained the paper's way (same layer, the paper's data, no adaptation) is no better than SHARS's own detector here.
-- The probe adapted to the model's own writing (below) removes 1.74 more false claims per person [1.13, 2.42] and keeps 0.94 more true claims [0.57, 1.34]. Precision is +0.132 [+0.087, +0.179].
+The adaptation to the model's own writing is what makes the difference here. A probe trained only the paper's way (same layer, the paper's data, no adaptation) is no better than SHARS's own detector. The adapted one removes 1.74 more false claims per person (1.13 to 2.42), keeps 0.94 more true claims (0.57 to 1.34), and has 0.132 higher precision (0.087 to 0.179).
 
-**Checks on these numbers**
-- **The fact checker is fair to every method.** Claude re-labeled 150 claims blind against full Wikipedia articles, sampled equally across methods and labels.
-  - It agreed with the fact checker on 91.3% (κ 0.83), and equally for SHARS's detector and HalluStream (90% each).
-  - Where they differed, the fact checker had accepted vague praise. That happened equally for both detectors.
-- **The probe's advantage does not come from learning the fact checker.** The probe trained the paper's way never saw its labels. On 987 dev facts it still ranks false facts above true ones better than SHARS's detector at its best settings (0.692 vs 0.636 AUROC).
-- **Repeated sentences are counted once.**
+Two checks on these numbers. First, to make sure the fact checker wasn't favouring one method, Claude re-labeled 150 claims blind against the full Wikipedia articles, sampled evenly across methods and labels. It agreed with the fact checker on 91.3% of them (κ 0.83), and on 90% for both SHARS's detector and HalluStream. Where they differed, the fact checker had accepted vague praise, equally for both. Second, to make sure the probe's edge doesn't come from learning the fact checker's habits: the probe trained the paper's way never saw its labels, and on 987 dev facts it still ranks false facts above true ones better than SHARS's detector at its best settings (0.692 against 0.636 AUROC). Repeated sentences are counted once.
 
-## The detector on the model's own writing
-The paper's probe is trained on other models' answers. HalluStream adapts it to the model's own writing.
-- **Method:** a regularized linear term on the layer-21 hidden state, fitted on Qwen3-4B's own biographies of 432 dev people and labeled by the fact checker below. The setting was chosen by nested cross-validation on dev.
-- **It reads only the hidden state the probe already uses,** so it still works while the model writes.
+## The model's own writing
 
-**600 untouched people** (Qwen3-4B answered 477; 3,727 checked details, 61% unsupported):
+The paper trains its probe on other models' answers. I adapted it to the model's own writing with a regularized linear term on the layer-21 hidden state, fitted on Qwen3-4B's biographies of 432 dev people and labeled by the fact checker below. The setting was chosen by nested cross-validation on dev. It reads only the hidden state the probe already uses, so it still works while the model writes.
+
+On 600 people that weren't used for anything else (Qwen3-4B answered 477 of them, with 3,727 checked details, 61% unsupported):
 
 | | AUROC |
 |---|---|
-| Model's own confidence (max entropy) | 0.690 [0.668, 0.711] |
-| Probe trained the paper's way | 0.776 [0.751, 0.800] |
-| **HalluStream (adapted)** | **0.854 [0.834, 0.873]** |
-| Adapted − paper's way | **+0.078 [0.064, 0.091]** |
-| Adapted − confidence | **+0.164 [0.138, 0.192]** |
+| Model's own confidence (max entropy) | 0.690 (0.668 to 0.711) |
+| Probe trained the paper's way | 0.776 (0.751 to 0.800) |
+| HalluStream, adapted | **0.854 (0.834 to 0.873)** |
+| Adapted minus the paper's way | **+0.078 (0.064 to 0.091)** |
+| Adapted minus confidence | **+0.164 (0.138 to 0.192)** |
 
-**Beyond biographies:** Qwen3-4B's writing about 496 random Wikipedia subjects that are not people (4,549 checked details).
-- The subjects are living things, events, organizations, creative works and places, spread over four popularity levels.
-- **HalluStream 0.834**, against 0.777 for the paper's way and 0.668 for the model's confidence. The difference from confidence is +0.166 [0.138, 0.193].
-- The adaptation was fitted only on biographies, yet it carries over: +0.056 [0.046, 0.066] over the paper's way.
+It also works beyond biographies. On Qwen3-4B's writing about 496 random Wikipedia subjects that aren't people (4,549 checked details), HalluStream scores 0.834, against 0.777 for the paper's way and 0.668 for the model's confidence (+0.166, 0.138 to 0.193). The subjects are living things, events, organizations, creative works and places, spread over four levels of popularity. The adaptation was fitted only on biographies and still adds +0.056 (0.046 to 0.066) here.
 
 | By category | HalluStream | Model's confidence |
 |---|---|---|
@@ -121,36 +88,23 @@ The paper's probe is trained on other models' answers. HalluStream adapts it to 
 | Places | 0.839 | 0.644 |
 
 ## The base probe
-- **Probe:** a linear probe on Qwen3-4B's layer 21, picked by the every-layer sweep above.
-- **Training:**
-  - the paper's annealed loss (a per-token loss that shifts to each entity's riskiest token), entity tokens weighted 10×
-  - all 20,056 training answers of the paper's data
-  - choices tuned on validation and frozen before test
-  - 5 seeds
-- **Test:** 9,426 answers written by five other models, with 144,676 labeled details.
+
+The base probe is a linear probe on Qwen3-4B's layer 21, picked by the every-layer sweep. It is trained with the paper's annealed loss, which starts as a per-token loss and shifts to each entity's riskiest token, with entity tokens weighted 10x. It used all 20,056 training answers of the paper's data, with choices tuned on validation and frozen before the test, over 5 seeds. The test set is 9,426 answers written by five other models, with 144,676 labeled details.
 
 | | Value |
 |---|---|
 | AUROC (5 seeds) | **0.854** ± 0.0002 |
 | Best confidence baseline (max entropy) | 0.678 |
-| Probe − baseline | +0.177 [0.171, 0.183] |
+| Probe minus baseline | +0.177 (0.171 to 0.183) |
 | Recall / precision at a 10% false-alarm rate | 55.9% / 70.2% |
 | Calibration error (ECE) | 0.012 |
 
 ## The fact checker
-Every own-answer and SHARS label comes from one fact checker:
-- Gemini 3.1 Flash-Lite (Batch API)
-- given the subject's Wikipedia page (BM25 top 24 passages)
-- prompts in `research/factcheck/`
 
-It was validated before use:
-- **Against FActScore's human labels:** 0.890 balanced accuracy on 11,049 facts (143 people kept apart from the 40 used to pick settings).
-- **FActScore scores against the human ones:** off by 0.023 for InstructGPT and 0.013 for ChatGPT (bar 0.03).
-- **Spot checks with stronger models:** Gemini 3.5 Flash re-judged 300 details of Qwen3-4B's own biographies and 300 of its other-topic texts (0.856 and 0.859 agreement); Claude did the SHARS check above.
+All the own-writing and SHARS labels come from one fact checker: Gemini 3.1 Flash-Lite through the Batch API, given the subject's Wikipedia page (the 24 best-matching passages by BM25). The prompts are in `research/factcheck/`.
+
+I validated it before using it. Against FActScore's human labels it gets 0.890 balanced accuracy on 11,049 facts, from 143 people kept apart from the 40 used to pick its settings. Its FActScore scores land within 0.023 of the human ones for InstructGPT and 0.013 for ChatGPT. Gemini 3.5 Flash re-judged 300 details of Qwen3-4B's biographies and 300 of its other-topic texts, agreeing on 0.856 and 0.859 of them, and Claude did the SHARS check above.
 
 ## The library
-The shipped package (`pip install`, CLI and Python API) is measured in [LIBRARY.md](LIBRARY.md):
-- the same scores as the research code to within 0.0001
-- 0.876 / 0.827 AUROC when it finds details by itself
-- calibrated risk
-- +5% time per generated token
+
+The pip package, command line and Python API are measured in [LIBRARY.md](LIBRARY.md). In short: the same scores as the research code to within 0.0001, 0.876 / 0.827 AUROC when it finds the details itself, calibrated risk, and 5% extra time per generated token.

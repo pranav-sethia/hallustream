@@ -3,80 +3,96 @@
 [![CI](https://github.com/pranav-sethia/hallustream/actions/workflows/ci.yml/badge.svg)](https://github.com/pranav-sethia/hallustream/actions/workflows/ci.yml)
 [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/pranav-sethia/hallustream/blob/main/notebooks/quickstart.ipynb)
 
-**A near-free hallucination detector for open LLMs.** A small linear probe reads a model's hidden states while it writes and flags the names, dates, places and titles it is probably making up. It generates no extra text, needs no web search, and adds about 5% to generation time.
+HalluStream catches a language model making things up while it writes. A small linear probe reads the model's hidden states and flags the names, dates, places and titles it is probably inventing. It doesn't generate extra text or search the web, and it adds about 5% to generation time.
 
-**[See it work on the project page](https://pranav-sethia.github.io/hallustream/)**: real runs replayed with live flags, the SHARS comparison, and the accuracy and threshold charts.
+The [project page](https://pranav-sethia.github.io/hallustream/) replays real runs with the flags appearing live, and has the results and charts.
 
 ![Qwen3-4B writing a biography; likely made-up facts are highlighted as each sentence is checked](docs/img/stream.gif)
 
-*A real, unedited run (Qwen3-4B, greedy decoding). The flags land on invented facts: her birth date, her mother, a brother, and films and years she was never in.*
+*A real, unedited run with Qwen3-4B. The flags land on invented facts: her birth date, her mother, a brother, and films and years she was never in.*
+
+## Quick start
+
+```bash
+pip install "hallustream[entities] @ git+https://github.com/pranav-sethia/hallustream"
+hallustream "Tell me about A Caribbean Mystery."
+```
+
+That answers the question and highlights the details that are likely made up. There is also `hallustream chat`, `score` for checking an answer the model already wrote, and `batch` for whole files. From Python:
+
+```python
+from hallustream import Detector
+
+det = Detector.from_pretrained("qwen3-4b")
+report = det.generate("Tell me a bio of Kiara Advani.")
+print(report.summary())
+```
+
+It needs a GPU or an Apple Silicon Mac for Qwen3-4B. The [Colab notebook](https://colab.research.google.com/github/pranav-sethia/hallustream/blob/main/notebooks/quickstart.ipynb) runs on the free tier. More in [docs/LIBRARY.md](docs/LIBRARY.md).
 
 ## Results
-**Inside SHARS (ICML 2026), the probe beats SHARS's own detector.** [SHARS](https://arxiv.org/abs/2606.03628) writes sentence by sentence: it splits each sentence into facts, asks a detector which facts are made up, and keeps, rewrites or redoes the sentence. Its detector, HalluSE, asks the model a question about every fact and samples several answers. We replaced HalluSE with the probe and changed nothing else. Results on all 182 of SHARS's FActScore people (none in the probe's training data), with Qwen3-4B, pre-registered:
 
-| Per biography | Plain writing | SHARS + HalluSE | **SHARS + probe** |
+### Inside SHARS
+
+[SHARS](https://arxiv.org/abs/2606.03628) (ICML 2026) cuts hallucinations by writing an answer one sentence at a time. A detector checks each fact, and sentences with doubtful facts get rewritten or redone. SHARS's own detector asks the model about every fact several times. I replaced it with HalluStream and changed nothing else, then ran all 182 of SHARS's test people with Qwen3-4B:
+
+| Per biography | Qwen3-4B alone | SHARS, own detector | SHARS with HalluStream |
 |---|---|---|---|
 | True claims | 3.2 | 4.1 | **4.0** |
 | False claims | 6.9 | 5.3 | **3.0** (−44%) |
 | Precision | 29% | 38% | **49%** |
-| Detection time per fact | – | 5.7 s | **0.04 s** (~140× less) |
-| Total time per biography | 7 s | 211 s | **49 s** |
+| Time to check one fact | – | 5.7 s | **0.04 s** (~140x less) |
+| Time per biography | 7 s | 211 s | **49 s** |
 
-False claims are claims the fact checker could not support from the person's Wikipedia page (FActScore's convention). False claims: −2.37 per person, 95% interval [−2.96, −1.80]. Precision: +0.083 [+0.038, +0.132]. True claims: unchanged. Counting only specific details (names, places, dates, numbers), false ones drop 49% (2.74 → 1.41) and true ones are unchanged.
-
-**Compared with the paper it builds on** ([Obeso et al., 2025](https://arxiv.org/abs/2509.03531)):
-
-| | Paper | HalluStream |
-|---|---|---|
-| Paper's own benchmark: Qwen2.5-7B, its own training data and test sets, AUROC (LongFact / LongFact++) | linear probe 0.839 / 0.847 | **0.894 / 0.897**, +0.05 [95% intervals above +0.04] |
-| Same benchmark, the paper's best method (LoRA fine-tuning of the model) | 0.895 / 0.896 | **matched with the model's weights untouched** |
-| Made-up details caught at a 10% false-alarm rate (same benchmark) | 54% / 55% (LoRA: 66% / 68%) | **68% / 69%** |
-| On Qwen3-4B's own biographies (600 untouched people), AUROC | paper's recipe 0.776 | **0.854** (adapted to the model's own writing) |
-| Inside SHARS (182 people), false claims per biography | paper's recipe 4.70 | **2.96**, with 0.94 more true claims |
-
-The gains come from choices tested on validation data: reading a middle layer (layer 18 of 28) instead of the last ones, tuned training, and a cheap adaptation to the model's own answers. Details: [RESULTS.md](docs/RESULTS.md).
+A false claim is one the fact checker couldn't support from the person's Wikipedia page, which is FActScore's convention. The drop in false claims is −2.37 per person (95% interval −2.96 to −1.80), precision rises by 0.083 (0.038 to 0.132), and true claims don't change. Counting only specific details like names, places, dates and numbers, false ones drop 49%.
 
 ![False claims per biography vs detection time per fact](docs/img/shars_tradeoff.png)
 
-**The detector on its own** (AUROC: how often a made-up fact scores higher than a true one; 0.5 is chance):
+### Compared with the paper it builds on
 
-| | Probe | Model's own confidence |
+The probe comes from [Obeso et al. (2025)](https://arxiv.org/abs/2509.03531). Before building anything new I reproduced their published numbers, then changed two things: I read a middle layer instead of one near the end, and I tuned the training on validation data. Then I adapted the probe to the model's own writing.
+
+| | The paper | HalluStream |
 |---|---|---|
-| Qwen3-4B's own biographies, 600 untouched people | **0.854** | 0.690 |
-| Qwen3-4B's own writing about 496 other subjects (places, organizations, events, works, species) | **0.834** | 0.668 |
-| Long answers on many topics (144,676 held-out details) | **0.854** | 0.678 |
+| The paper's own benchmark (Qwen2.5-7B, its data and test sets), AUROC | 0.839 / 0.847 | **0.894 / 0.897** |
+| Made-up details caught at a 10% false-alarm rate, same benchmark | 54% / 55% | **68% / 69%** |
+| The paper's best method, which fine-tunes the model with LoRA | 0.895 / 0.896 | matched, with the model left unchanged |
+| Qwen3-4B's own biographies of 600 new people, AUROC | 0.776 | **0.854** |
+| False claims per biography inside SHARS | 4.70 | **2.96** |
 
-Example from the test (Adil Rami, French footballer, 2018 World Cup winner). Counting the names, places, dates and clubs the fact checker could check:
-- Qwen3-4B alone made up 10, including a birth date, a birthplace and five clubs he never played for (AS Monaco, Paris Saint-Germain, Tottenham, Nantes, Metz).
-- SHARS + HalluSE still kept 3 fake clubs.
-- SHARS + probe kept none. The probe flagged the fake birth date at 98% risk and the fake clubs at 60–95%.
+The two numbers per cell are the LongFact and LongFact++ test sets. On the model's own writing about 496 subjects that aren't people (places, events, organizations, works, species), HalluStream scores 0.834 against 0.668 for the model's own confidence.
 
-## How it was evaluated
-- Every test's settings, metrics and pass bars were committed in [EVAL_PROTOCOL.md](EVAL_PROTOCOL.md) before its outputs existed. Amendments are dated there with their reasons.
-- Settings were chosen on separate dev people, and each test set was scored once. Paired bootstrap intervals are over people.
-- Leak checks: none of the test people appear in the probe's training data or in the data used to adapt it.
-- Labels come from a fact checker validated against human labels (89% balanced accuracy on 11,049 facts) and re-checked blind by a second model (91% agreement).
+### An example
+
+Adil Rami is a French footballer who won the 2018 World Cup. Asked about him, Qwen3-4B made up 10 details, including a birth date, a birthplace and five clubs he never played for. SHARS with its own detector still kept three of the fake clubs. With HalluStream it kept none. The probe flagged the fake birth date at 98% risk and the fake clubs at 60–95%.
+
+## How it was tested
+
+Each test's settings and pass bars were written down in [EVAL_PROTOCOL.md](EVAL_PROTOCOL.md) before it was run. Choices were made on separate dev data, and each test set was scored once. None of the test people appear in the probe's training data.
+
+Labels come from a fact checker (Gemini with the subject's Wikipedia page). Against FActScore's human labels it gets 89% balanced accuracy on 11,049 facts, and Claude re-checking 150 claims blind agreed with it 91% of the time. The details are in [docs/RESULTS.md](docs/RESULTS.md).
 
 ## Limits
-- It needs the model's hidden states, so it works on open-weight models, and each model needs its own probe.
-- It holds back what the model would make up; it cannot add knowledge the model lacks. Retrieval does that when a source is available.
-- The SHARS test is on biographies (FActScore, the standard benchmark); the detector itself was also tested on 496 other subjects.
-- Our fact checker is stricter than SHARS's GPT-5 FActScore setup, so absolute precision is lower than in their paper. Every method shares the same fact checker.
+
+The probe needs the model's hidden states, so it works on open-weight models, and each model needs its own probe. It holds back what the model would make up but can't add facts the model doesn't know; retrieval does that when a source is available. The SHARS test is on biographies, the standard FActScore benchmark. My fact checker is stricter than the GPT-5 setup in the SHARS paper, so absolute precision is lower than theirs, but every method here is judged by the same checker.
 
 ## Repository
-- `src/hallustream/`: the library (`detector.py`, `probe.py`, `entities.py`, `cli.py`, `integrations/shars.py`, bundled `weights/`)
-- `src/hallustream/research/`: data, probe training, evaluation, the fact checker (`factcheck/`), SHARS analysis
-- `modal_jobs/`: GPU and batch jobs on Modal (feature extraction, training, biographies, judge batches, SHARS runs)
-- `configs/`: frozen choices, detector weights and fixed people lists
+
+- `src/hallustream/`: the library (detector, probe, entity finder, CLI, SHARS plug-in, bundled weights)
+- `src/hallustream/research/`: data, training, evaluation, the fact checker and the analysis scripts
+- `modal_jobs/`: the GPU and batch jobs, run on Modal
+- `configs/`: frozen settings and fixed lists of people
 - `notebooks/`: the Colab quickstart
-- `tests/`: unit tests; CI runs ruff, pyright and pytest on Python 3.10 and 3.12
+- `tests/`: unit tests, run in CI on Python 3.10 and 3.12
 
-Data sources and licenses: [docs/DATA.md](docs/DATA.md).
+Data sources and licenses are in [docs/DATA.md](docs/DATA.md).
 
-## Builds on
+## Credits
+
 - Obeso et al., [Real-Time Detection of Hallucinated Entities in Long-Form Generation](https://arxiv.org/abs/2509.03531) (2025): the probe method and training data
 - Li et al., [Building Reliable Long-Form Generation via Hallucination Rejection Sampling](https://arxiv.org/abs/2606.03628) (ICML 2026): SHARS
-- Min et al., [FActScore](https://arxiv.org/abs/2305.14251) (2023): people and human labels
+- Min et al., [FActScore](https://arxiv.org/abs/2305.14251) (2023): the people and human labels
 
 ## License
+
 Apache-2.0
