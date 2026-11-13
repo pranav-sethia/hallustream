@@ -1,0 +1,49 @@
+cff-version: 1.2.0
+message: "If you use HalluStream, please cite it and the work it builds on."
+title: "HalluStream: flagging the facts an open LLM is probably making up, from its hidden states"
+authors:
+  - family-names: Sethia
+    given-names: Pranav
+repository-code: "https://github.com/pranav-sethia/hallustream"
+url: "https://pranav-sethia.github.io/hallustream/"
+license: Apache-2.0
+version: 0.1.0
+date-released: 2026-10-26
+references:
+  - type: article
+    title: "Real-Time Detection of Hallucinated Entities in Long-Form Generation"
+    authors:
+      - family-names: Obeso
+        given-names: Oscar
+      - family-names: Arditi
+        given-names: Andy
+      - family-names: Ferrando
+        given-names: Javier
+      - family-names: Freeman
+        given-names: Joshua
+      - family-names: Holmes
+        given-names: Cameron
+      - family-names: Nanda
+        given-names: Neel
+    year: 2025
+    identifiers:
+      - type: other
+        value: "arXiv:2509.03531"
+  - type: conference-paper
+    title: "Building Reliable Long-Form Generation via Hallucination Rejection Sampling"
+    authors:
+      - family-names: Li
+        given-names: Lin
+      - family-names: Channing
+        given-names: Georgia
+      - family-names: Bhat
+        given-names: Suhaas M.
+      - family-names: Davis Jones
+        given-names: Gabriel
+      - family-names: Gal
+        given-names: Yarin
+    year: 2026
+    collection-title: "International Conference on Machine Learning (ICML)"
+    identifiers:
+      - type: other
+        value: "arXiv:2606.03628"

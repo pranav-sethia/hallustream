@@ -30,6 +30,8 @@ VARIANTS = {
     # head-to-head with the paper's Qwen2.5-7B probe: the sweep's best layer and the paper's layer
     "qwen25_L18": dict(run="main_qwen25", layers=[18]),
     "qwen25_L26": dict(run="main_qwen25", layers=[26]),
+    # second model (follow-ups B2): any layer of the Llama-3.1-8B main cache, chosen on validation
+    **{f"llama31_L{L}": dict(run="main_llama31", layers=[L]) for L in range(10, 31, 2)},
 }
 SEEDS = [0, 1, 2, 3, 4]
 # Paper recipe plus the knobs the sweep showed matter (regularization), on validation only.
@@ -203,7 +205,8 @@ if __name__ == "__main__":
         "hallustream-train", {"predict": "predict_split"}.get(a.action, a.action)
     )
     if a.action == "tune":
-        calls = {v: fn.spawn(v, GRID_QWEN25 if v.startswith("qwen25") else GRID, exclude)
+        paper_grid = ("qwen25", "llama31")  # the head-to-head grid (EVAL_PROTOCOL.md)
+        calls = {v: fn.spawn(v, GRID_QWEN25 if v.startswith(paper_grid) else GRID, exclude)
                  for v in a.variants}  # fmt: skip
     elif a.action == "fit":
         calls = {v: fn.spawn(v, a.config, SEEDS, exclude, git_commit()) for v in a.variants}

@@ -421,6 +421,33 @@ def prepare_judge(arms: dict[str, list[dict]], shared: bool = False,
     return sizes
 
 
+@app.function(image=research_image, volumes={CACHE_DIR: volume}, timeout=30 * 60)
+def prepare_second_judge(samples: dict[str, list[list[str]]], setting: str = "t1_minimal") -> dict:
+    """Second judge (EVAL_PROTOCOL.md, follow-ups A): sampled claims of each arm, labeled
+    against the person's whole article. samples: arm -> [[name, claim], ...] (shuffled; the
+    request shows neither the arm nor the first judge's label). Writes judge/shars_second/."""
+    from hallustream.research.factcheck import judge, wiki
+
+    volume.reload()
+    w = wiki.WikiDB(Path(DB))
+    by_person: dict[str, list[tuple[str, int, str]]] = {}
+    for arm, items in samples.items():
+        for i, (name, claim) in enumerate(items):
+            by_person.setdefault(name, []).append((arm, i, claim))
+    reqs, index = [], []
+    for name, items in sorted(by_person.items()):
+        reqs.append(judge.claim_request(name, name, w.passages(name), [c for *_, c in items],
+                                        setting))  # fmt: skip
+        index.append({"name": name, "items": [[a, i] for a, i, _ in items]})
+    w.close()
+    d = ROOT / "judge" / "shars_second"
+    d.mkdir(parents=True, exist_ok=True)
+    (d / "requests.jsonl").write_text("".join(json.dumps(x) + "\n" for x in reqs))
+    (d / "index.json").write_text(json.dumps(index))
+    volume.commit()
+    return {"requests": len(reqs), "claims": sum(len(x["items"]) for x in index)}
+
+
 @app.function(image=research_image, volumes={CACHE_DIR: volume}, timeout=10 * 60)
 def run_bios(run: str) -> list[dict]:
     """A finished run's biographies, as stored on the Volume."""
