@@ -39,12 +39,14 @@ GPU = dict(gpu="L4", memory=32768, volumes={CACHE_DIR: volume}, timeout=3 * 60 *
 
 
 FEATURE_LAYERS = [15, 18, 21, 24, 27, 30]  # candidate layers for the own-answer detector
+FRESH = ("fresh_people", "fresh_topics")  # the follow-up test set (EVAL_PROTOCOL.md, C)
 
 
 def _people(group: str) -> list[str]:
     """gate: FActScore's 500 people. dev / reserved: the two halves of configs/dev_people.json,
     copied to the Volume as dev/people.json. topics: configs/topic_subjects.json, copied as
-    topics/people.json (subjects other than people)."""
+    topics/people.json (subjects other than people). fresh_people / fresh_topics: the new test
+    set of the 2026-11-13 follow-ups (configs/fresh_test.json)."""
     from hallustream.research.factcheck.people import eval_people
 
     if group == "gate":
@@ -53,6 +55,9 @@ def _people(group: str) -> list[str]:
         return [
             p["name"] for p in json.loads((ROOT / "topics" / "people.json").read_text())["subjects"]
         ]
+    if group in FRESH:  # configs/fresh_test.json, copied as fresh/people.json
+        key = "people" if group == "fresh_people" else "subjects"
+        return [p["name"] for p in json.loads((ROOT / "fresh" / "people.json").read_text())[key]]
     return [p["name"] for p in json.loads((ROOT / "dev" / "people.json").read_text())[group]]
 
 
@@ -60,7 +65,7 @@ def _prompt(group: str) -> str:
     from hallustream.research.factcheck.people import BIO_PROMPT
     from hallustream.research.factcheck.topics import TOPIC_PROMPT
 
-    return TOPIC_PROMPT if group == "topics" else BIO_PROMPT
+    return TOPIC_PROMPT if group in ("topics", "fresh_topics") else BIO_PROMPT
 
 
 def _bio_dir(group: str, model: str) -> Path:
@@ -172,8 +177,8 @@ def prepare(db_path: str, what: str, setting: str = "", run: str = "") -> dict:
     w = wiki.WikiDB(Path(db_path))
     root = ROOT / "factscore" / "data"
     runs: dict[str, list[dict]] = {}
-    if what in ("gate", "dev", "reserved", "topics"):
-        kind = "topic_judge" if what == "topics" else "bio_judge"
+    if what in ("gate", "dev", "reserved", "topics", *FRESH):
+        kind = "topic_judge" if what in ("topics", "fresh_topics") else "bio_judge"
         for model in MODELS if what == "gate" else ["qwen3"]:
             bios = _bios(model, what)
             assert len({r["name"] for r in bios}) == len(bios), "duplicate people"
@@ -367,9 +372,12 @@ def score(model: str, commit: str, group: str = "gate", features: bool = False) 
 
 if __name__ == "__main__":
     p = argparse.ArgumentParser()
-    p.add_argument("action", choices=["fetch", "generate", "prepare", "score"])
+    p.add_argument("action", choices=["fetch", "generate", "prepare", "sample_titles", "score"])
     p.add_argument("args", nargs="*")
-    p.add_argument("--group", default="gate", help="gate (FActScore's 500), dev or reserved")
+    p.add_argument(
+        "--group", default="gate",
+        help="gate (FActScore's 500), dev, reserved, topics, fresh_people or fresh_topics",
+    )  # fmt: skip
     p.add_argument("--features", action="store_true", help="score: also store detector features")
     a = p.parse_args()
 
@@ -383,6 +391,10 @@ if __name__ == "__main__":
         print([c.get() for c in calls])
     elif a.action == "prepare":
         print(json.dumps(fn("prepare").remote(*a.args), indent=1))
+    elif a.action == "sample_titles":  # <db> <n> <seed> <out.json>
+        titles = fn("sample_titles").remote(a.args[0], int(a.args[1]), int(a.args[2]))
+        Path(a.args[3]).write_text(json.dumps(titles))
+        print(len(titles))
     elif a.action == "score":
         calls = [fn("score").spawn(m, git_commit(), a.group, a.features) for m in a.args]
         print([c.get() for c in calls])
