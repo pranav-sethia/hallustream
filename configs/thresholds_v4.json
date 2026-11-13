@@ -1,0 +1,10 @@
+{
+ "balanced": {
+  "threshold": 0.763768,
+  "pool_out_of_fold": "flags 10% of supported entities"
+ },
+ "strict": {
+  "threshold": 0.858314,
+  "pool_out_of_fold": "flags 5% of supported entities"
+ }
+}

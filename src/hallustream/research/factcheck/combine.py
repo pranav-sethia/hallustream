@@ -7,7 +7,12 @@ v1 is the frozen probe: mean of the 5 seeds, max over the entity's tokens. Candi
   C  A plus the hidden-state term of B
 Every model is a logistic regression with L2 penalties, fitted with L-BFGS.
 
+v4 (EVAL_PROTOCOL.md, follow-ups C) is chosen the same way on every judged own-answer text
+(dev, gate, reserved and other-topics scores dirs), with v3 as the reference.
+
 Run: uv run python -m hallustream.research.factcheck.combine choose|choose_v3 <dev_dir> <out.json>
+     uv run python -m hallustream.research.factcheck.combine choose_v4 <out.json> <v3.json>
+         dev=<dir> gate=<dir> reserved=<dir> topics=<dir>
      uv run python -m hallustream.research.factcheck.combine apply <detector.json> <scores_dir>
 """
 
@@ -139,7 +144,16 @@ def _inputs(cand: str, df: pd.DataFrame, hidden: np.ndarray, layer: int | None, 
     raise ValueError(cand)
 
 
-def _grid(cand: str):
+V4_GRID = {  # EVAL_PROTOCOL.md, follow-ups C
+    "B": [(L, 0.0, lh) for L in (18, 21, 24) for lh in (100.0, 300.0, 1000.0, 3000.0)],
+    "C": [(L, lx, lh) for L in (18, 21, 24) for lx in (0.001, 0.01)
+          for lh in (100.0, 300.0, 1000.0, 3000.0)],
+}  # fmt: skip
+
+
+def _grid(cand: str, grid: dict | None = None):
+    if grid is not None:
+        return grid[cand]
     if cand in ("A", "A_pos"):
         return [(None, lx, 0.0) for lx in LAMBDAS]
     if cand == "B":
@@ -157,11 +171,11 @@ def _predict(m: Model, cand, df, hidden, layer, position=False) -> np.ndarray:
     return m.predict(x, h, off)
 
 
-def _tune(cand, df, hidden, y, groups, folds: int = 4) -> tuple:
+def _tune(cand, df, hidden, y, groups, folds: int = 4, grid: dict | None = None) -> tuple:
     """Best (layer, lam_x, lam_h) by inner cross-validated AUROC."""
     best, best_auc = None, -1.0
     splits = list(GroupKFold(folds).split(df, y, groups))
-    for params in _grid(cand):
+    for params in _grid(cand, grid):
         pred = np.zeros(len(y))
         for tr, te in splits:
             m = _fit(cand, df.iloc[tr], hidden[tr], y[tr], *params)
@@ -172,13 +186,15 @@ def _tune(cand, df, hidden, y, groups, folds: int = 4) -> tuple:
     return best
 
 
-def out_of_fold(cand, df, hidden, y, groups, folds: int = 5) -> tuple[np.ndarray, list]:
+def out_of_fold(
+    cand, df, hidden, y, groups, folds: int = 5, grid: dict | None = None
+) -> tuple[np.ndarray, list]:
     """Out-of-fold scores, with hyperparameters tuned inside each training fold."""
     if cand.startswith("D_"):
         return v1_logit(df, cand[2:]), []
     pred, chosen = np.zeros(len(y)), []
     for tr, te in GroupKFold(folds).split(df, y, groups):
-        params = _tune(cand, df.iloc[tr], hidden[tr], y[tr], groups[tr])
+        params = _tune(cand, df.iloc[tr], hidden[tr], y[tr], groups[tr], grid=grid)
         m = _fit(cand, df.iloc[tr], hidden[tr], y[tr], *params)
         pred[te] = _predict(m, cand, df.iloc[te], hidden[te], params[0])
         chosen.append(params)
@@ -223,6 +239,56 @@ def choose(df: pd.DataFrame, hidden: np.ndarray, order=ORDER, reference: str | N
     return res
 
 
+def load_pool(dirs: dict[str, Path]) -> tuple[pd.DataFrame, np.ndarray]:
+    """Every judged own-answer text, one group per subject ("<source>:<name>")."""
+    parts = [load(d) for d in dirs.values()]
+    df = pd.concat(
+        [p[0].assign(source=k) for k, p in zip(dirs, parts, strict=True)], ignore_index=True
+    )
+    df["group"] = df["source"] + ":" + df["name"]
+    return df, np.concatenate([p[1] for p in parts])
+
+
+def choose_v4(df: pd.DataFrame, hidden: np.ndarray, v3: dict, order=("B", "C")) -> dict:
+    """v4 by the follow-ups rule: nested grouped CV over the pool; the gain over v3 is
+    measured on the rows v3 was not fitted on (everything but dev)."""
+    y = (df["kind"] == "not_supported").to_numpy().astype(int)
+    groups = df["group"].to_numpy()
+    ref = apply(v3, df, hidden)
+    held = (df["source"] != "dev").to_numpy()
+    res = {"subjects": int(len(set(groups))), "entities": int(len(y)),
+           "positives": int(y.sum()), "by_source": df["source"].value_counts().to_dict(),
+           "v3_auroc_not_dev": round(auroc(y[held], ref[held]), 4), "candidates": {}}  # fmt: skip
+    oof = {}
+    for cand in order:
+        pred, chosen = out_of_fold(cand, df, hidden, y, groups, grid=V4_GRID)
+        oof[cand] = pred
+        gain = paired_bootstrap(y[held], pred[held], ref[held], groups[held], n_boot=2000)
+        res["candidates"][cand] = {
+            "auroc_not_dev": round(auroc(y[held], pred[held]), 4),
+            "auroc_all": round(auroc(y, pred), 4),
+            "gain": {k: round(v, 4) for k, v in gain.items()},
+            "fold_params": [list(p) for p in chosen],
+        }
+        for src in sorted(set(df["source"]) - {"dev"}):
+            m = (df["source"] == src).to_numpy()
+            res["candidates"][cand][f"auroc_{src}"] = round(auroc(y[m], pred[m]), 4)
+            res[f"v3_auroc_{src}"] = round(auroc(y[m], ref[m]), 4)
+    winner = next(
+        (c for c in order
+         if res["candidates"][c]["gain"]["delta"] >= MIN_GAIN
+         and res["candidates"][c]["gain"]["ci_low"] > 0),
+        None,
+    )  # fmt: skip
+    res["chosen"] = winner or "v3"
+    if winner:
+        params = _tune(winner, df, hidden, y, groups, folds=5, grid=V4_GRID)
+        m = _fit(winner, df, hidden, y, *params)
+        res["detector"] = m.to_json(candidate=winner, layer=params[0])
+        res["oof"] = [round(float(v), 5) for v in oof[winner]]  # for calibration and presets
+    return res
+
+
 def apply(det: dict, df: pd.DataFrame, hidden: np.ndarray) -> np.ndarray:
     """Scores (logits) of a frozen detector from configs/detector_v2.json."""
     cand = det["candidate"]
@@ -245,6 +311,12 @@ if __name__ == "__main__":
         out = choose(*load(Path(sys.argv[2])), **args)
         Path(sys.argv[3]).write_text(json.dumps(out, indent=1))
         print(json.dumps({k: v for k, v in out.items() if k != "detector"}, indent=1))
+    elif sys.argv[1] == "choose_v4":
+        dirs = {k: Path(v) for k, v in (a.split("=", 1) for a in sys.argv[4:])}
+        v3 = json.loads(Path(sys.argv[3]).read_text())["detector"]
+        out = choose_v4(*load_pool(dirs), v3)
+        Path(sys.argv[2]).write_text(json.dumps(out, indent=1))
+        print(json.dumps({k: v for k, v in out.items() if k not in ("detector", "oof")}, indent=1))
     else:
         det = json.loads(Path(sys.argv[2]).read_text())["detector"]
         df, hidden = load(Path(sys.argv[3]))
