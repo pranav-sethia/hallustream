@@ -1664,7 +1664,7 @@ dev = [
 research = [
     { name = "anthropic" },
     { name = "datasets" },
-    { name = "gliner" },
+    { name = "gliner", marker = "python_full_version >= '3.11'" },
     { name = "google-genai" },
     { name = "huggingface-hub" },
     { name = "matplotlib", version = "3.10.9", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
@@ -1707,7 +1707,7 @@ dev = [
 research = [
     { name = "anthropic", specifier = ">=0.60" },
     { name = "datasets", specifier = ">=3.0" },
-    { name = "gliner", specifier = ">=0.2.24" },
+    { name = "gliner", marker = "python_full_version >= '3.11'", specifier = ">=0.2.24" },
     { name = "google-genai", specifier = ">=2.32.0" },
     { name = "huggingface-hub", specifier = ">=1.0" },
     { name = "matplotlib", specifier = ">=3.10.9" },
