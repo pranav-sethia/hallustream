@@ -23,6 +23,9 @@ CHUNK = 250
 N_NEG = 50
 QWEN35, QWEN3 = "Qwen/Qwen3.5-4B", "Qwen/Qwen3-4B-Instruct-2507"
 QWEN25 = "Qwen/Qwen2.5-7B-Instruct"  # the paper's released linear probe reads its layer 26
+LLAMA31 = "meta-llama/Llama-3.1-8B-Instruct"  # second-model head-to-head (follow-ups B2)
+SUBSET_SOURCE = {"qwen25": "Qwen2.5-7B-Instruct", "llama31": "Meta-Llama-3.1-8B-Instruct",
+                 "sweep_llama31": "Meta-Llama-3.1-8B-Instruct"}  # fmt: skip
 RUNS = {
     # layer sweep: 1,200 train + 800 val answers, several layers
     "sweep_qwen35": dict(model=QWEN35, layers=[15, 18, 19, 22, 23, 26, 27, 30], subset="sweep"),
@@ -38,20 +41,24 @@ RUNS = {
     "main2_qwen3": dict(model=QWEN3, layers=[21], subset="all"),
     # head-to-head with the paper: Qwen2.5-7B's own answers only, official splits
     "main_qwen25": dict(model=QWEN25, layers=list(range(10, 27, 2)), subset="qwen25"),
+    # second model: validation sweep over every second layer from 30% to 95% of depth (the
+    # paper's layer 30 included), then every answer (and HealthBench's test) at the chosen layers
+    "sweep_llama31": dict(model=LLAMA31, layers=list(range(10, 31, 2)), subset="sweep_llama31"),
+    "main_llama31": dict(model=LLAMA31, layers=None, subset="llama31"),
     # tiny end-to-end check
     "smoke": dict(model=QWEN35, layers=[26, 30], subset="smoke"),
 }
-N_SHARDS = {"sweep": 4, "all": 8, "qwen25": 4, "smoke": 1}
+N_SHARDS = {"sweep": 4, "all": 8, "qwen25": 4, "smoke": 1, "sweep_llama31": 4, "llama31": 8}
 
 
 def select(subset: str):
     """Deterministic (record, split) list for a subset."""
     import random
 
-    from hallustream.research.data import SOURCES, load_records, make_splits
+    from hallustream.research.data import SOURCES, load_healthbench, load_records, make_splits
 
     recs = load_records()
-    sources = ["Qwen2.5-7B-Instruct"] if subset == "qwen25" else SOURCES
+    sources = [SUBSET_SOURCE[subset]] if subset in SUBSET_SOURCE else SOURCES
     split_of = {}
     res = make_splits(recs, train_sources=sources)
     for name, ids in (("train", res.train), ("val", res.val), ("test", res.test)):
@@ -60,10 +67,12 @@ def select(subset: str):
               if r.answer_id in split_of and r.source in sources]  # fmt: skip
     if subset in ("all", "qwen25"):
         return chosen
+    if subset == "llama31":
+        return chosen + [(r, "test") for r in load_healthbench(sources[0])]
     rng = random.Random(0)
     train = [x for x in chosen if x[1] == "train"]
     val = [x for x in chosen if x[1] == "val"]
-    if subset == "sweep":
+    if subset in ("sweep", "sweep_llama31"):
         return rng.sample(train, 1200) + rng.sample(val, 800)
     return rng.sample(train, 10) + rng.sample(val, 10)
 

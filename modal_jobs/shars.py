@@ -14,6 +14,8 @@ Deploy:  uv run modal deploy modal_jobs/shars.py
 Dev:     uv run python -m modal_jobs.shars dev_props      # detector comparison on fixed bios
 Test:    uv run python -m modal_jobs.shars run <arm> <threshold> [--people N] [--shards K]
          uv run python -m modal_jobs.shars merge <arm><tag>       # after a sharded run
+Judge:   uv run python -m modal_jobs.shars prepare_judge <arm>=<bios.jsonl or run> ... [--shared]
+         then modal_jobs.judge_batch submit/collect shars_<arm> (or shars_shared_<arm>)
 """
 
 import argparse
@@ -25,6 +27,7 @@ from pathlib import Path
 import modal
 
 from modal_jobs.common import CACHE_DIR, PROJECT_ROOT, git_commit, volume, write_run_meta
+from modal_jobs.common import image as research_image
 
 app = modal.App("hallustream-shars")
 ROOT = Path(CACHE_DIR)
@@ -70,6 +73,9 @@ image = (
     .add_local_python_source("hallustream", "modal_jobs", ignore=["**/__pycache__/**", "**/*.pyc"])
 )
 GPU = dict(gpu="L4", memory=32768, volumes={CACHE_DIR: volume}, timeout=6 * 60 * 60)
+# The 2026-11-13 follow-up arms may also run on an A10G when no L4 is free; every row records
+# its GPU, and timing is only compared between runs on the same GPU type.
+RUN_GPU = GPU | {"gpu": ["L4", "A10G"]}
 
 
 def _shars():
@@ -277,7 +283,7 @@ def prepare_prop_judge(setting: str = "t1_minimal") -> dict:
     return {"people": len(reqs), "props": len(props)}
 
 
-@app.function(image=image, **GPU)
+@app.function(image=image, **RUN_GPU)
 def run(
     arm: str,
     threshold: float,
@@ -327,7 +333,8 @@ def run(
                      "aborted_on_error": aborted, "log": log.getvalue(),
                      "props": getattr(est, "n_props", None),
                      "unlocated": getattr(est, "n_unlocated", None),
-                     "gpu_gb": round(torch.cuda.memory_allocated() / 1e9, 2)})  # fmt: skip
+                     "gpu_gb": round(torch.cuda.memory_allocated() / 1e9, 2),
+                     "gpu": torch.cuda.get_device_name()})  # fmt: skip
         print(f"{name}: {rows[-1]['seconds']}s, {len(text)} chars, error={aborted}, "
               f"detect {rows[-1]['detect_seconds']}s, gpu {rows[-1]['gpu_gb']} GB")  # fmt: skip
     run_name = f"{arm}{tag}"
@@ -372,6 +379,55 @@ def merge(run_name: str, names: list[str]) -> dict:
     if missing:
         return {"run": run_name, "missing": len(missing), "first_missing": missing[:5]}
     return _write_run(run_name, [by_name[n] for n in names], meta["commit"], meta["config"])
+
+
+DB = (
+    "/cache/hf/hub/datasets--danielli2003--enwiki-20230401.db/snapshots/"
+    "f15343f7209459595eb338bf54ae80b7bfdb86d2/enwiki-20230401.db"
+)
+
+
+@app.function(image=research_image, volumes={CACHE_DIR: volume}, timeout=30 * 60)
+def prepare_judge(arms: dict[str, list[dict]], shared: bool = False,
+                  setting: str = "t1_minimal") -> dict:  # fmt: skip
+    """Biography-judge requests for SHARS arms, one per answered biography (an empty answer is
+    an abstention and is not judged). The judge reads the person's whole page if it has at
+    most 24 passages, otherwise the 24 that best match by BM25. The query is the arm's own text,
+    or, with shared, the person's name plus every arm's text for that person, so that each arm
+    is judged against the same passages (EVAL_PROTOCOL.md, follow-ups A)."""
+    from hallustream.research.factcheck import judge, wiki
+
+    volume.reload()
+    w = wiki.WikiDB(Path(DB))
+    union: dict[str, str] = {}
+    for rows in arms.values():
+        for r in rows:
+            union[r["name"]] = union.get(r["name"], r["name"]) + "\n" + r["bio"]
+    sizes = {}
+    for arm, rows in arms.items():
+        reqs = []
+        for r in rows:
+            if not r["bio"].strip():
+                continue
+            query = union[r["name"]] if shared else r["bio"]
+            ev = wiki.evidence(w.passages(r["name"]), query)
+            reqs.append(judge.bio_request(r["name"], r["name"], ev, r["bio"], setting))
+        d = ROOT / "judge" / (f"shars_shared_{arm}" if shared else f"shars_{arm}")
+        d.mkdir(parents=True, exist_ok=True)
+        (d / "requests.jsonl").write_text("".join(json.dumps(x) + "\n" for x in reqs))
+        sizes[d.name] = len(reqs)
+    w.close()  # an open file on the volume blocks the next call's volume.reload()
+    volume.commit()
+    return sizes
+
+
+@app.function(image=research_image, volumes={CACHE_DIR: volume}, timeout=10 * 60)
+def run_bios(run: str) -> list[dict]:
+    """A finished run's biographies, as stored on the Volume."""
+    volume.reload()
+    p = ROOT / "shars" / "runs" / run / "bios.jsonl"
+    return [{"name": r["name"], "bio": r["bio"]}
+            for r in map(json.loads, p.read_text().splitlines())]  # fmt: skip
 
 
 def _timed(obj, method, timer, key):
@@ -426,7 +482,15 @@ if __name__ == "__main__":
     p = argparse.ArgumentParser()
     p.add_argument(
         "action",
-        choices=["dev_props", "run", "merge", "prepare_prop_judge", "rescore_halluse", "parity"],
+        choices=[
+            "dev_props",
+            "run",
+            "merge",
+            "prepare_prop_judge",
+            "rescore_halluse",
+            "parity",
+            "prepare_judge",
+        ],  # fmt: skip
     )
     p.add_argument("args", nargs="*")
     p.add_argument("--people", type=int, default=0, help="first N people only")
@@ -438,6 +502,7 @@ if __name__ == "__main__":
     p.add_argument("--se-expected", action="store_true")
     p.add_argument("--entail-check", action="store_true")
     p.add_argument("--no-rewrite", action="store_true")
+    p.add_argument("--shared", action="store_true", help="prepare_judge: one evidence set each")
     a = p.parse_args()
     if a.action == "parity":  # args: the local dev props table, number of people
         import pandas as pd
@@ -474,6 +539,17 @@ if __name__ == "__main__":
     elif a.action == "rescore_halluse":
         fn = modal.Function.from_name("hallustream-shars", "rescore_halluse")
         print(fn.spawn(git_commit()).object_id)
+    elif a.action == "prepare_judge":  # args: <arm>=<local bios.jsonl or a run on the Volume>
+        arms = {}
+        for spec in a.args:
+            arm, src = spec.split("=", 1)
+            if Path(src).is_file():
+                rows = map(json.loads, Path(src).read_text().splitlines())
+                arms[arm] = [{"name": r["name"], "bio": r["bio"]} for r in rows]
+            else:
+                arms[arm] = modal.Function.from_name("hallustream-shars", "run_bios").remote(src)
+        fn = modal.Function.from_name("hallustream-shars", "prepare_judge")
+        print(fn.remote(arms, a.shared))
     elif a.action == "prepare_prop_judge":
         print(modal.Function.from_name("hallustream-shars", "prepare_prop_judge").remote())
     elif a.action == "dev_props":

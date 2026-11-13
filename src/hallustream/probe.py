@@ -41,7 +41,8 @@ class Probe:
         self.weight = torch.stack([p["weight"] for p in ps], dim=1).float()  # (d, n_seeds)
         self.bias = torch.stack([p["bias"].reshape(()) for p in ps]).float()  # (n_seeds,)
         det = json.loads(Path(v3_json).read_text())["detector"]
-        assert det["candidate"] == "B" and det["offset"]
+        if det.get("candidate") != "B" or not det.get("offset"):
+            raise ValueError(f"{v3_json}: expected a detector of type B with a v1 offset")
         self.layer = int(det["layer"])
         self.v3_w = np.asarray(det["w"], dtype=np.float32)
         self.v3_b = float(det["b"])

@@ -140,6 +140,13 @@ def _weights_dir(weights: str | Path) -> Path:
     return Path(weights)
 
 
+def _check_weights(d: Path, weights: str | Path) -> None:
+    if not (d / "model.json").exists():
+        raise FileNotFoundError(
+            f"{weights!r} is not a bundled probe {list(BUNDLED)} or a folder with model.json"
+        )
+
+
 class Detector:
     """A model, its probe, and the thresholds for flagging an entity."""
 
@@ -164,6 +171,7 @@ class Detector:
         from transformers import AutoModelForCausalLM, AutoTokenizer
 
         d = _weights_dir(weights)
+        _check_weights(d, weights)
         meta = json.loads((d / "model.json").read_text())
         if model is None:
             model = AutoModelForCausalLM.from_pretrained(meta["hf_id"], dtype=dtype)
@@ -184,9 +192,13 @@ class Detector:
         if threshold is None:
             return self.threshold
         if isinstance(threshold, str):
-            if threshold not in self.thresholds:
-                raise ValueError(f"unknown threshold {threshold!r}; have {list(self.thresholds)}")
+            presets = [k for k, v in self.thresholds.items() if isinstance(v, dict)]
+            if threshold not in presets:
+                hint = f"use one of {presets}" if presets else "no presets loaded; give a number"
+                raise ValueError(f"unknown threshold {threshold!r}: {hint}")
             return float(self.thresholds[threshold]["threshold"])
+        if not 0 <= float(threshold) <= 1:
+            raise ValueError(f"threshold {threshold} is not a risk between 0 and 1")
         return float(threshold)
 
     def _messages(self, prompt: str | None, messages: list[dict] | None) -> list[dict]:
@@ -257,6 +269,7 @@ class Detector:
         cache = DynamicCache()
         out = lm(ids, past_key_values=cache, use_cache=True)
         gen: list[int] = []
+        dec = [0]  # dec[i]: length of the text decoded from the first i tokens
         hidden: list[np.ndarray] = []
         probs: list[np.ndarray] = []
         text, scored, seen = "", set(), set()  # sentences and entity spans already scored
@@ -276,16 +289,17 @@ class Detector:
             probs.append(self.probe.token_probs(h[None])[0])
             ended = text.rstrip()[-1:] in SENTENCE_END or "\n" in text[-1:]
             new = tok.decode(gen, skip_special_tokens=True)
+            dec.append(len(new))
             delta = new[len(text) :] if new.startswith(text) else new
             text = new
             found = []
             if ended:
-                found = self._finished(text, gen, hidden, probs, scored, seen, th, False)
+                found = self._finished(text, gen, dec, hidden, probs, scored, seen, th, False)
             yield Event(delta, found, checked=max((hi for _, hi in scored), default=0))
-        last = self._finished(text, gen, hidden, probs, scored, seen, th, True)
+        last = self._finished(text, gen, dec, hidden, probs, scored, seen, th, True)
         yield Event("", last, True, len(text), gen)
 
-    def _finished(self, text, gen, hidden, probs, scored, seen, th, final) -> list[Entity]:
+    def _finished(self, text, gen, dec, hidden, probs, scored, seen, th, final) -> list[Entity]:
         """Entities of sentences that are complete and not scored yet (each span once, even if
         sentence boundaries shift as more text arrives)."""
         sents = sentences(text)
@@ -293,8 +307,6 @@ class Detector:
         if not todo or not gen:
             return []
         scored.update(todo)
-        dec = [len(self.tokenizer.decode(gen[:i], skip_special_tokens=True))
-               for i in range(len(gen) + 1)]  # fmt: skip
         n = len(gen)
         fw = Forward(gen, list(zip(dec[:-1], dec[1:], strict=True)), 0, np.stack(probs),
                      np.stack(hidden), np.full(n, np.nan), np.full(n, np.nan))  # fmt: skip

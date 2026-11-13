@@ -28,6 +28,20 @@ def is_refusal(sentence: str) -> bool:
     return any(p in low for p in REFUSAL)
 
 
+def end_of_turn(tokenizer) -> str:
+    """What the chat template writes after an assistant answer (Qwen: END_OF_TURN)."""
+    eot = getattr(tokenizer, "_hallustream_eot", None)  # cached: get_vocab() is slow
+    if eot is None:
+        if "<|im_end|>" in tokenizer.get_vocab():
+            eot = END_OF_TURN
+        else:
+            msgs = [{"role": "user", "content": "q"}, {"role": "assistant", "content": "ANSWER"}]
+            full = tokenizer.apply_chat_template(msgs, tokenize=False)
+            eot = full[full.rindex("ANSWER") + len("ANSWER") :]
+        tokenizer._hallustream_eot = eot
+    return eot
+
+
 def build_text(tokenizer, messages: list[dict], answer: str, **chat_kwargs) -> tuple[str, int]:
     """Prompt exactly as the model sees it when it starts answering, then the answer.
 
@@ -36,7 +50,7 @@ def build_text(tokenizer, messages: list[dict], answer: str, **chat_kwargs) -> t
     prefix = tokenizer.apply_chat_template(
         messages, add_generation_prompt=True, tokenize=False, **chat_kwargs
     )
-    return prefix + answer + END_OF_TURN, len(prefix)
+    return prefix + answer + end_of_turn(tokenizer), len(prefix)
 
 
 def token_baselines(logits: torch.Tensor, input_ids: torch.Tensor) -> tuple[np.ndarray, ...]:

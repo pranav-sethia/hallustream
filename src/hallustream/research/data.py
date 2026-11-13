@@ -32,6 +32,9 @@ SOURCES = [
     "Llama-3.3-70B-Instruct",
 ]
 SPLITS = ["train", "validation", "test"]
+# The paper's HealthBench annotations (test only; answers by Llama-3.1-8B and -3.3-70B), an extra
+# out-of-domain test set for the second-model head-to-head (EVAL_PROTOCOL.md, follow-ups B2).
+HEALTHBENCH = ("obalcells/healthbench-annotations", "9ef1023c42a268a8aa7ebbd854d47e3f2169d1da")
 
 
 @dataclass
@@ -82,6 +85,26 @@ def load_records(sources: list[str] = SOURCES) -> list[Record]:
                         )
                     )
     return records
+
+
+def load_healthbench(source: str) -> list[Record]:
+    from datasets import load_dataset
+
+    repo, rev = HEALTHBENCH
+    rows = load_dataset(repo, source, split="test", revision=rev)
+    return [
+        Record(
+            answer_id=f"healthbench/{source}/test/{i}",
+            dataset="healthbench",
+            source=source,
+            orig_split="test",
+            subset=row["subset"],
+            messages=row["conversation"][:-1],
+            answer=row["conversation"][-1]["content"],
+            annotations=row["annotations"],
+        )
+        for i, row in enumerate(rows)
+    ]
 
 
 @dataclass

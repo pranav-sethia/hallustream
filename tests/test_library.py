@@ -58,9 +58,11 @@ def test_score_is_the_probe_math(tiny):
 def test_thresholds_by_name_or_number(tiny):
     every = [(e.start, e.end) for e in tiny.score("q", ANSWER).entities]
     assert [(e.start, e.end) for e in tiny.score("q", ANSWER, threshold=0.0).flagged] == every
-    assert tiny.score("q", ANSWER, threshold=1.01).flagged == []
+    assert tiny.score("q", ANSWER, threshold=1.0).flagged == []
     with pytest.raises(ValueError, match="unknown threshold"):
         tiny.score("q", ANSWER, threshold="nope")
+    with pytest.raises(ValueError, match="between 0 and 1"):
+        tiny.score("q", ANSWER, threshold=1.5)
 
 
 def test_highlight_merges_overlaps_and_escapes_html():
@@ -129,6 +131,11 @@ def test_only_specific_entities_are_kept():
     assert not entities.is_specific("region", "location") and not entities.is_specific(
         "book", "title of work"
     )
+    # a capital that is only there because the sentence starts, and a lone title, don't count
+    assert not entities.is_specific("The death", "event", sentence_start=True)
+    assert entities.is_specific("Paris", "location", sentence_start=True)
+    assert entities.is_specific("The Beatles", "organization", sentence_start=True)
+    assert not entities.is_specific("Mr.", "person")
 
 
 def _run(capsys, *args, detector, stdin=None, monkeypatch=None):
@@ -203,6 +210,23 @@ def test_cli_rejects_an_unknown_threshold_before_loading(tiny, capsys):
     with pytest.raises(SystemExit):
         cli.main(["Hi.", "--threshold", "nope"], detector=tiny)
     assert "unknown threshold" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize(
+    "args, message",
+    [
+        (["Hi.", "--threshold", "1.5"], "between 0 and 1"),
+        (["Hi.", "--device", "tpu"], "invalid choice"),
+        (["score", "q", "/no/such/file"], "no such file"),
+        (["Hi.", "--weights", "/no/such/folder"], "not a bundled name"),
+    ],
+)
+def test_cli_reports_bad_arguments_in_one_line(tiny, capsys, args, message):
+    from hallustream import cli
+
+    with pytest.raises(SystemExit):
+        cli.main(args, detector=tiny if "--weights" not in args else None)
+    assert message in capsys.readouterr().err
 
 
 def test_shars_estimator_scores_each_proposition(tiny):

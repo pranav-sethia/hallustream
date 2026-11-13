@@ -16,7 +16,7 @@ import sys
 from pathlib import Path
 
 from hallustream import __version__
-from hallustream.detector import Detector, Entity, Report, _weights_dir, highlight
+from hallustream.detector import BUNDLED, Detector, Entity, Report, _weights_dir, highlight
 
 COMMANDS = ("ask", "chat", "score", "batch")
 DIM, RESET = "\033[2m", "\033[0m"
@@ -27,11 +27,14 @@ def _parser() -> argparse.ArgumentParser:
     shared.add_argument("--threshold", default="balanced",
                         help="balanced (default), strict, or a risk between 0 and 1")  # fmt: skip
     shared.add_argument("--weights", default="qwen3-4b", help="bundled name or weights folder")
-    shared.add_argument("--device", help="cuda, mps or cpu (default: the fastest available)")
+    shared.add_argument("--device", choices=["cuda", "mps", "cpu"],
+                        help="default: the fastest available")  # fmt: skip
     p = argparse.ArgumentParser(
         prog="hallustream",
         description="Answers from Qwen3-4B with the details it is probably making up highlighted."
         " Without a command, the arguments go to 'ask'.",
+        epilog='Example: hallustream "Tell me about Lake Tahoe."  (see "hallustream ask -h" for'
+        " --threshold, --device, --json and the other options)",
     )
     p.add_argument("--version", action="version", version=f"hallustream {__version__}")
     sub = p.add_subparsers(dest="command", required=True)
@@ -46,7 +49,7 @@ def _parser() -> argparse.ArgumentParser:
                        'written), or one prompt per line; - for stdin')  # fmt: skip
     batch.add_argument("-o", "--output", default="-", help="JSONL results (default: stdout)")
     for s in (ask, chat, batch):
-        s.add_argument("--max-new-tokens", type=int, default=400)
+        s.add_argument("--max-new-tokens", type=int, default=512)
     for s in (ask, chat, score):
         s.add_argument("--no-color", action="store_true")
     for s in (ask, score):
@@ -55,12 +58,21 @@ def _parser() -> argparse.ArgumentParser:
 
 
 def _load(weights: str, device: str | None) -> Detector:
+    import logging as pylogging
     import warnings
 
+    import torch
     from huggingface_hub import try_to_load_from_cache
     from transformers.utils import logging
 
-    warnings.simplefilter("ignore")  # library warnings (GLiNER, transformers) are not for readers
+    if device == "cuda" and not torch.cuda.is_available():
+        sys.exit("hallustream: --device cuda, but no CUDA GPU is available")
+    if device == "mps" and not torch.backends.mps.is_available():
+        sys.exit("hallustream: --device mps, but this machine has no Apple GPU")
+    # This is a command for reading answers: library warnings (GLiNER, transformers, torch's
+    # macOS note about redirects) are turned off for the whole process.
+    warnings.simplefilter("ignore")
+    pylogging.getLogger("torch.distributed.elastic.multiprocessing.redirects").setLevel("ERROR")
 
     hf_id = json.loads((_weights_dir(weights) / "model.json").read_text())["hf_id"]
     if isinstance(try_to_load_from_cache(hf_id, "model.safetensors.index.json"), str):
@@ -151,7 +163,11 @@ def _batch(det: Detector, a, threshold, color: bool) -> int:
     lines = [x for x in raw.splitlines() if x.strip()]
     out = sys.stdout if a.output == "-" else open(a.output, "w")
     for i, line in enumerate(lines, 1):
-        item: dict = json.loads(line) if line.lstrip().startswith("{") else {"prompt": line.strip()}
+        try:
+            item: dict = (json.loads(line) if line.lstrip().startswith("{")
+                          else {"prompt": line.strip()})  # fmt: skip
+        except json.JSONDecodeError as e:
+            sys.exit(f"{a.input} line {i}: not valid JSON ({e.msg})")
         prompt, msgs = item.get("prompt"), item.get("messages")
         if prompt is None and msgs is None:
             sys.exit(f'{a.input} line {i}: needs a "prompt" or "messages"')
@@ -174,8 +190,12 @@ def main(argv: list[str] | None = None, detector: Detector | None = None) -> int
         argv.insert(0, "ask")
     p = _parser()
     a = p.parse_args(argv)
+    if detector is None and not (_weights_dir(a.weights) / "model.json").exists():
+        p.error(f"--weights {a.weights}: not a bundled name {list(BUNDLED)} or a weights folder")
     try:
         threshold: str | float = float(a.threshold)
+        if not 0 <= threshold <= 1:
+            p.error(f"--threshold {a.threshold}: a risk must be between 0 and 1")
     except ValueError:
         threshold = a.threshold
         file = _weights_dir(a.weights) / "thresholds.json"
@@ -183,10 +203,17 @@ def main(argv: list[str] | None = None, detector: Detector | None = None) -> int
         if not isinstance(presets.get(threshold), dict):
             names = [k for k, v in presets.items() if isinstance(v, dict)]
             p.error(f"unknown threshold {threshold!r}; use one of {names} or a number")
-    det = detector or _load(a.weights, a.device)
+    path = getattr(a, "file", None) or getattr(a, "input", None)
+    if path and path != "-" and not Path(path).is_file():
+        p.error(f"{path}: no such file")
     color = not getattr(a, "no_color", True) and sys.stdout.isatty()
     run = {"ask": _ask, "chat": _chat, "score": _score, "batch": _batch}[a.command]
-    return run(det, a, threshold, color)
+    try:
+        det = detector or _load(a.weights, a.device)
+        return run(det, a, threshold, color)
+    except KeyboardInterrupt:
+        print(file=sys.stderr)
+        return 130
 
 
 if __name__ == "__main__":

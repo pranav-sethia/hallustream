@@ -4,12 +4,23 @@ version = "0.1.0"
 description = "Flag the facts an open LLM is probably making up, from its hidden states, as it writes."
 readme = "README.md"
 license = "Apache-2.0"
+license-files = ["LICENSE"]
 authors = [{ name = "Pranav Sethia", email = "pranav.sethia5@gmail.com" }]
 requires-python = ">=3.10"
 keywords = ["llm", "hallucination", "probe", "interpretability", "qwen3", "streaming"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
 dependencies = [
     "torch>=2.4",
-    "transformers>=4.51",
+    "transformers>=4.56",
     "safetensors>=0.4",
     "numpy>=1.26",
     "pysbd>=0.3.4",
@@ -19,7 +30,11 @@ dependencies = [
 hallustream = "hallustream.cli:main"
 
 [project.optional-dependencies]
-entities = ["gliner>=0.2.24; python_version >= '3.11'"]
+# protobuf: GLiNER's DeBERTa tokenizer can't be converted without it under transformers 5
+entities = ["gliner>=0.2.24", "protobuf>=4"]
+
+[dependency-groups]
+# Training, evaluation and fact checking (src/hallustream/research, modal_jobs); not published.
 research = [
     "torch>=2.8",
     "transformers>=5.20,<6",
@@ -32,13 +47,11 @@ research = [
     "anthropic>=0.60",
     "matplotlib>=3.10.9",
     "google-genai>=2.32.0",
-    "gliner>=0.2.24; python_version >= '3.11'",
+    "gliner>=0.2.24",
     "pysbd>=0.3.4",
     "sentencepiece>=0.2.2",
     "protobuf>=7.36.2",
 ]
-
-[dependency-groups]
 dev = [
     "pytest>=8",
     "hypothesis>=6.100",
@@ -51,6 +64,10 @@ dev = [
 [project.urls]
 Homepage = "https://pranav-sethia.github.io/hallustream/"
 Repository = "https://github.com/pranav-sethia/hallustream"
+
+[tool.uv.build-backend]
+# The research code (training, evaluation, fact checking) stays in the repo, not in the wheel.
+wheel-exclude = ["hallustream/research/**"]
 
 [build-system]
 requires = ["uv_build>=0.10.7,<0.11.0"]

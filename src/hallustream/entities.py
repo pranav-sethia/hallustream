@@ -1,6 +1,6 @@
 """Find the entities to score: names, places, dates, numbers, titles. Uses GLiNER, chosen on dev
 biographies for finding the most false entities; install with
-`pip install "hallustream[entities]"` (Python 3.11+), or pass your own spans."""
+`pip install "hallustream[entities]"`, or pass your own spans."""
 
 from __future__ import annotations
 
@@ -18,6 +18,12 @@ GLINER_MODEL = "urchade/gliner_medium-v2.1"  # Apache-2.0
 # kept 96-99% of the false entities found (research/entity_rule.py). Jobs and roles ("actress")
 # stay: in biographies they are claims, and the probe ranks them well (0.92 AUROC).
 ROLES = {"occupation"}
+TITLES = {"mr", "mrs", "ms", "miss", "dr", "prof", "sir", "dame", "st"}  # alone, not a detail
+# Words that are capitalized only because they start a sentence ("The death of ...")
+STARTERS = {
+    "the", "a", "an", "his", "her", "their", "its", "this", "that", "these", "those",
+    "in", "on", "at", "after", "before", "during", "by", "for", "with", "from", "as",
+}  # fmt: skip
 
 
 def available() -> bool:
@@ -28,14 +34,24 @@ def available() -> bool:
     return True
 
 
-def is_specific(text: str, label: str) -> bool:
-    """A name, place, title, date or number (it has a capital letter or a digit), or a role."""
-    return label in ROLES or any(c.isupper() or c.isdigit() for c in text)
+def is_specific(text: str, label: str, sentence_start: bool = False) -> bool:
+    """A name, place, title, date or number (it has a capital letter or a digit), or a role.
+
+    At the start of a sentence, a capitalized function word ("The death of ...") doesn't
+    count, and a lone title ("Mr.") is skipped (EVAL_PROTOCOL.md, follow-ups C)."""
+    words = text.split()
+    if not words or text.strip().rstrip(".").lower() in TITLES:
+        return False
+    if label in ROLES:
+        return True
+    if sentence_start and words[0].lower() in STARTERS:
+        text = " ".join(words[1:])
+    return any(c.isupper() or c.isdigit() for c in text)
 
 
 @lru_cache(maxsize=1)
 def _gliner(device: str = "cpu"):
-    from gliner import GLiNER  # pyright: ignore[reportMissingImports]  (Python 3.11+ only)
+    from gliner import GLiNER  # pyright: ignore[reportMissingImports]
 
     return GLiNER.from_pretrained(GLINER_MODEL).to(device)
 
@@ -45,7 +61,7 @@ def find(text: str, sents: list[tuple[int, int]], threshold: float = 0.4,
     """(start, end) character spans of specific entities, found sentence by sentence."""
     if not available():
         raise ImportError(
-            "finding entities needs GLiNER: pip install 'hallustream[entities]' (Python 3.11+),"
+            "finding entities needs GLiNER: pip install 'hallustream[entities]',"
             " or pass spans=[(start, end), ...] yourself"
         )
     model = _gliner(device)
@@ -53,6 +69,7 @@ def find(text: str, sents: list[tuple[int, int]], threshold: float = 0.4,
     for lo, hi in sents:
         for e in model.predict_entities(text[lo:hi], GLINER_LABELS, threshold=threshold):
             a, b = lo + e["start"], lo + e["end"]
-            if is_specific(text[a:b], e["label"]):
+            start = not text[lo:a].strip()  # nothing but spaces before it in the sentence
+            if is_specific(text[a:b], e["label"], start):
                 out.append((a, b))
     return out

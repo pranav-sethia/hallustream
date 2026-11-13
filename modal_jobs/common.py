@@ -13,7 +13,7 @@ CACHE_DIR = "/cache"  # Modal Volume mount point (features, results, HF cache)
 
 base_image = (
     modal.Image.debian_slim(python_version="3.12")
-    .uv_sync(str(PROJECT_ROOT), extras=["research"], frozen=True)
+    .uv_sync(str(PROJECT_ROOT), groups=["research"], frozen=True)
     .env({"HF_HOME": f"{CACHE_DIR}/hf", "TOKENIZERS_PARALLELISM": "false"})
 )
 
