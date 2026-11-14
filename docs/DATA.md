@@ -6,10 +6,11 @@
 |---|---|---|
 | [`obalcells/longfact-annotations`](https://huggingface.co/datasets/obalcells/longfact-annotations) | train / val / test | The test split is the paper's "LongFact" set |
 | [`obalcells/longfact-augmented-annotations`](https://huggingface.co/datasets/obalcells/longfact-augmented-annotations) | train / val / test | The test split is the paper's "LongFact++" set |
+| [`obalcells/healthbench-annotations`](https://huggingface.co/datasets/obalcells/healthbench-annotations) | test only | Llama-3.1-8B's answers to HealthBench's medical questions; an extra test set for the Llama head-to-head |
 
-Both come from Obeso et al., *Real-Time Detection of Hallucinated Entities in Long-Form Generation* ([arXiv 2509.03531](https://arxiv.org/abs/2509.03531)). Their entity labels were made by Claude 4 Sonnet with web search, which agreed with human labels 84% of the time in the paper's check. The datasets have no license tag, so this project never re-hosts them; the code downloads them from the source at a pinned revision.
+Both come from Obeso et al., *Real-Time Detection of Hallucinated Entities in Long-Form Generation* ([arXiv 2509.03531](https://arxiv.org/abs/2509.03531)). Their entity labels were made by Claude 4 Sonnet with web search, which agreed with human labels 84% of the time in the paper's check of 50 spans. The datasets have no license tag, so this project never re-hosts them; the code downloads them from the source at a pinned revision.
 
-Training uses the official train splits of both datasets across all five source models. After removing any answer whose question also appears in a test set, that leaves 20,056 answers for training and 2,395 for validation (7.7% removed). Exact matching can miss reworded questions, so `research/leak_check.py` compares every test question with every train and validation question by TF-IDF similarity. Five of the 1,986 test questions had a match at 0.9 or above. Reading them, all five ask about the same subject, so their 7 train and validation answers are dropped before training. Pairs below 0.9 are mostly sibling topics that share a prompt template.
+Training uses the official train splits of both datasets across all five source models. After removing any answer whose question also appears in a test set, that leaves 20,056 answers for training and 2,395 for validation (7.7% removed), and 20,049 for training once the 7 reworded copies below are dropped. Exact matching can miss reworded questions, so `research/leak_check.py` compares every test question with every train and validation question by TF-IDF similarity. Five of the 1,986 test questions had a match at 0.9 or above. Reading them, all five ask about the same subject, so their 7 train and validation answers are dropped before training. Pairs below 0.9 are mostly sibling topics that share a prompt template.
 
 The test set is the official test splits of both datasets, all five sources: 9,426 answers. The `obalcells/hallucination-heads*` datasets aren't used, because they re-export the same answers and mixing them in would leak test data into training.
 
@@ -20,13 +21,14 @@ These are the only large public datasets with entity-level hallucination labels 
 | Use | Model | License |
 |---|---|---|
 | The shipped detector | `Qwen/Qwen3-4B-Instruct-2507` | Apache-2.0 |
-| Head-to-head with the paper, and its reproduction | `Qwen/Qwen2.5-7B-Instruct` + `obalcells/hallucination-probes` (`qwen2_5_7b_linear`) | Apache-2.0 |
+| Head-to-head with the paper, and its reproduction | `Qwen/Qwen2.5-7B-Instruct` + the paper's released probes `obalcells/hallucination-probes` (`qwen2_5_7b_linear`, `qwen2_5_7b_lora_lambda_kl_0_05`) | Apache-2.0 |
+| Head-to-head on a second model | `meta-llama/Llama-3.1-8B-Instruct` + the paper's released `llama3_1_8b_linear` and `llama3_1_8b_lora_lambda_lm_0_01` | Llama 3.1 Community License (gated) |
 | Finding details in the library | `urchade/gliner_medium-v2.1` | Apache-2.0 |
 | Tests | `trl-internal-testing/tiny-Qwen3ForCausalLM` | – |
 
 ## Data written for this project
 
-The people come from FActScore (Min et al., 2023), including SHARS's 182 test people, plus random Wikipedia people sampled across popularity levels (`configs/dev_people.json`). The other subjects are 500 random Wikipedia pages that aren't people (`configs/topic_subjects.json`). Qwen3-4B-Instruct-2507 wrote the texts with greedy decoding; the SHARS runs use SHARS's own decoding.
+The people come from FActScore (Min et al., 2023), including SHARS's 182 test people, plus random Wikipedia people sampled across popularity levels (`configs/dev_people.json`). The other subjects are 500 random Wikipedia pages that aren't people (`configs/topic_subjects.json`). A fresh test set of 600 more people and 500 more subjects, sampled the same way from new random pages and sharing no one and nothing with the earlier sets, is in `configs/fresh_test.json`. Qwen3-4B-Instruct-2507 wrote the texts with greedy decoding; the SHARS runs use SHARS's own decoding.
 
 Every detail is checked by Gemini 3.1 Flash-Lite through the Batch API against the subject's Wikipedia page, using FActScore's enwiki-20230401 dump and the 24 best-matching passages by BM25. Only labels and scores are published, never page text, since Wikipedia text is CC BY-SA.
 
@@ -34,5 +36,6 @@ Every detail is checked by Gemini 3.1 Flash-Lite through the Batch API against t
 
 - `obalcells/longfact-annotations` @ `949fd2f71b3efd403350e38539340d9d9ceefc9d`
 - `obalcells/longfact-augmented-annotations` @ `63174c7ea9111adb6f4c4ea61895af3e3740d997`
+- `obalcells/healthbench-annotations` @ `9ef1023c42a268a8aa7ebbd854d47e3f2169d1da`
 
 These are set in `src/hallustream/research/data.py`. Every run also records its git commit in `run_meta.json`.

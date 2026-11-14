@@ -12,9 +12,11 @@ notes/
 # Data, activations, run outputs (re-created by scripts; never committed)
 data/
 runs/
-results/
+results/*
+!results/public/
 *.npy
 *.parquet
+!results/public/*.parquet
 *.safetensors
 # ...except the bundled probe (about 10 KB per seed)
 !src/hallustream/weights/**/*.safetensors
