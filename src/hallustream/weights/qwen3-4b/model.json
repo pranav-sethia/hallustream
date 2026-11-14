@@ -1,6 +1,8 @@
 {
  "hf_id": "Qwen/Qwen3-4B-Instruct-2507",
  "layer": 21,
- "chat_template_kwargs": {"enable_thinking": false},
- "probe": "linear probe on the output of decoder layer 21, 5 seeds (Obeso et al. 2025 recipe); v3 adds a linear term on the entity's mean hidden state, fitted on 432 people's own biographies (docs/RESULTS.md)"
+ "chat_template_kwargs": {
+  "enable_thinking": false
+ },
+ "probe": "linear probe on the output of decoder layer 21, 5 seeds (Obeso et al. 2025 recipe), plus a linear term on the entity's mean hidden state fitted on Qwen3-4B's own texts about 1,809 people and other subjects (detector v4, docs/RESULTS.md)"
 }

@@ -6,9 +6,10 @@ Inputs (all in results/, not committed):
                        (Modal run of the shipped library at d4e187c)
   site/showcase.json   the recorded stream() run of the Kiara Advani example, with timing
   site/topics_judge.jsonl  the fact checker's labels for the topic texts
-  shars/test182/       the SHARS test on all 182 people (arms, judge labels)
-  paper_h2h.json       the head-to-head with the paper's Qwen2.5-7B probe
-  reserved/, topics/scores/  held-out detector scores (threshold curves, calibration)
+  shars/test182/       the SHARS test on all 182 people (arms, judge labels; spotlight texts)
+  shars/followup.json  every SHARS setting with shared-evidence labels (follow-ups A)
+  paper_h2h.json, paper_h2h_llama31.json  the head-to-heads with the paper's released probes
+  fresh/people, fresh/topics  the fresh test set's scores (threshold curves, calibration)
 
 Run: uv run python -m hallustream.research.site results docs/index.html
 """
@@ -28,9 +29,14 @@ from hallustream.research.factcheck import combine, judge
 from hallustream.research.factcheck.validate import read_results
 from hallustream.text import PRONOUNS, sentences
 
-V3 = Path(__file__).parents[3] / "configs" / "detector_v3.json"
-BALANCED, STRICT = 0.737832, 0.823369
-MS_PER_TOKEN = 62.5  # measured on an L4 with the probe and GLiNER (docs/LIBRARY.md)
+SHIPPED = Path(__file__).parents[3] / "configs" / "detector_v4.json"
+PRESETS = json.loads(
+    (Path(__file__).parents[1] / "weights" / "qwen3-4b" / "thresholds.json").read_text()
+)
+BALANCED, STRICT = PRESETS["balanced"]["threshold"], PRESETS["strict"]["threshold"]
+# The replays (hero, reader) were recorded with detector v3 at its balanced threshold.
+V3_BALANCED = 0.737832
+MS_PER_TOKEN = 62.5  # the replays: measured on an L4 with the probe and GLiNER at recording
 
 # Kiara Advani checked by hand against her Wikipedia article (2026-10-26).
 KIARA = {
@@ -64,12 +70,14 @@ SPOTLIGHT_TRUTH = (
 SPOTLIGHT_LEAD = (
     "Qwen3-4B half-knows him: it gets a French defender right, then invents a birth date, a "
     "birthplace and five clubs he never played for. SHARS with its own detector still keeps three "
-    "of the fake clubs. With the probe, nothing made up is left."
+    "of the fake clubs. With HalluStream at its more cautious setting ({answered} of people "
+    "answered; the previous detector version, v3), nothing made up is left."
 )
 # From the SHARS log of this run: the flagged propositions and their risks.
 SPOTLIGHT_WIN = (
     "The probe flagged the fake birth date (98% risk), birthplace (93%) and clubs AS Monaco, PSG, "
-    "Arsenal and Tottenham (60–95%), and SHARS rewrote around each one."
+    "Arsenal and Tottenham (60–95%), and SHARS rewrote around each one. It also flagged Lille, "
+    "a club he really played for (89%)."
 )
 # Plain answers shown with the library's flags: test people with the most errors caught and no
 # false alarms (pick_reader in the site notes), avoiding sensitive topics.
@@ -156,7 +164,7 @@ def _example(item: dict, verdicts: dict, cut: str, times: list[float] | None, mi
         lo, hi = m[e["start"]], m[e["end"]]
         v = verdicts.get((e["start"], clean[lo:hi])) or verdicts.get(clean[lo:hi])
         ents.append({"text": clean[lo:hi], "start": lo, "end": hi, "risk": round(e["risk"], 3),
-                     "flagged": e["risk"] >= BALANCED,
+                     "flagged": e["risk"] >= V3_BALANCED,
                      "checked": next((x for x in ends if x >= hi), len(clean)),
                      "true": v and v[0], "note": v[1] if v else ""})  # fmt: skip
     for name in missed:  # wrong details the entity finder never picked up
@@ -195,18 +203,23 @@ def hero(root: Path) -> list[dict]:
 
 
 def shars(root: Path) -> dict:
-    """SHARS test numbers, and the spotlight person's three answers."""
+    """Every SHARS setting (shared-evidence labels), the matched comparison, and the spotlight
+    person's three answers (from the first test's θ = 0.599 run)."""
     d = root / "shars" / "test182"
-    report = json.loads((d / "report.json").read_text())
+    fu = json.loads((root / "shars" / "followup.json").read_text())["shared"]
     keys = [("naive", "Qwen3-4B alone"), ("halluse", "SHARS + its sampling detector"),
-            ("probe_45", "SHARS + HalluStream probe")]  # fmt: skip
+            ("probe_45", "SHARS + HalluStream, cautious")]  # fmt: skip
     arms = {k: _shown(_arm(d / k)[SPOTLIGHT], SPOTLIGHT) for k, _ in keys}
-    spotlight = {"name": SPOTLIGHT, "truth": SPOTLIGHT_TRUTH, "lead": SPOTLIGHT_LEAD,
+    answered = f"{fu['arms']['probe_45']['response_rate']:.0%}"
+    spotlight = {"name": SPOTLIGHT, "truth": SPOTLIGHT_TRUTH,
+                 "lead": SPOTLIGHT_LEAD.format(answered=answered),
                  "win": SPOTLIGHT_WIN,
                  "arms": [{"label": label, **arms[k]} for k, label in keys]}  # fmt: skip
-    summary = {k: report["arms"][k] for k in ("naive", "halluse", "probe_45", "probe_60",
-                                              "logprob_45", "probe_v1")}  # fmt: skip
-    return {"summary": summary, "paired": report["paired"], "spotlight": spotlight}
+    keep = ("response_rate", "supported_per_bio", "unsupported_per_bio", "precision",
+            "seconds_per_bio", "detect_seconds_per_prop")  # fmt: skip
+    summary = {k: {c: v.get(c) for c in keep} for k, v in fu["arms"].items()}
+    pairs = {k: fu["pairs"][k]["all"] for k in ("probe_30-halluse", "probe_45-halluse_07")}
+    return {"summary": summary, "pairs": pairs, "spotlight": spotlight}
 
 
 def reader(root: Path) -> list[dict]:
@@ -240,7 +253,7 @@ def reader(root: Path) -> list[dict]:
             note = wrong[0][3] if wrong else (hits[0][3] if hits else "")
             risk = float(r.risk)  # pyright: ignore[reportArgumentType]
             ents.append({"text": text[lo:hi], "start": lo, "end": hi, "risk": round(risk, 3),
-                         "flagged": risk >= BALANCED, "true": true, "note": note})  # fmt: skip
+                         "flagged": risk >= V3_BALANCED, "true": true, "note": note})  # fmt: skip
         for j in judged:  # errors no detail was found for
             if not j[2] and not any(over(e["start"], e["end"], j) for e in ents):
                 ents.append({"text": text[j[0]:j[1]], "start": j[0], "end": j[1], "risk": None,
@@ -274,13 +287,14 @@ def detectors(root: Path) -> dict:
 
 def _risks(d: Path) -> tuple[np.ndarray, np.ndarray]:
     spans, hidden = combine.load(d)
-    z = combine.apply(json.loads(V3.read_text())["detector"], spans, hidden)
+    z = combine.apply(json.loads(SHIPPED.read_text())["detector"], spans, hidden)
     return 1 / (1 + np.exp(-z)), (spans["kind"] != "supported").to_numpy()
 
 
 def curves(root: Path) -> dict:
+    """Threshold curves and calibration of the shipped detector on the fresh test set."""
     out = {}
-    for name, d in [("people", root / "reserved"), ("topics", root / "topics" / "scores")]:
+    for name, d in [("people", root / "fresh" / "people"), ("topics", root / "fresh" / "topics")]:
         r, y = _risks(d)
         pts = []
         for t in np.round(np.arange(0.30, 0.96, 0.01), 2):
@@ -295,16 +309,38 @@ def curves(root: Path) -> dict:
 
 
 def paper(root: Path) -> dict:
-    """Our probe vs the paper's released Qwen2.5-7B probe on the paper's own test sets."""
-    h = json.loads((root / "paper_h2h.json").read_text())
-    return {ds: {"paper": h[ds]["paper"]["auroc"], "ours": h[ds]["qwen25_L18"]["auroc"],
-                 "gain": h[ds]["qwen25_L18_minus_paper"]["delta"]}
-            for ds in ("longfact", "longfact_aug")}  # fmt: skip
+    """Our probe against the paper's released linear and LoRA probes, per model and test set."""
+    out = {}
+    for model, key, f in (("Qwen2.5-7B", "qwen25_L18", "paper_h2h.json"),
+                          ("Llama-3.1-8B", "llama31_L12", "paper_h2h_llama31.json")):  # fmt: skip
+        if not (root / f).exists():
+            continue
+        h = json.loads((root / f).read_text())
+        out[model] = {ds: {"linear": h[ds]["paper"]["auroc"], "lora": h[ds]["lora"]["auroc"],
+                           "ours": h[ds][key]["auroc"],
+                           "gain_lora": h[ds][f"{key}_minus_lora"]["delta"],
+                           "gain_lora_ci": [h[ds][f"{key}_minus_lora"]["ci_low"],
+                                            h[ds][f"{key}_minus_lora"]["ci_high"]]}
+                      for ds in ("longfact", "longfact_aug", "healthbench") if ds in h}  # fmt: skip
+    return out
+
+
+def own(root: Path) -> dict:
+    """The shipped detector on the fresh test (from the public bundle's numbers) and the base
+    probe on other models' text."""
+    n = json.loads((root / "public" / "numbers.json").read_text())
+    base = json.loads((root / "test_results.json").read_text())["models"]["qwen3_L21"]["overall"]
+    fresh = {k: n[f"own_fresh_{k}"] for k in ("people", "topics")}
+    out = {k: {"subjects": f["subjects"], "ours": f["v4"]["auroc"],
+               "confidence": f["entropy_max"]["auroc"]} for k, f in fresh.items()}  # fmt: skip
+    out["base"] = {"details": base["n_spans"], "ours": base["auroc"],
+                   "confidence": base["baseline_auroc"]}  # fmt: skip
+    return out
 
 
 def build(root: Path) -> str:
     data = {"hero": hero(root), "shars": shars(root), "reader": reader(root), "paper": paper(root),
-            "detectors": detectors(root), "thresholds": curves(root),
+            "detectors": detectors(root), "thresholds": curves(root), "own": own(root),
             "presets": {"balanced": BALANCED, "strict": STRICT}}  # fmt: skip
     page = (Path(__file__).parent / "site_template.html").read_text()
     return page.replace("__DATA__", json.dumps(data, separators=(",", ":")).replace("</", "<\\/"))

@@ -1,7 +1,8 @@
 """The probe: per-token probabilities from one hidden layer, and entity scores.
 
-v1 is the frozen probe (mean over seeds of each seed's max over an entity's tokens); v3 adds a
-linear term on the entity's mean hidden state, fitted on the model's own answers. Scoring is
+v1 is the frozen probe (mean over seeds of each seed's max over an entity's tokens); the adapted
+probe (detector v4 for the bundled weights, v3 before it) adds a linear term on the entity's mean
+hidden state, fitted on the model's own answers. Scoring is
 by teacher forcing, which is how the probe's training data was produced.
 """
 
@@ -15,6 +16,7 @@ import numpy as np
 import torch
 
 EPS = 1e-6
+ADAPTER = "detector.json"  # the adapted probe's file in a weights folder
 
 
 @dataclass
@@ -34,15 +36,15 @@ class Probe:
     """v1 (frozen probe seeds) and v3 (v1 plus a hidden-state term) from their saved weights.
     The probe reads the output of decoder layer `layer` (hidden_states[layer + 1])."""
 
-    def __init__(self, probe_files: list[Path], v3_json: Path, device: str = "cuda"):
+    def __init__(self, probe_files: list[Path], adapter_json: Path, device: str = "cuda"):
         from safetensors.torch import load_file
 
         ps = [load_file(str(f), device=device) for f in probe_files]
         self.weight = torch.stack([p["weight"] for p in ps], dim=1).float()  # (d, n_seeds)
         self.bias = torch.stack([p["bias"].reshape(()) for p in ps]).float()  # (n_seeds,)
-        det = json.loads(Path(v3_json).read_text())["detector"]
+        det = json.loads(Path(adapter_json).read_text())["detector"]
         if det.get("candidate") != "B" or not det.get("offset"):
-            raise ValueError(f"{v3_json}: expected a detector of type B with a v1 offset")
+            raise ValueError(f"{adapter_json}: expected a detector of type B with a v1 offset")
         self.layer = int(det["layer"])
         self.v3_w = np.asarray(det["w"], dtype=np.float32)
         self.v3_b = float(det["b"])

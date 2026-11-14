@@ -79,7 +79,9 @@ def tradeoff(res: dict, out: Path, labels: str = "shared") -> None:
                    label=name)  # fmt: skip
         for x, y, k in pts:
             a = arms[k]
-            ax.annotate(f"{a['response_rate']:.0%} answered", (x, y), xytext=(7, -12),
+            below = k == pts[-1][2] and len(pts) > 2  # the curve rises from its last point
+            ax.annotate(f"{a['response_rate']:.0%} answered", (x, y),
+                        xytext=(8, -13) if below else (8, 4),
                         textcoords="offset points", fontsize=7.5, color=muted)  # fmt: skip
     for k, label in SINGLES.items():
         if k in arms:
@@ -87,6 +89,8 @@ def tradeoff(res: dict, out: Path, labels: str = "shared") -> None:
             ax.scatter(x, y, s=56, color="#9a9994", edgecolor="#fcfcfb", linewidth=2, zorder=3)
             ax.annotate(label, (x, y), xytext=(7, -10), textcoords="offset points",
                         fontsize=8, color=ink)  # fmt: skip
+    lo = min(v["unsupported_per_bio"] for v in arms.values())
+    ax.set_ylim(max(0, lo - 0.6), None)
     ax.set_xlabel("True claims per person (more is better)", color=ink)
     ax.set_ylabel("False claims per person (fewer is better)", color=ink)
     n = arms["naive"]["bios"]

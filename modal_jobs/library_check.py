@@ -1,8 +1,10 @@
 """Checks of the library on Qwen3-4B-Instruct-2507 (docs/LIBRARY.md).
 
-  parity     the library's scores equal the stored research scores on the topic texts
-  automatic  how well it ranks entities it finds itself (GLiNER), on held-out texts whose
-             entities the judge labeled: 150 topic texts and 150 greedy SHARS-test biographies
+  parity     the library's scores equal the stored research scores on fresh topic texts
+  automatic  how well it ranks entities it finds itself (GLiNER), on texts used for nothing
+             else whose entities the judge labeled: 150 fresh people and 150 fresh subjects
+             (EVAL_PROTOCOL.md, follow-ups C; the first version used topic and SHARS texts that
+             had also been used to set the entity rule)
   speed      ms per generated token: plain decoding, with the live probe, and with the probe
              plus GLiNER at each sentence end
 
@@ -20,15 +22,6 @@ from modal_jobs.common import CACHE_DIR, git_commit, image, volume, write_run_me
 app = modal.App("hallustream-library")
 ROOT = Path(CACHE_DIR)
 GPU = dict(gpu="L4", memory=32768, volumes={CACHE_DIR: volume}, timeout=60 * 60)
-# SHARS's system prompt and query (modal_jobs/shars.py), for its greedy test biographies
-SHARS_SYST = (
-    "You are given a query from the user asking for information. Write the answer in English "
-    "characters. Output plain text only. Do not use formatting styles, symbols, or headings. "
-    "Each sentence should provide different information and must not repeat the same content. "
-    "Output only the final answer to the query. Do not generate explanations, reasoning, or "
-    "commentary for the answer. Do not ask follow-up questions."
-)
-SHARS_QUERY = "Tell me about {entity}."
 
 
 def _plain(det, prompt: str, max_new_tokens: int) -> int:
@@ -66,6 +59,7 @@ def check(commit: str, n_parity: int = 60, n_auto: int = 150, n_speed: int = 8,
     from hallustream import Detector
     from hallustream.probe import forward
     from hallustream.research.factcheck import judge
+    from hallustream.research.factcheck.people import BIO_PROMPT
     from hallustream.research.factcheck.topics import TOPIC_PROMPT
     from hallustream.research.factcheck.validate import read_results
 
@@ -73,36 +67,37 @@ def check(commit: str, n_parity: int = 60, n_auto: int = 150, n_speed: int = 8,
     det = Detector.from_pretrained("qwen3-4b", device="cuda")
     rng = random.Random(0)
 
-    # 1. Parity on the topic texts, using the stored token spans of every judged entity.
-    topic_bios = {}
-    for f in sorted((ROOT / "topics" / "bios" / "qwen3").glob("shard*.jsonl")):
-        for line in f.read_text().splitlines():
-            r = json.loads(line)
-            topic_bios[r["name"]] = r["bio"]
-    spans = pd.read_parquet(ROOT / "scores" / "topics_qwen3" / "spans.parquet")
+    def texts(group):
+        out = {}
+        for f in sorted((ROOT / group / "bios" / "qwen3").glob("shard*.jsonl")):
+            for line in f.read_text().splitlines():
+                r = json.loads(line)
+                out[r["name"]] = r["bio"]
+        return out
+
+    fresh = {"people": (texts("fresh_people"), BIO_PROMPT),
+             "topics": (texts("fresh_topics"), TOPIC_PROMPT)}  # fmt: skip
+    topic_bios = fresh["topics"][0]
+
+    # 1. Parity on fresh topic texts, using the stored token spans of every judged entity.
+    spans = pd.read_parquet(ROOT / "scores" / "fresh_topics_qwen3" / "spans.parquet")
     parity = []
     for name in rng.sample(sorted(spans["name"].unique()), n_parity):
         msgs = [{"role": "user", "content": TOPIC_PROMPT.format(name=name)}]
         fw = forward(det.model, det.tokenizer, det.probe, msgs, topic_bios[name], **det.chat)
         for r in spans[spans["name"] == name].itertuples():
-            v1, v3 = det.probe.span_scores(fw, [(int(r.start), int(r.end))])  # pyright: ignore
+            v1, adapted = det.probe.span_scores(fw, [(int(r.start), int(r.end))])  # pyright: ignore
             parity.append({"name": name, "start": int(r.start), "end": int(r.end),  # pyright: ignore
-                           "lib_v1": float(v1[0]), "lib_v3": float(v3[0])})  # fmt: skip
+                           "lib_v1": float(v1[0]), "lib_adapted": float(adapted[0])})  # fmt: skip
 
     # 2. Automatic mode: GLiNER entities, labeled by the judge's entities they overlap.
     sets = {}
-    topic_results, _ = read_results(ROOT / "judge" / "topics_qwen3" / "results.jsonl")
-    names = rng.sample(sorted(n for n in topic_bios if n in topic_results), n_auto)
-    sets["topics"] = [(n, [{"role": "user", "content": TOPIC_PROMPT.format(name=n)}],
-                       topic_bios[n], topic_results[n]) for n in names]  # fmt: skip
-    bio_results, _ = read_results(ROOT / "judge" / "fix_shars_naive" / "results.jsonl")
-    lines = (ROOT / "fix" / "shars" / "naive" / "bios.jsonl").read_text().splitlines()
-    shars_bios = {(r := json.loads(x))["name"]: r["bio"] for x in lines}
-    pool = sorted(n for n, b in shars_bios.items() if b.strip() and n in bio_results)
-    names = rng.sample(pool, min(n_auto, len(pool)))
-    sets["biographies"] = [(n, [{"role": "system", "content": SHARS_SYST},
-                                {"role": "user", "content": SHARS_QUERY.format(entity=n)}],
-                            shars_bios[n], bio_results[n]) for n in names]  # fmt: skip
+    for kind, (bios, prompt) in fresh.items():
+        results, _ = read_results(ROOT / "judge" / f"fresh_{kind}_qwen3" / "results.jsonl")
+        pool = sorted(n for n, b in bios.items() if b.strip() and n in results)
+        names = rng.sample(pool, min(n_auto, len(pool)))
+        sets[kind] = [(n, [{"role": "user", "content": prompt.format(name=n)}], bios[n],
+                       results[n]) for n in names]  # fmt: skip
     auto, coverage = [], []
     for kind, items in sets.items():
         for name, msgs, text, judged in items:
@@ -144,7 +139,7 @@ def check(commit: str, n_parity: int = 60, n_auto: int = 150, n_speed: int = 8,
         ms = 1000 * (time.perf_counter() - t0) / toks
         speed[mode] = {"tokens": toks, "ms_per_token": round(ms, 2)}
 
-    out = ROOT / "library_check"
+    out = ROOT / "library_check_fresh"
     out.mkdir(parents=True, exist_ok=True)
     pd.DataFrame(parity).to_parquet(out / "parity.parquet")
     pd.DataFrame(auto).to_parquet(out / "auto.parquet")

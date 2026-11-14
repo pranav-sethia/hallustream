@@ -1,6 +1,6 @@
 [project]
 name = "hallustream"
-version = "0.1.0"
+version = "0.2.0"
 description = "Flag the facts an open LLM is probably making up, from its hidden states, as it writes."
 readme = "README.md"
 license = "Apache-2.0"

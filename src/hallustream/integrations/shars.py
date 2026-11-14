@@ -24,7 +24,7 @@ from pathlib import Path
 
 import numpy as np
 
-from hallustream.probe import Probe, char_to_tokens, forward
+from hallustream.probe import ADAPTER, Probe, char_to_tokens, forward
 
 BIO_PROMPT = "Tell me a bio of {name}."  # the probe's training-style prompt ("native" context)
 
@@ -54,7 +54,7 @@ def estimator_class(uncertainty, probe: Probe | None = None, weights: str | Path
                 self.det = probe
             else:
                 d = _weights_dir(weights)
-                self.det = Probe(sorted(d.glob("probe_seed*.safetensors")), d / "v3.json",
+                self.det = Probe(sorted(d.glob("probe_seed*.safetensors")), d / ADAPTER,
                                  device=str(self.model.model.device))  # fmt: skip
 
         def sentence_scores(self, user_query, text_sofar, sentence, query_entity, props):

@@ -4,9 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>HalluStream: catch an AI making things up while it writes</title>
-<meta name="description" content="A small probe reads Qwen3-4B's hidden states while it writes and flags the names, dates and titles it is making up. Inside SHARS (ICML 2026) it cut false claims by 44% at about 140 times less detection cost, and it beats the paper it builds on, on that paper's own benchmark.">
+<meta name="description" content="A small probe reads Qwen3-4B's hidden states while it writes and flags the names, dates and titles it is making up. It beats the paper it builds on, including that paper's fine-tuned probe, on its own benchmark, and inside SHARS (ICML 2026) it matches the method's own detector 4.5 to 6 times faster.">
 <meta property="og:title" content="HalluStream: catch an AI making things up while it writes">
-<meta property="og:description" content="A hallucination detector that reads a language model's hidden states. 44% fewer false claims than SHARS's own detector, about 140x cheaper.">
+<meta property="og:description" content="A hallucination detector that reads a language model's hidden states. It beats the paper's released probes on their own benchmark without changing the model.">
 <meta property="og:type" content="website">
 <meta property="og:image" content="https://pranav-sethia.github.io/hallustream/img/og.png">
 <meta name="twitter:card" content="summary_large_image">
@@ -199,6 +199,7 @@ section p { margin: 0 0 16px; }
 .fig .pt { cursor: help; outline: none; }
 .fig .pt:focus-visible .ring { stroke: var(--ink); stroke-width: 2; }
 @media (max-width: 700px) { .fig text { font-size: 19px; } }
+.subh { margin-top: 72px; font-size: 22px; text-wrap: balance; }
 .cmp { width: 100%; border-collapse: collapse; margin-top: 40px; font-variant-numeric: tabular-nums; }
 .cmp th, .cmp td { text-align: right; padding: 14px 16px; border-bottom: 1px solid var(--line); vertical-align: baseline; }
 .cmp th:first-child, .cmp td:first-child { text-align: left; padding-left: 0; color: var(--text); }
@@ -207,6 +208,7 @@ section p { margin: 0 0 16px; }
 .cmp td { font-size: 16px; color: var(--muted); }
 .cmp .us { background: var(--ice-soft); }
 .cmp td.us { color: var(--ink); font-weight: 600; font-size: 19px; }
+.cmp .d.neg { color: var(--muted); }
 .cmp .d { display: block; font-size: 13px; font-weight: 500; color: var(--ice); margin-top: 2px; }
 .cmp caption { caption-side: bottom; text-align: left; font-size: 13.5px; color: var(--muted); padding-top: 12px; }
 @media (max-width: 720px) {
@@ -368,7 +370,7 @@ footer .wrap { display: grid; gap: 10px; }
 <main id="top">
 <div class="wrap hero">
   <h1>Catch an AI making things up while it writes</h1>
-  <p class="lead">HalluStream reads a language model's hidden states as each word is generated and flags the names, dates and titles it is making up. No second model, no web search, just 5% extra time.</p>
+  <p class="lead">HalluStream reads a language model's hidden states as each word is generated and flags the names, dates and titles it is making up. Nothing extra is generated and nothing is looked up; it adds 3–7% to generation time.</p>
   <div class="actions">
     <a class="btn primary" href="https://github.com/pranav-sethia/hallustream"><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8a8 8 0 0 0 5.47 7.59c.4.07.55-.17.55-.38v-1.33c-2.23.48-2.7-1.07-2.7-1.07-.36-.92-.89-1.17-.89-1.17-.73-.5.06-.49.06-.49.8.06 1.23.83 1.23.83.72 1.22 1.87.87 2.33.66.07-.52.28-.87.5-1.07-1.78-.2-3.65-.89-3.65-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.6 7.6 0 0 1 4 0c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.28.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48v2.2c0 .21.15.46.55.38A8 8 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>Read the code</a>
     <a class="btn" href="https://colab.research.google.com/github/pranav-sethia/hallustream/blob/main/notebooks/quickstart.ipynb">Run it free in Colab</a>
@@ -402,11 +404,15 @@ footer .wrap { display: grid; gap: 10px; }
 
 <section id="results">
   <div class="wrap">
-    <h2 class="wideh">Plugged into a 2026 method, it beat that method's own detector</h2>
-    <p class="measure muted">SHARS (ICML 2026) cuts hallucinations by rewriting an answer sentence by sentence, asking a detector which facts are made up. Its own detector re-asks the model about every fact several times. Swapping in the probe, and changing nothing else, made SHARS more accurate and far cheaper on all 182 of its test people.</p>
+    <h2 class="wideh">It beats the probe it builds on, on that paper's own benchmark</h2>
+    <p class="measure muted">HalluStream starts from the probe of Obeso et al. (2025) and leaves the model unchanged. Picking the layer on validation and tuning the training beats the paper's released linear probes on both models it was tried on, and on Qwen2.5-7B even the probe that fine-tunes the model.</p>
+    <div class="cmpwrap"><table class="cmp" id="ptable"></table></div>
+
+    <h3 class="subh">Inside SHARS: the same results in a fraction of the time</h3>
+    <p class="measure muted">SHARS (ICML 2026) cuts hallucinations by redoing sentences whose facts look doubtful. Its own detector samples extra answers for every fact. Swapping in HalluStream and changing nothing else, both detectors were run at several settings on all 182 of SHARS's test people. They trace about the same trade-off; HalluStream gets there 4.5–6× faster.</p>
     <figure class="fig">
-      <svg id="scatter" role="img" aria-label="False claims per answer against time to check one fact, for each way of running SHARS"></svg>
-      <figcaption class="cap">Each dot is one way of running Qwen3-4B on SHARS's 182 test people. A false claim is one the fact checker could not support from the person's Wikipedia page. Lower means fewer false claims; further left means a faster detector (log scale, one L4 GPU). Hover or tap a dot for its numbers.</figcaption>
+      <svg id="scatter" role="img" aria-label="True against false claims per answer for each detector and setting inside SHARS"></svg>
+      <figcaption class="cap">Each dot is one detector setting on SHARS's 182 test people, Qwen3-4B on one L4 GPU. A false claim is one the fact checker could not support from the person's Wikipedia page; a person the setting declined to answer counts as zero claims. Down and right is better. Hover or tap a dot for its numbers.</figcaption>
     </figure>
     <div class="cmpwrap"><table class="cmp" id="cmp"></table></div>
 
@@ -422,7 +428,7 @@ footer .wrap { display: grid; gap: 10px; }
 <section id="answers">
   <div class="wrap">
     <h2>See it check real answers</h2>
-    <p class="measure muted">Qwen3-4B's own biographies of four test people, exactly as it wrote them, with the flags the library raised and the fact checker's verdicts. Hover or tap a detail for its risk and the correction.</p>
+    <p class="measure muted">Qwen3-4B's own biographies of four test people, exactly as it wrote them, with the flags the library raised (the previous version, v3) and the fact checker's verdicts. Hover or tap a detail for its risk and the correction.</p>
     <div class="sheet reader" data-nosnippet>
       <div class="rhead"><div class="people" role="group" aria-label="Person" id="rpeople"></div><div class="rscore" id="rscore"></div></div>
       <div class="rtext" id="rtext"></div>
@@ -465,15 +471,15 @@ footer .wrap { display: grid; gap: 10px; }
 <section id="cautious">
   <div class="wrap">
     <h2>Choose how cautious it is</h2>
-    <p class="measure muted">A risk is the estimated chance a detail is made up, and it holds up: details given 90–100% risk turned out false 93% of the time. Where to draw the line is a trade-off between catching more errors and wrongly flagging true facts. Measured on text never used to build it.</p>
+    <p class="measure muted">A risk is the estimated chance a detail is made up, and it holds up: details given 90–100% risk turned out false 96% of the time. Where to draw the line is a trade-off between catching more errors and wrongly flagging true facts. Measured on new people and subjects, sampled after the detector was frozen.</p>
     <div class="dial">
       <div>
         <div class="dialhead">
           <label for="th"><b>Flag details with risk of at least</b></label>
-          <span class="val" id="thv">74%</span>
+          <span class="val" id="thv">76%</span>
           <div class="switch dsw" role="group" aria-label="Text" id="dsw"></div>
         </div>
-        <input type="range" id="th" min="0.30" max="0.95" step="0.01" value="0.74">
+        <input type="range" id="th" min="0.30" max="0.95" step="0.01" value="0.76">
         <div class="ticks" id="ticks"></div>
         <p class="readline" aria-live="polite">It catches <b class="ro1" id="r1"></b> of made-up details, wrongly flags <b class="ro2" id="r2"></b> of true ones, and <b id="r3"></b> of its flags are right.</p>
         <svg id="tcurve" viewBox="0 0 520 170" role="img" aria-label="Share of made-up and true details flagged at each threshold"></svg>
@@ -492,9 +498,9 @@ footer .wrap { display: grid; gap: 10px; }
     <h2>Built on solid ground</h2>
     <div class="solid">
       <div class="cell sweep"><h3>Layer 21 is where the model knows</h3><svg id="sweep" viewBox="0 0 520 210" role="img" aria-label="Probe accuracy at each of the 36 layers"></svg><p class="muted small" id="sweepnote"></p></div>
-      <div class="cell"><h3>Beats the paper on its own benchmark</h3><div class="pair"><div><b id="pp"></b><span>the paper's released probe, Qwen2.5-7B</span></div><div><b class="ice" id="po"></b><span>this recipe, same model, training data and test set</span></div></div><p class="muted small" id="pnote"></p></div>
-      <div class="cell"><h3>A fact checker that holds up</h3><div class="pair"><div><b class="ice">89%</b><span>balanced accuracy against FActScore's human labels, on 11,049 facts</span></div><div><b class="ice">91%</b><span>agreement with Claude re-checking 150 claims blind against full Wikipedia articles</span></div></div><p class="muted small">Gemini reads each subject's Wikipedia page and labels every claim. The independent check agreed equally on every system's answers.</p></div>
-      <div class="cell"><h3>Tested at scale</h3><ul class="scale"><li><b>144,676</b> details written by five other models</li><li><b>600</b> people never used in building it</li><li><b>496</b> subjects beyond people</li><li><b>182</b> people in the SHARS head-to-head</li></ul></div>
+      <div class="cell"><h3>The paper reproduced first</h3><div class="pair"><div><b id="pp"></b><span>the published AUROC of the paper's Qwen2.5-7B probe on LongFact</span></div><div><b class="ice" id="po"></b><span>the same probe run through this pipeline</span></div></div><p class="muted small" id="pnote"></p></div>
+      <div class="cell"><h3>A fact checker that holds up</h3><div class="pair"><div><b class="ice">89%</b><span>balanced accuracy against FActScore's human labels, on 11,049 facts</span></div><div><b class="ice">84–91%</b><span>agreement with a stronger model re-checking claims blind against the whole article</span></div></div><p class="muted small">Gemini reads each subject's Wikipedia page and labels every claim. It marks made-up details reliably and leans toward accepting doubtful ones.</p></div>
+      <div class="cell"><h3>Tested at scale</h3><ul class="scale"><li><b>144,676</b> details written by five other models</li><li><b>1,100</b> new people and subjects, sampled after the detector was frozen</li><li><b>2</b> models in the head-to-head with the paper</li><li><b>182</b> people and 8 settings inside SHARS</li></ul></div>
     </div>
   </div>
 </section>
@@ -570,8 +576,8 @@ addEventListener("scroll", hideTip, {passive: true});
 /* ---------- The instrument ---------- */
 const NAMES = {caribbean: "A novel", kiara: "A biography"};
 const CAPS = {
-  caribbean: "Qwen3-4B's real answer and the shipped library's real risks; replayed at the measured speed of 62.5 ms per token. The fact checker's notes come from the novel's Wikipedia page. Shown: the first 721 characters.",
-  kiara: "A real run, replayed at its recorded speed on one L4 GPU. Checked by hand against her Wikipedia article.",
+  caribbean: "Qwen3-4B's real answer and the library's real risks, recorded with the previous version of the detector (v3); replayed at the measured speed of 62.5 ms per token. The fact checker's notes come from the novel's Wikipedia page. Shown: the first 721 characters.",
+  kiara: "A real run, replayed at its recorded speed on one L4 GPU, with the previous version of the detector (v3). Checked by hand against her Wikipedia article.",
 };
 let ex, timer, start, shownTok, checkedMode = false;
 const screen = $("screen"), traceEl = $("trace");
@@ -713,81 +719,96 @@ bindTips(screen, (t) => {
 load(location.hash.includes("kiara") ? "kiara" : "caribbean");
 if (location.hash.includes("check")) setChecked(true);
 
-/* ---------- SHARS scatter ---------- */
+/* ---------- Paper head-to-head ---------- */
+(function paperTable() {
+  const P = D.paper, f3 = (x) => x.toFixed(3), names = {longfact: "LongFact", longfact_aug: "LongFact++", healthbench: "HealthBench"};
+  const rows = [];
+  Object.entries(P).forEach(([model, sets]) => Object.entries(sets).forEach(([ds, r]) => {
+    const g = r.gain_lora, sig = r.gain_lora_ci[0] > 0 || r.gain_lora_ci[1] < 0;
+    const d = `${g >= 0 ? "+" : "−"}${Math.abs(g).toFixed(3)} against the LoRA probe${sig ? "" : ", not a reliable difference"}`;
+    rows.push(`<tr><td>${model}, ${names[ds]}</td><td data-label="Paper, linear">${f3(r.linear)}</td><td data-label="Paper, LoRA">${f3(r.lora)}</td><td class="us" data-label="HalluStream">${f3(r.ours)}<span class="d${g < 0 ? " neg" : ""}">${d}</span></td></tr>`);
+  }));
+  $("ptable").innerHTML = `<thead><tr><th scope="col"><span class="sr">Model and test set</span></th><th scope="col">The paper's linear probe</th><th scope="col">The paper's LoRA probe, which fine-tunes the model</th><th scope="col" class="us">HalluStream, model unchanged</th></tr></thead><tbody>${rows.join("")}</tbody><caption>AUROC, how often a made-up detail scores above a true one (0.5 is chance), on the paper's own test sets and exactly the same details for every probe; HealthBench is medical advice, never used to build anything here. The paper's probes are its released ones, re-run through this pipeline. HalluStream beats the linear probe everywhere and the LoRA probe on Qwen2.5-7B; on Llama-3.1-8B, the model with the most training data in the paper (8,429 answers against 1,625), fine-tuning the model still wins. All differences hold at 95% confidence.</caption>`;
+})();
+
+/* ---------- SHARS trade-off ---------- */
 const narrow = matchMedia("(max-width: 700px)");
 function scatter() {
   const s = D.shars.summary, el = $("scatter");
-  const [W, H] = narrow.matches ? [560, 440] : [1040, 340];
+  const [W, H] = narrow.matches ? [560, 460] : [1040, 380];
   el.setAttribute("viewBox", `0 0 ${W} ${H}`);
   el.innerHTML = "";
-  const L = 46, R = W - 12, T = 46, B = H - 54;
-  const X = (sec) => L + (Math.log10(sec) + 2) / 3 * (R - L);   // 0.01 .. 10 s
-  const Y = (f) => B - f / 8 * (B - T);                          // 0 .. 8 false claims
-  [0.01, 0.1, 1, 10].forEach((v) => {
+  const L = 46, R = W - 16, T = 46, B = H - 54;
+  const X = (t) => L + (t - 2.8) / 2.0 * (R - L);   // 2.8 .. 4.8 true claims
+  const Y = (f) => B - (f - 1) / 6.5 * (B - T);      // 1 .. 7.5 false claims
+  [3, 3.5, 4, 4.5].forEach((v) => {
     svg("line", {x1: X(v), x2: X(v), y1: T, y2: B, stroke: "var(--grid)"}, el);
-    svg("text", {x: X(v), y: B + 20, "text-anchor": v === 0.01 ? "start" : v === 10 ? "end" : "middle"}, el).textContent = v + " s";
+    svg("text", {x: X(v), y: B + 20, "text-anchor": "middle"}, el).textContent = v;
   });
-  [0, 2, 4, 6, 8].forEach((v) => {
+  [2, 4, 6].forEach((v) => {
     svg("line", {x1: L, x2: R, y1: Y(v), y2: Y(v), stroke: "var(--grid)"}, el);
     svg("text", {x: L - 10, y: Y(v) + 4, "text-anchor": "end"}, el).textContent = v;
   });
-  // Axis titles say which way is better
   const yt = svg("text", {x: L - 36, y: T - 22, class: "axis"}, el);
   yt.textContent = "False claims per answer";
-  svg("tspan", {dx: 8, style: "font-weight:400;fill:var(--muted)"}, yt).textContent = "↓ lower is better";
+  svg("tspan", {dx: 8, style: "font-weight:400;fill:var(--muted)"}, yt).textContent = "↓ fewer is better";
   const xt = svg("text", {x: R, y: H - 4, "text-anchor": "end", class: "axis"}, el);
-  svg("tspan", {style: "font-weight:400;fill:var(--muted)"}, xt).textContent = "← faster   ";
-  svg("tspan", {}, xt).textContent = "Time to check one fact";
-  svg("text", {x: L + 10, y: B - 12, style: "fill:var(--ice);font-weight:600"}, el).textContent = "↙ better: fewer false claims, faster";
-  const g = s.naive.unsupported_per_bio;
-  svg("line", {x1: L, x2: R, y1: Y(g), y2: Y(g), stroke: "var(--muted)", "stroke-dasharray": "4 5"}, el);
-  svg("text", {x: R - 4, y: Y(g) - 8, "text-anchor": "end"}, el).textContent = `Qwen3-4B alone, no detector: ${g.toFixed(2)}`;
-  const fewer = Math.round((1 - s.probe_45.unsupported_per_bio / s.halluse.unsupported_per_bio) * 100);
-  const faster = Math.round(s.halluse.detect_seconds_per_prop / s.probe_45.detect_seconds_per_prop / 10) * 10;
-  const pts = [
-    [s.halluse, "SHARS + its own sampling detector", "var(--muted)", 7, "end", -14],
-    [s.logprob_45, "SHARS + model's own confidence", "var(--dim)", 5, "start", 12],
-    [s.probe_45, "SHARS + HalluStream (ours)", "var(--ice)", 9, "start", 18],
+  xt.textContent = "True claims per answer";
+  svg("tspan", {dx: 8, style: "font-weight:400;fill:var(--muted)"}, xt).textContent = "more is better →";
+  const sec = (x) => (x < 1 ? x.toFixed(2) : Math.round(x)) + " s";
+  const tip = (a, label) => `<b>${a.unsupported_per_bio.toFixed(2)}</b> false and <b>${a.supported_per_bio.toFixed(2)}</b> true claims per answer<span class="v">${label}. Answered ${Math.round(a.response_rate * 100)}% of people, precision ${Math.round(a.precision * 100)}%, ${sec(a.seconds_per_bio)} per answer.</span>`;
+  const curves = [
+    [["halluse", "halluse_07"], "SHARS + its sampling detector", "var(--muted)", -1],
+    [["probe_30", "probe_45", "probe_60"], "SHARS + HalluStream (ours)", "var(--ice)", 1],
   ];
-  pts.forEach(([a, label, color, r, anchor, dx], i) => {
-    const x = X(a.detect_seconds_per_prop), y = Y(a.unsupported_per_bio), us = i === 2;
-    const tip = `<b>${a.unsupported_per_bio.toFixed(2)}</b> false and <b>${a.supported_per_bio.toFixed(2)}</b> true claims per answer<span class="v">${label}. ${a.detect_seconds_per_prop.toFixed(2)} s to check each fact.</span>`;
-    const pt = svg("g", {class: "pt", tabindex: 0, "data-tip": tip}, el);
-    svg("circle", {cx: x, cy: y, r: 18, fill: "transparent"}, pt);  // easier to hover and tap
-    if (us) svg("circle", {class: "ring", cx: x, cy: y, r: r + 5, fill: "none", stroke: "var(--ice)", "stroke-width": 1.5}, pt);
-    svg("circle", {cx: x, cy: y, r, fill: color}, pt);
-    const t = svg("text", {x: x + dx, y: y + (us ? -4 : 4), "text-anchor": anchor}, el);
-    t.textContent = `${label}: ${a.unsupported_per_bio.toFixed(2)}`;
-    if (us) {
-      t.setAttribute("style", "fill:var(--ink);font-weight:600");
-      const notes = narrow.matches ? [`${fewer}% fewer false claims`, `${faster}× faster`]
-        : [`${fewer}% fewer false claims than SHARS's own detector`, `${faster}× faster to check each fact`];
-      notes.forEach((line, k) => {
-        svg("text", {x: x + dx, y: y + 16 + k * 17 * (narrow.matches ? 1.5 : 1), style: "fill:var(--ice);font-weight:600"}, el).textContent = line;
-      });
-    }
+  curves.forEach(([keys, label, color, side]) => {
+    const pts = keys.map((k) => s[k]);
+    svg("polyline", {points: pts.map((a) => `${X(a.supported_per_bio)},${Y(a.unsupported_per_bio)}`).join(" "), fill: "none", stroke: color, "stroke-width": 2}, el);
+    pts.forEach((a, i) => {
+      const x = X(a.supported_per_bio), y = Y(a.unsupported_per_bio);
+      const pt = svg("g", {class: "pt", tabindex: 0, "data-tip": tip(a, label)}, el);
+      svg("circle", {cx: x, cy: y, r: 18, fill: "transparent"}, pt);
+      svg("circle", {cx: x, cy: y, r: 6, fill: color, stroke: "var(--bg)", "stroke-width": 2}, pt);
+      const left = side < 0 && i === 0;  // keep clear of the other curve
+      svg("text", {x: x + (left ? -10 : 10), y: y + (i > 0 && side > 0 ? 16 : -10), "text-anchor": left ? "end" : "start", style: "font-size:12px;fill:var(--muted)"}, el).textContent = `${Math.round(a.response_rate * 100)}% answered`;
+    });
+    const end = pts[pts.length - 1];  // label each curve at its most cautious setting
+    const n = narrow.matches && side > 0;  // on phones, below the point instead of to its left
+    const t = svg("text", {x: X(end.supported_per_bio) + (n ? 10 : -14), y: Y(end.unsupported_per_bio) + (n ? 34 : side > 0 ? 5 : 24), "text-anchor": n ? "start" : "end", style: `fill:${side > 0 ? "var(--ink)" : "var(--muted)"};font-weight:600`}, el);
+    t.textContent = narrow.matches ? label.replace(" (ours)", "") : label;
+  });
+  const singles = narrow.matches
+    ? [["naive", "No detector"], ["logprob_45", "Confidence"], ["probe_v1", "Paper's recipe"]]
+    : [["naive", "Qwen3-4B alone"], ["logprob_45", "Model's own confidence"], ["probe_v1", "Probe trained the paper's way"]];
+  singles.forEach(([k, label]) => {
+    const a = s[k], x = X(a.supported_per_bio), y = Y(a.unsupported_per_bio);
+    const pt = svg("g", {class: "pt", tabindex: 0, "data-tip": tip(a, label)}, el);
+    svg("circle", {cx: x, cy: y, r: 18, fill: "transparent"}, pt);
+    svg("circle", {cx: x, cy: y, r: 4.5, fill: "var(--dim)"}, pt);
+    svg("text", {x: x + 9, y: y + 4, style: "font-size:12.5px;fill:var(--muted)"}, el).textContent = label;
   });
 }
 scatter();
 narrow.addEventListener("change", scatter);
 bindTips($("scatter"), (t) => t.dataset.tip);
 
-/* ---------- Comparison table ---------- */
+/* ---------- Comparison at the same answer rate ---------- */
 (function compare() {
-  const S = D.shars.summary, A = [S.naive, S.halluse, S.probe_45];
-  const f2 = (x) => x.toFixed(2), sec = (x) => (x < 1 ? x.toFixed(2) : x < 10 ? x.toFixed(1) : Math.round(x)) + " s";
-  const less = (a, b) => `−${Math.round((1 - b / a) * 100)}% vs the sampling detector`;
+  const S = D.shars.summary, A = [S.naive, S.halluse, S.probe_30], M = D.shars.pairs["probe_30-halluse"];
+  const f2 = (x) => x.toFixed(2), pc = (x) => Math.round(x * 100) + "%", sec = (x) => (x < 1 ? x.toFixed(2) : x < 10 ? x.toFixed(1) : Math.round(x)) + " s";
+  const same = (d) => `${d.delta >= 0 ? "+" : "−"}${Math.abs(d.delta).toFixed(2)}, not a reliable difference`;
   const rows = [
-    ["False claims per answer", A.map((a) => f2(a.unsupported_per_bio)), less(A[1].unsupported_per_bio, A[2].unsupported_per_bio)],
-    ["True claims per answer", A.map((a) => f2(a.supported_per_bio)), ""],
-    ["False names, dates and numbers", A.map((a) => f2(a.specific_unsupported_per_bio)), less(A[1].specific_unsupported_per_bio, A[2].specific_unsupported_per_bio)],
-    ["True names, dates and numbers", A.map((a) => f2(a.specific_supported_per_bio)), ""],
+    ["Answered", A.map((a) => pc(a.response_rate)), ""],
+    ["True claims per answer", A.map((a) => f2(a.supported_per_bio)), same(M.supported)],
+    ["False claims per answer", A.map((a) => f2(a.unsupported_per_bio)), same(M.unsupported)],
+    ["Precision", A.map((a) => pc(a.precision)), `+${(M.precision.delta * 100).toFixed(1)} points`],
     ["Time to check one fact", ["–", sec(A[1].detect_seconds_per_prop), sec(A[2].detect_seconds_per_prop)], `${Math.round(A[1].detect_seconds_per_prop / A[2].detect_seconds_per_prop / 10) * 10}× less`],
     ["Time per answer", A.map((a) => sec(a.seconds_per_bio)), `${(A[1].seconds_per_bio / A[2].seconds_per_bio).toFixed(1)}× faster`],
   ];
-  $("cmp").innerHTML = `<thead><tr><th scope="col"><span class="sr">Per answer</span></th><th scope="col">Qwen3-4B alone</th><th scope="col">SHARS + its sampling detector</th><th scope="col" class="us">SHARS + HalluStream probe</th></tr></thead><tbody>`
+  const C = D.shars.pairs["probe_45-halluse_07"];
+  $("cmp").innerHTML = `<thead><tr><th scope="col"><span class="sr">At the same answer rate</span></th><th scope="col">Qwen3-4B alone</th><th scope="col">SHARS + its sampling detector</th><th scope="col" class="us">SHARS + HalluStream</th></tr></thead><tbody>`
     + rows.map(([lab, v, d]) => `<tr><td>${lab}</td><td data-label="Alone">${v[0]}</td><td data-label="Sampling detector">${v[1]}</td><td class="us" data-label="HalluStream">${v[2]}${d ? `<span class="d">${d}</span>` : ""}</td></tr>`).join("")
-    + `</tbody><caption>Averages over SHARS's 182 test people; Qwen3-4B on one L4 GPU. False claims are those the fact checker could not support from the person's Wikipedia page, the FActScore convention. The reductions in false claims and the higher precision hold at 95% confidence, and the true-claim counts are statistically the same. With the probe trained only the paper's way, SHARS left ${f2(S.probe_v1.unsupported_per_bio)} false claims per answer.</caption>`;
+    + `</tbody><caption>The two detectors at settings that answer the same share of people. The precision gain holds at 95% confidence with this fact checker, but a stronger model re-checking 600 sampled claims found both equally accurate. Set more cautiously, HalluStream left ${Math.abs(C.unsupported.delta).toFixed(1)} fewer false claims per answer than the sampling detector's more cautious setting, and ${Math.abs(C.supported.delta).toFixed(1)} fewer true ones (not a reliable difference). A first comparison reported 44% fewer false claims; it compared settings that answered different shares of people, and these runs replace it.</caption>`;
 })();
 
 /* ---------- Spotlight ---------- */
@@ -896,8 +917,8 @@ bindTips($("scatter"), (t) => t.dataset.tip);
     $("r1").textContent = pct(row[1]); $("r2").textContent = pct(row[2]); $("r3").textContent = pct(row[3]);
     drawCurve(v);
     $("dialnote").textContent = set === "people"
-      ? `${T.people.entities.toLocaleString()} details in biographies of 600 people.`
-      : `${T.topics.entities.toLocaleString()} details in writing about 496 places, organizations, events, works and species.`;
+      ? `${T.people.entities.toLocaleString()} details in biographies of 437 new people, sampled after the detector was frozen.`
+      : `${T.topics.entities.toLocaleString()} details in writing about 498 new places, organizations, events, works and species.`;
   };
   ["people", "topics"].forEach((k) => {
     const b = document.createElement("button");
@@ -946,13 +967,14 @@ bindTips($("scatter"), (t) => t.dataset.tip);
   const W = (v) => ((v - 0.5) / 0.5 * 100).toFixed(1) + "%";
   const bar = (v, cls, strong) => `<div class="track"><i class="${cls}" style="width:${W(v)}"></i><em${strong ? "" : ' class="muted"'} style="left:calc(${W(v)} + 10px)">${pct(v)}</em></div>`;
   const S = D.shars.summary;
-  const time = ["0.05 s per fact", "free", `${S.halluse.detect_seconds_per_prop.toFixed(1)} s per fact`, `${S.halluse.detect_seconds_per_prop.toFixed(1)} s per fact`];
-  $("detnote").textContent = `The same ${D.detectors.facts} facts from SHARS runs on Qwen3-4B.`;
+  const time = [`${S.probe_45.detect_seconds_per_prop.toFixed(2)} s per fact`, `${S.logprob_45.detect_seconds_per_prop.toFixed(2)} s per fact`, `${S.halluse.detect_seconds_per_prop.toFixed(1)} s per fact`, "not timed"];
+  $("detnote").textContent = `How well each ranks the same ${D.detectors.facts} development facts from Qwen3-4B biographies (AUROC). These texts were written without SHARS, so the sampling detector's answers saw earlier sentences SHARS would have removed; on first sentences alone the gap is smaller (82% against 70%).`;
   $("dets").innerHTML = D.detectors.rows.map(([name, v], i) => `<div class="brow one"><div class="lab">${name}<small>${time[i]}</small></div><div>${bar(v, i ? "c" : "p", !i)}</div></div>`).join("");
+  const O = D.own;
   const rows = [
-    ["Its own biographies", "600 people never used in building it", 0.854, 0.690],
-    ["Its own writing about other subjects", "496 places, organizations, events, works and species", 0.834, 0.668],
-    ["Other models' long answers", "144,676 details written by five other models", 0.854, 0.678],
+    ["Its own biographies", `${O.people.subjects} new people, sampled after it was frozen`, O.people.ours, O.people.confidence],
+    ["Its own writing about other subjects", `${O.topics.subjects} new places, organizations, events, works and species`, O.topics.ours, O.topics.confidence],
+    ["Other models' long answers", `${O.base.details.toLocaleString()} details written by five other models; the probe before adapting to Qwen3-4B's own writing`, O.base.ours, O.base.confidence],
   ];
   $("bars").innerHTML = rows.map(([a, b, p, c]) => `<div class="brow one"><div class="lab">${a}<small>${b}</small></div><div>${bar(p, "p", true)}${bar(c, "c", false)}</div></div>`).join("")
     + `<div class="bkey"><span><i style="background:var(--ice)"></i>HalluStream probe</span><span><i style="background:var(--bar-muted)"></i>Model's own confidence</span></div>`;
@@ -979,10 +1001,9 @@ bindTips($("scatter"), (t) => t.dataset.tip);
 
 /* ---------- Against the paper ---------- */
 (function paperCell() {
-  const P = D.paper, f3 = (x) => x.toFixed(3);
-  $("pp").textContent = f3(P.longfact.paper);
-  $("po").textContent = f3(P.longfact.ours);
-  $("pnote").textContent = `AUROC on the paper's LongFact test set (+${P.longfact_aug.gain.toFixed(3)} on LongFact++). It matches the paper's LoRA fine-tuned probe (0.895) without changing the model's weights. First, the paper's probe was rebuilt through this pipeline and reproduced to 0.0001 (0.8383 vs 0.8384).`;
+  $("pp").textContent = "0.8383";
+  $("po").textContent = "0.8384";
+  $("pnote").textContent = "Before building anything new, the paper's released probe was run through this pipeline: 0.8384 / 0.8469 on LongFact and LongFact++ against the published 0.8383 / 0.8467.";
 })();
 
 /* ---------- Copy ---------- */

@@ -34,7 +34,7 @@ for k in range(2):
     )
 det = {"candidate": "B", "layer": n - 2, "offset": True, "b": 0.0, "w": [0.0] * d,
        "h_mean": [0.0] * d, "h_std": [1.0] * d}  # fmt: skip
-(w / "v3.json").write_text(json.dumps({"detector": det}))
+(w / "detector.json").write_text(json.dumps({"detector": det}))
 (w / "model.json").write_text(json.dumps({"hf_id": TINY}))
 (w / "thresholds.json").write_text(json.dumps({"balanced": {"threshold": 0.5}}))
 

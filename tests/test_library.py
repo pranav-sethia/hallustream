@@ -36,7 +36,7 @@ def tiny(tmp_path_factory):
     det = {"candidate": "B", "layer": n - 2, "offset": True, "b": -0.2,
            "w": (np.random.default_rng(0).normal(size=d) * 0.1).tolist(),
            "h_mean": [0.0] * d, "h_std": [1.0] * d}  # fmt: skip
-    (w / "v3.json").write_text(json.dumps({"detector": det}))
+    (w / "detector.json").write_text(json.dumps({"detector": det}))
     (w / "model.json").write_text(json.dumps({"hf_id": TINY, "layer": n - 2}))
     (w / "thresholds.json").write_text(json.dumps({"balanced": {"threshold": 0.5}}))
     return Detector.from_pretrained(w, model=lm, tokenizer=tok, entity_finder=words)
@@ -274,7 +274,7 @@ def test_the_package_ships_its_probe_weights():
     names = sorted(p.name for p in d.iterdir())
     assert [n for n in names if n.startswith("probe_seed")] == [f"probe_seed{k}.safetensors"
                                                                 for k in range(5)]  # fmt: skip
-    assert {"v3.json", "model.json", "thresholds.json"} <= set(names)
+    assert {"detector.json", "model.json", "thresholds.json"} <= set(names)
     presets = json.loads((d / "thresholds.json").read_text())
     assert presets["balanced"]["threshold"] < presets["strict"]["threshold"]
 

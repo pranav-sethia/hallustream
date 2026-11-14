@@ -434,8 +434,12 @@ def prepare_second_judge(samples: dict[str, list[list[str]]], setting: str = "t1
     for arm, items in samples.items():
         for i, (name, claim) in enumerate(items):
             by_person.setdefault(name, []).append((arm, i, claim))
+    import random
+
+    rng = random.Random(0)
     reqs, index = [], []
     for name, items in sorted(by_person.items()):
+        rng.shuffle(items)  # arms mixed within a person
         reqs.append(judge.claim_request(name, name, w.passages(name), [c for *_, c in items],
                                         setting))  # fmt: skip
         index.append({"name": name, "items": [[a, i] for a, i, _ in items]})
@@ -445,7 +449,9 @@ def prepare_second_judge(samples: dict[str, list[list[str]]], setting: str = "t1
     (d / "requests.jsonl").write_text("".join(json.dumps(x) + "\n" for x in reqs))
     (d / "index.json").write_text(json.dumps(index))
     volume.commit()
-    return {"requests": len(reqs), "claims": sum(len(x["items"]) for x in index)}
+    chars = sum(len(r["request"]["contents"][0]["parts"][0]["text"]) for r in reqs)
+    return {"requests": len(reqs), "claims": sum(len(x["items"]) for x in index),
+            "prompt_chars": chars}  # fmt: skip
 
 
 @app.function(image=research_image, volumes={CACHE_DIR: volume}, timeout=10 * 60)
@@ -517,6 +523,7 @@ if __name__ == "__main__":
             "rescore_halluse",
             "parity",
             "prepare_judge",
+            "prepare_second_judge",
         ],  # fmt: skip
     )
     p.add_argument("args", nargs="*")
@@ -577,6 +584,11 @@ if __name__ == "__main__":
                 arms[arm] = modal.Function.from_name("hallustream-shars", "run_bios").remote(src)
         fn = modal.Function.from_name("hallustream-shars", "prepare_judge")
         print(fn.remote(arms, a.shared))
+    elif a.action == "prepare_second_judge":  # args: sample JSON, arm -> [[name, claim, label]]
+        sample = json.loads(Path(a.args[0]).read_text())
+        samples = {arm: [[n, c] for n, c, _ in items] for arm, items in sample.items()}
+        fn = modal.Function.from_name("hallustream-shars", "prepare_second_judge")
+        print(fn.remote(samples))
     elif a.action == "prepare_prop_judge":
         print(modal.Function.from_name("hallustream-shars", "prepare_prop_judge").remote())
     elif a.action == "dev_props":

@@ -100,31 +100,40 @@ def export() -> None:
     pd.concat(rows, ignore_index=True).to_parquet(PUBLIC / "shars_people.parquet", index=False)
     with gzip.open(PUBLIC / "shars_texts.jsonl.gz", "wt") as f:
         f.writelines(json.dumps(x, ensure_ascii=False) + "\n" for x in texts)
-    h2h = h2h_load(ROOT / "data/h2h/spans", ROOT / "data/h2h/probes", ROOT / "data/gate/probs.npz",
-                   ROOT / "data/gate_lora/probs.npz")  # fmt: skip
-    cols = [c for c in h2h if c not in ("start", "end")]
-    h2h[cols].round(6).to_parquet(PUBLIC / "h2h_qwen25.parquet", index=False)
+
+    for model, d, lin, lora in (("qwen25", "h2h", "gate", "gate_lora"),
+                                ("llama31", "h2h_llama31", "gate_llama31_linear",
+                                 "gate_llama31_lora")):  # fmt: skip
+        h2h = h2h_load(ROOT / "data" / d / "spans", ROOT / "data" / d / "probes",
+                       ROOT / "data" / lin / "probs.npz", ROOT / "data" / lora / "probs.npz",
+                       model)  # fmt: skip
+        cols = [c for c in h2h if c not in ("start", "end")]
+        h2h[cols].round(6).to_parquet(PUBLIC / f"h2h_{model}.parquet", index=False)
     print({p.name: f"{p.stat().st_size / 1e6:.2f} MB" for p in sorted(PUBLIC.iterdir())})
 
 
 def _ci(d: dict) -> list[float]:
-    return [round(d["ci_low"], 4), round(d["ci_high"], 4)]
+    return [round(d["ci_low"], 6), round(d["ci_high"], 6)]
 
 
 def numbers() -> dict:
     """Every headline number, recomputed from the bundle alone."""
     out: dict = {}
-    h = pd.read_parquet(PUBLIC / "h2h_qwen25.parquet")
-    for ds, g in h.groupby("dataset"):
-        y, grp = g["label"].to_numpy(), g["answer_id"].to_numpy()
-        r = {c: {"auroc": round(auroc(y, g[c].to_numpy()), 4),
-                 "recall_at_10pct_fpr": round(recall_at_fpr(y, g[c].to_numpy()), 4)}
-             for c in ("paper", "lora", "qwen25_L18", "qwen25_L26")}  # fmt: skip
-        for ref in ("paper", "lora"):
-            d = paired_bootstrap(y, g["qwen25_L18"].to_numpy(), g[ref].to_numpy(), grp, n_boot=2000)
-            r[f"ours_minus_{ref}"] = {"delta": round(d["delta"], 4), "ci": _ci(d)}
-        r["spans"] = len(g)
-        out[f"h2h_{ds}"] = r
+    from hallustream.research.paper_h2h import MODELS
+
+    for model in ("qwen25", "llama31"):
+        ours, control = MODELS[model]["variants"]
+        h = pd.read_parquet(PUBLIC / f"h2h_{model}.parquet")
+        for ds, g in h.groupby("dataset"):
+            y, grp = g["label"].to_numpy(), g["answer_id"].to_numpy()
+            r = {c: {"auroc": round(auroc(y, g[c].to_numpy()), 6),
+                     "recall_at_10pct_fpr": round(recall_at_fpr(y, g[c].to_numpy()), 6)}
+                 for c in ("paper", "lora", ours, control)}  # fmt: skip
+            for ref in ("paper", "lora"):
+                d = paired_bootstrap(y, g[ours].to_numpy(), g[ref].to_numpy(), grp, n_boot=2000)
+                r[f"ours_minus_{ref}"] = {"delta": round(d["delta"], 6), "ci": _ci(d)}
+            r["spans"] = len(g)
+            out[f"h2h_{model}_{ds}"] = r
     own = pd.read_parquet(PUBLIC / "own_answers.parquet")
     for group, g in own.groupby("group"):
         y = (g["kind"] == "not_supported").to_numpy().astype(int)
@@ -133,27 +142,27 @@ def numbers() -> dict:
              "share_false": round(float(y.mean()), 3)}  # fmt: skip
         for c in ("v1", "v3", "v4", "entropy_max"):
             r[c] = {
-                "auroc": round(auroc(y, g[c].to_numpy()), 4),
-                "within_subject": round(within_subject_auroc(y, g[c].to_numpy(), grp), 4),
+                "auroc": round(auroc(y, g[c].to_numpy()), 6),
+                "within_subject": round(within_subject_auroc(y, g[c].to_numpy(), grp), 6),
             }
         for a, b in (("v4", "v3"), ("v3", "v1"), ("v4", "entropy_max"), ("v3", "entropy_max")):
             d = paired_bootstrap(y, g[a].to_numpy(), g[b].to_numpy(), grp, n_boot=2000)
-            r[f"{a}_minus_{b}"] = {"delta": round(d["delta"], 4), "ci": _ci(d)}
+            r[f"{a}_minus_{b}"] = {"delta": round(d["delta"], 6), "ci": _ci(d)}
         out[f"own_{group}"] = r
     fresh = own[own["group"].str.startswith("fresh")]
     if len(fresh):
         y = (fresh["kind"] == "not_supported").to_numpy().astype(int)
         grp = (fresh["group"] + ":" + fresh["name"]).to_numpy()
         d = paired_bootstrap(y, fresh["v4"].to_numpy(), fresh["v3"].to_numpy(), grp, n_boot=2000)
-        out["fresh_v4_minus_v3"] = {"delta": round(d["delta"], 4), "ci": _ci(d)}
+        out["fresh_v4_minus_v3"] = {"delta": round(d["delta"], 6), "ci": _ci(d)}
     sp = pd.read_parquet(PUBLIC / "shars_people.parquet")
     for (labels, arm), g in sp.groupby(["labels", "arm"]):
         ans = g[g["responded"]]
         out.setdefault(f"shars_{labels}", {})[arm] = {
-            "people": len(g), "answered": round(float(g["responded"].mean()), 4),
+            "people": len(g), "answered": round(float(g["responded"].mean()), 6),
             "false_per_person": round(float(g["unsupported"].mean()), 2),
             "true_per_person": round(float(g["supported"].mean()), 2),
-            "precision": round(float(ans["precision"].mean()), 4),
+            "precision": round(float(ans["precision"].mean()), 6),
         }  # fmt: skip
     (PUBLIC / "numbers.json").write_text(json.dumps(out, indent=1, default=float))
     return out

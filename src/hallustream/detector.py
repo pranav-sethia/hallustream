@@ -26,7 +26,7 @@ import numpy as np
 import torch
 
 from hallustream import entities as _entities
-from hallustream.probe import Forward, Probe, char_to_tokens, forward
+from hallustream.probe import ADAPTER, Forward, Probe, char_to_tokens, forward
 from hallustream.text import PRONOUNS, is_refusal, sentences
 
 BUNDLED = ("qwen3-4b",)
@@ -39,7 +39,7 @@ class Entity:
     text: str
     start: int  # character offsets in the answer
     end: int
-    risk: float  # probability that the entity is made up (sigmoid of the v3 score)
+    risk: float  # probability that the entity is made up (sigmoid of the adapted probe's score)
     flagged: bool
 
 
@@ -181,7 +181,7 @@ class Detector:
         seeds = sorted(d.glob("probe_seed*.safetensors"))
         if not seeds:
             raise FileNotFoundError(f"no probe weights (probe_seed*.safetensors) in {d}")
-        probe = Probe(seeds, d / "v3.json", device=str(model.device))
+        probe = Probe(seeds, d / ADAPTER, device=str(model.device))
         if probe.weight.shape[0] != model.config.hidden_size:
             raise ValueError(f"probe width {probe.weight.shape[0]} does not match the model")
         th = d / "thresholds.json"
@@ -221,8 +221,8 @@ class Detector:
             if (t := char_to_tokens(fw, lo, hi)) is not None:
                 keep.append((lo, hi))
                 tok_spans.append(t)
-        _, v3 = self.probe.span_scores(fw, tok_spans)
-        risk = [1 / (1 + math.exp(-float(z))) for z in v3]
+        _, adapted = self.probe.span_scores(fw, tok_spans)
+        risk = [1 / (1 + math.exp(-float(z))) for z in adapted]
         return [Entity(text[lo:hi], lo, hi, r, r >= threshold)
                 for (lo, hi), r in zip(keep, risk, strict=True)]  # fmt: skip
 
