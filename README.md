@@ -14,7 +14,7 @@ The [project page](https://pranav-sethia.github.io/hallustream/) replays real ru
 ## Quick start
 
 ```bash
-pip install "hallustream[entities] @ git+https://github.com/pranav-sethia/hallustream"
+pip install "hallustream[entities]"
 hallustream "Tell me about A Caribbean Mystery."
 ```
 

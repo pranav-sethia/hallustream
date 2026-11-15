@@ -7,7 +7,7 @@ You might use it to warn readers about doubtful details in an app built on an op
 ## Install
 
 ```bash
-pip install "hallustream[entities] @ git+https://github.com/pranav-sethia/hallustream"
+pip install "hallustream[entities]"
 ```
 
 The `[entities]` extra adds [GLiNER](https://github.com/urchade/GLiNER), which finds the details automatically. Without it you can pass your own `spans=[(start, end), ...]` to `score()`. Python 3.10 or newer.

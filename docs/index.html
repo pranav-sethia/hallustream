@@ -510,7 +510,7 @@ footer .wrap { display: grid; gap: 10px; }
     <h2>Run it</h2>
     <p class="measure muted">A pip package with a command line and a Python API. It needs a GPU or an Apple Silicon Mac for Qwen3-4B, or the free Colab notebook.</p>
     <div class="sheet code" id="code"><button class="iconbtn copy" type="button" id="copy">Copy</button><span class="c"># install</span>
-pip install "hallustream[entities] @ git+https://github.com/pranav-sethia/hallustream"
+pip install "hallustream[entities]"
 
 <span class="c"># ask, with likely made-up details highlighted as each sentence is checked</span>
 hallustream "Tell me about A Caribbean Mystery."</div>
@@ -1008,7 +1008,7 @@ bindTips($("scatter"), (t) => t.dataset.tip);
 
 /* ---------- Copy ---------- */
 $("copy").onclick = () => {
-  const text = 'pip install "hallustream[entities] @ git+https://github.com/pranav-sethia/hallustream"\nhallustream "Tell me about A Caribbean Mystery."';
+  const text = 'pip install "hallustream[entities]"\nhallustream "Tell me about A Caribbean Mystery."';
   navigator.clipboard.writeText(text).then(() => { $("copy").textContent = "Copied"; setTimeout(() => { $("copy").textContent = "Copy"; }, 1600); });
 };
 </script>
