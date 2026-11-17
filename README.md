@@ -34,16 +34,17 @@ It needs a GPU or an Apple Silicon Mac for Qwen3-4B, and Python 3.10 or newer. T
 
 Every test below was written down in [EVAL_PROTOCOL.md](https://github.com/pranav-sethia/hallustream/blob/main/EVAL_PROTOCOL.md) before it was run, choices were made on separate validation data, and each test set was scored once. The details are in [RESULTS.md](https://github.com/pranav-sethia/hallustream/blob/main/docs/RESULTS.md).
 
-### Against the paper it builds on
+### Building on the paper
 
-The probe comes from [Obeso et al. (2025)](https://arxiv.org/abs/2509.03531), who released probes for several models. I ran their released probes through my own pipeline, then changed two things: the layer is picked on validation instead of fixed near the end, and the training is tuned on validation. The model is never changed. On the paper's own data and test sets, scored on exactly the same details as the paper's released probes:
+The probe comes from [Obeso et al. (2025)](https://arxiv.org/abs/2509.03531), who released their code, probes and annotated data for several models. Their results reproduce: their Qwen2.5-7B linear probe, run through this pipeline, gives 0.8387 / 0.8467 against the published 0.8383 / 0.8467. I then changed two things, both chosen on validation: the layer the probe reads, and the training settings. The model itself is never changed. On the paper's own data and test sets, with every probe scored on exactly the same details:
 
-| AUROC on LongFact / LongFact++ | Paper's linear probe | Paper's LoRA probe (fine-tunes the model) | HalluStream |
+| AUROC on LongFact / LongFact++ | Paper's linear probe | Paper's LoRA probe (fine-tunes the model) | HalluStream (model unchanged) |
 |---|---|---|---|
-| Qwen2.5-7B | 0.839 / 0.847 | 0.884 / 0.889 | **0.894 / 0.896** |
-| Llama-3.1-8B | 0.848 / 0.862 | **0.889 / 0.900** | 0.872 / 0.891 |
+| Qwen2.5-7B | 0.839 / 0.847 | 0.884 / 0.889 | 0.894 / 0.896 |
+| Llama-3.1-8B | 0.848 / 0.862 | 0.889 / 0.900 | 0.872 / 0.891 |
 
-HalluStream beats the paper's linear probe on both models (+0.050 to +0.055 on Qwen2.5-7B, +0.024 to +0.029 on Llama-3.1-8B), and on Qwen2.5-7B it also beats the probe that fine-tunes the model (+0.010 / +0.008). On Llama-3.1-8B, the model with the most training data in the paper, fine-tuning still wins (by 0.017 / 0.009). On the paper's HealthBench set of medical answers, never used here before, the same holds: 0.874 against 0.849 (linear) and 0.892 (LoRA). Every difference holds at 95% confidence.
+- **The signal peaks in the middle of the model.** Validation picked layer 18 of 28 on Qwen2.5-7B and layer 12 of 32 on Llama-3.1-8B, where the paper reads a layer near the end; on Qwen2.5-7B the layer alone adds about 0.02 AUROC. Earlier probing work also found middle layers best.
+- **A probe on the unchanged model comes close to fine-tuning.** The two changes add 0.050–0.055 AUROC to the linear probe on Qwen2.5-7B and 0.024–0.029 on Llama-3.1-8B. That puts it within 0.02 of the paper's LoRA probes: slightly above on Qwen2.5-7B (+0.010 / +0.008), below on Llama-3.1-8B (−0.017 / −0.009), where the paper has about five times more training answers. The paper's HealthBench set of medical answers, never used here before, shows the same pattern: 0.874 against 0.849 (linear) and 0.892 (LoRA). Every difference holds at 95% confidence.
 
 ### On the model's own writing
 
@@ -63,12 +64,12 @@ Comparing only details about the same subject, which removes the easy part of te
 
 ![False against true claims per person for each detector and setting](https://raw.githubusercontent.com/pranav-sethia/hallustream/main/docs/img/shars_tradeoff.png)
 
-The two detectors trace about the same trade-off between true and false claims, and HalluStream gets there 4.5–6x faster end to end (34–49 s per biography against 211–222 s), with about 140x less time spent on detection. At the same answer rate it has the same numbers of true and false claims; set more cautiously it goes further, down to 1.7 false claims per person. A first comparison reported 44% fewer false claims than SHARS's detector; that compared a cautious HalluStream setting with a permissive one of SHARS's, and the runs at matched settings above replace it.
+The two detectors trace about the same trade-off between true and false claims, and HalluStream gets there 4.5–6x faster end to end (34–49 s per biography against 211–222 s), with about 140x less time spent on detection. At the same answer rate it has the same numbers of true and false claims; set more cautiously it goes further, down to 1.7 false claims per person.
 
 ## How it was tested
 
 - **Pre-registered:** each test's settings and pass bars were committed before it ran. Experiments that were stopped are kept in the protocol's appendix with their outcomes.
-- **Reproduced first:** the paper's released Qwen2.5-7B probe, run through this pipeline, gives 0.8384 / 0.8469 against the published 0.8383 / 0.8467.
+- **Reproduced first:** the paper's released Qwen2.5-7B probe, run through this pipeline, gives 0.8387 / 0.8467 against the published 0.8383 / 0.8467.
 - **Fresh test data:** the own-writing test used 1,100 people and subjects sampled after the detector was frozen.
 - **A validated fact checker:** labels come from Gemini reading the subject's Wikipedia page. Against FActScore's human labels it gets 89% balanced accuracy on 11,049 facts. A stronger model re-checking its labels blind agreed on 84–91%; it marks made-up details reliably and leans toward accepting doubtful ones.
 

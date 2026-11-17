@@ -4,45 +4,45 @@ Every number here comes from logged runs and the scripts named in each section. 
 
 In short:
 
-- On the benchmark of the paper it builds on, HalluStream beats that paper's released linear probes on both models tried (Qwen2.5-7B and Llama-3.1-8B), without changing the model. On Qwen2.5-7B it also beats the paper's LoRA probe, which fine-tunes the model; on Llama-3.1-8B the LoRA probe stays ahead.
+- On the benchmark of the paper it builds on (Obeso et al. 2025), the paper's released Qwen2.5-7B probe reproduces its published scores in this pipeline. Picking the layer and the training settings on validation adds 0.024 to 0.055 AUROC to their linear probes on Qwen2.5-7B and Llama-3.1-8B, without changing the model. That brings a probe on the unchanged model within 0.02 of their LoRA probes, which fine-tune it: slightly above on Qwen2.5-7B, below on Llama-3.1-8B.
 - On Qwen3-4B's own writing about people and other subjects sampled after the detector was frozen, it scores 0.874 and 0.854 AUROC, against 0.660 and 0.684 for the model's own confidence.
-- Inside SHARS (ICML 2026), it traces about the same trade-off between true and false claims as SHARS's own detector, 4.5–6x faster end to end. An earlier comparison reported 44% fewer false claims; it compared different operating points, and the matched comparison replaces it.
+- Inside SHARS (ICML 2026), it traces about the same trade-off between true and false claims as SHARS's own detector, 4.5–6x faster end to end. An earlier comparison at different settings is replaced by this one (see Inside SHARS).
 
 Intervals are over people, subjects or answers; the base probe's is over questions with 1,000 resamples. Some of this was added after an audit of the finished project, which is marked where it applies (EVAL_PROTOCOL.md, follow-ups).
 
-## Against the paper on its own benchmark
+## Building on the paper, on its own benchmark
 
-Obeso et al. released two probes for each of several models. For Qwen2.5-7B-Instruct: a linear probe that reads layer 26 of 28 (their default, about 0.95 of the depth), and a LoRA probe that also fine-tunes the model's layers up to that point. I kept everything else from the paper's setting and asked whether my recipe beats them.
+Obeso et al. released two probes for each of several models. For Qwen2.5-7B-Instruct: a linear probe that reads layer 26 of 28 (their default, about 0.95 of the depth), and a LoRA probe that also fine-tunes the model's layers up to that point. I kept everything else from the paper's setting and asked how far a probe on the unchanged model could go with two changes: the layer it reads and its training settings.
 
 The model stays frozen. Training uses the paper's own annotations of Qwen2.5-7B's answers: 1,625 answers from the official train split, with the 178-answer validation split for every choice, and the official test split scored once at the end. The layer was picked on validation with the same sweep I used for Qwen3-4B (chart below): layer 18 scored 0.874 against 0.845 for layer 26. Training uses the paper's annealed loss, with the learning rate, number of passes and L2 strength tuned on validation, and the scores of 5 seeds are averaged.
 
-All three probes are scored on exactly the same details, by the same code. The paper's probes, run through it, give the numbers they report themselves: 0.8384 / 0.8469 for the linear probe (published 0.8383 / 0.8467) and 0.884 / 0.889 for the LoRA probe (its own evaluation file).
+All three probes are scored on exactly the same details, by the same code. The paper's probes, run through it, give the numbers they report themselves: 0.8387 / 0.8467 for the linear probe (published 0.8383 / 0.8467) and 0.884 / 0.889 for the LoRA probe (its own evaluation file).
 
 | | LongFact (14,416 details) | LongFact++ (10,117) |
 |---|---|---|
 | Paper's released linear probe (layer 26), re-run | 0.839 (54% caught) | 0.847 (55% caught) |
 | Paper's released LoRA probe (fine-tunes the model), re-run | 0.884 (64% caught) | 0.889 (65% caught) |
 | My recipe at layer 26 | 0.870 | 0.880 |
-| My recipe at layer 18 | **0.894 (68% caught)** | **0.896 (69% caught)** |
-| Gain over the linear probe | **+0.055 (0.049 to 0.062)** | **+0.050 (0.043 to 0.057)** |
-| Gain over the LoRA probe | **+0.010 (0.006 to 0.014)** | **+0.008 (0.003 to 0.013)** |
+| My recipe at layer 18 | 0.894 (68% caught) | 0.896 (69% caught) |
+| Difference from the linear probe | +0.055 (0.049 to 0.062) | +0.050 (0.043 to 0.057) |
+| Difference from the LoRA probe | +0.010 (0.006 to 0.014) | +0.008 (0.003 to 0.013) |
 
-"Caught" is the share of made-up details flagged at the point of the curve with 10% false alarms. Each of the 5 seeds alone also beats the LoRA probe (0.888 to 0.890 on LongFact, 0.890 to 0.893 on LongFact++). About +0.03 of the gain over the linear probe comes from the tuned training at the same layer, and +0.017 to +0.024 from reading a middle layer. The paper fixes the layer at 95% of the depth without a sweep; earlier probing work (Azaria and Mitchell 2023; Kossen et al. 2024; Orgad et al. 2025) already found middle layers best, and these results agree.
+"Caught" is the share of made-up details flagged at the point of the curve with 10% false alarms. The 5 seeds alone score 0.888 to 0.890 on LongFact and 0.890 to 0.893 on LongFact++, so the result doesn't rest on one seed. About +0.03 of the gain over the linear probe comes from the tuned training at the same layer, and +0.017 to +0.024 from reading a middle layer. The paper reads a layer near the end (about 95% of the depth); earlier probing work (Azaria and Mitchell 2023; Kossen et al. 2024; Orgad et al. 2025) found middle layers best, and the sweep here agrees.
 
-The paper's best number for this model is a LoRA probe with a different setting that was not released (their Table 4 in the current arXiv version: 0.895 / 0.896, 66% / 68% caught). The frozen probe here is within 0.001 of it. That comparison uses the published values, so it has no interval.
+The paper's best number for this model is a LoRA probe with a different setting that was not released (their Table 4 in the current arXiv version: 0.895 / 0.896, 66% / 68% caught). The frozen probe here scores about the same. That comparison uses the published values, so it has no interval.
 
 **A second model.** The same recipe on Llama-3.1-8B-Instruct, against the paper's released linear probe (layer 30) and its released LoRA probe (`llama3_1_8b_lora_lambda_lm_0_01`, layer 31), pre-registered as follow-ups B2. Llama has 8,429 training answers in the paper's data against 1,625 for Qwen2.5-7B. The validation sweep over every second layer from 10 to 30 picked layer 12 (0.846 on validation against 0.830 for the paper's layer 30), and the same tuning grid picked the same settings at both layers. The paper's HealthBench annotations of Llama's answers to medical questions are a third test set, never used for anything here before.
 
 | | LongFact (18,443 details) | LongFact++ (12,445) | HealthBench (9,008) |
 |---|---|---|---|
 | Paper's released linear probe, re-run | 0.848 | 0.862 | 0.849 |
-| Paper's released LoRA probe, re-run | **0.889** | **0.900** | **0.892** |
+| Paper's released LoRA probe, re-run | 0.889 | 0.900 | 0.892 |
 | My recipe at layer 30 | 0.866 | 0.886 | 0.859 |
 | My recipe at layer 12 | 0.872 | 0.891 | 0.874 |
-| Gain over the linear probe | **+0.024 (0.020 to 0.029)** | **+0.029 (0.023 to 0.035)** | **+0.025 (0.016 to 0.034)** |
-| Gain over the LoRA probe | −0.017 (−0.021 to −0.014) | −0.009 (−0.013 to −0.004) | −0.018 (−0.025 to −0.012) |
+| Difference from the linear probe | +0.024 (0.020 to 0.029) | +0.029 (0.023 to 0.035) | +0.025 (0.016 to 0.034) |
+| Difference from the LoRA probe | −0.017 (−0.021 to −0.014) | −0.009 (−0.013 to −0.004) | −0.018 (−0.025 to −0.012) |
 
-The recipe beats the linear probe on all three test sets, including the medical one, which is the pre-registered claim; on this model fine-tuning wins. Run through this pipeline, the paper's two Llama probes score 0.004 to 0.007 below their published values (0.854 / 0.868 / 0.856 and 0.894 / 0.904 / 0.896); every probe here is scored by the same code on the same details, so the comparison stays like for like.
+The recipe improves on the linear probe on all three test sets, including the medical one, which was the pre-registered claim. On this model the LoRA probe stays ahead. One possible factor is training data: the paper has about five times more answers for Llama, and fine-tuning may gain more from it than a frozen probe does. Subsampling Llama's training set would test this. Run through this pipeline, the paper's two Llama probes score 0.004 to 0.007 below their published values (0.854 / 0.868 / 0.856 and 0.894 / 0.904 / 0.896); every probe here is scored by the same code on the same details, so the comparison stays like for like.
 
 The code is `modal_jobs/extract.py` (runs `main_qwen25`, `sweep_llama31`, `main_llama31`), `modal_jobs/sweep.py`, `modal_jobs/train.py` (variants `qwen25_*`, `llama31_*`), `modal_jobs/gate.py` (the paper's probes) and `research/paper_h2h.py`.
 
@@ -107,7 +107,7 @@ The shipped detector (v4) was fitted on 1,809 subjects (16,127 checked details):
 | HalluStream minus confidence | **+0.214** (0.186 to 0.244) | **+0.170** (0.146 to 0.197) |
 | The same, pairs within one subject only | 0.872 against 0.747 | 0.853 against 0.751 |
 
-The last row matters: part of any detector's pooled score comes from telling well-known subjects from obscure ones. Comparing only details from the same subject, the probe still beats the model's confidence by 0.10 to 0.13.
+The last row matters: part of any detector's pooled score comes from telling well-known subjects from obscure ones. Comparing only details from the same subject, the probe still leads the model's confidence by 0.10 to 0.13.
 
 The previous detector (v3) was fitted on 432 people only. On the same new data it scores 0.868 and 0.834, so the extra training data adds +0.006 (0.001 to 0.011) on people and +0.019 (0.013 to 0.026) on other subjects, +0.014 (0.010 to 0.019) together; that was the pre-registered bar for switching the library to v4 (EVAL_PROTOCOL.md, follow-ups C).
 

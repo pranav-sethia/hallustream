@@ -41,6 +41,15 @@ for model in ("qwen25", "llama31"):
             ("docs/RESULTS.md", f3(r["lora"]["auroc"])),
             ("docs/RESULTS.md", signed(r["ours_minus_paper"]["delta"])),
         ]
+# README: the reproduction, the gains over the linear probe and the gaps to the LoRA probe
+qw = [_h2h("qwen25", ds) for ds in ("longfact", "longfact_aug")]
+ll = [_h2h("llama31", ds) for ds in ("longfact", "longfact_aug")]
+for doc in ("README.md", "docs/RESULTS.md"):
+    CASES.append((doc, f"{qw[0]['paper']['auroc']:.4f} / {qw[1]['paper']['auroc']:.4f}"))
+for rows in (qw, ll):
+    d = sorted(r["ours_minus_paper"]["delta"] for r in rows)
+    CASES.append(("README.md", f"{d[0]:.3f}–{d[1]:.3f}"))
+    CASES.append(("README.md", " / ".join(signed(r["ours_minus_lora"]["delta"]) for r in rows)))
 for part in ("people", "topics"):
     r = N[f"own_fresh_{part}"]
     CASES += [
